@@ -168,29 +168,23 @@ void parse_audblk (ac3_state_t * state, audblk_t * audblk)
 	}
     }
 
-    if(audblk->cplinu) {
-	/* Loop through all the channels and get their coupling co-ords */	
-	for(i=0;i < state->nfchans;i++) {
-	    if(!audblk->chincpl[i])
-		continue;
+    if (audblk->cplinu) {
+	int cplcoe = 0;
+	int j;
 
-	    /* Is there new coupling co-ordinate info? */
-	    audblk->cplcoe[i] = bitstream_get (1);
-	    if(audblk->cplcoe[i]) {
-		int j;
-		audblk->mstrcplco[i] = bitstream_get (2); 
-		for(j=0;j < audblk->ncplbnd; j++) {
-		    audblk->cplcoexp[i][j] = bitstream_get (4); 
-		    audblk->cplcomant[i][j] = bitstream_get (4); 
+	for (i = 0; i < state->nfchans; i++) {
+	    if (audblk->chincpl[i])
+		if (bitstream_get (1)) {	// cplcoe
+		    cplcoe = 1;
+		    audblk->mstrcplco[i] = bitstream_get (2);
+		    for (j = 0; j < audblk->ncplbnd; j++) {
+			audblk->cplcoexp[i][j] = bitstream_get (4);
+			audblk->cplcomant[i][j] = bitstream_get (4);
+		    }
 		}
-	    }
 	}
-
-	/* If we're in dual mono mode, there's going to be some phase info */
-	if( (state->acmod == 0x2) && audblk->phsflginu &&
-	    (audblk->cplcoe[0] || audblk->cplcoe[1])) {
-	    int j;
-	    for(j=0;j < audblk->ncplbnd; j++)
+	if ((state->acmod == 0x2) && audblk->phsflginu && cplcoe) {
+	    for (j = 0; j < audblk->ncplbnd; j++)
 		audblk->phsflg[j] = bitstream_get (1);
 	}
     }

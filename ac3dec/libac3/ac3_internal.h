@@ -104,16 +104,12 @@ typedef struct audblk_s
     uint16_t ncplsubnd;		// number of coupling sub-bands
     uint16_t ncplbnd;		// number of coupling bands
 
+    // should we simply have float cplco[5][18] instead of these 4 ?
+    uint16_t mstrcplco[5];	// per channel master coupling coordinate
+    uint16_t cplcoexp[5][18];	// per band coupling exponent
+    uint16_t cplcomant[5][18];	// per band coupling mantissa
+    uint16_t phsflg[18];	// per band phase flags for stereo
 
-			/* Do coupling co-ords exist for this channel? */
-			uint16_t cplcoe[5];
-			/* Master coupling co-ordinate */
-			uint16_t mstrcplco[5];
-			/* Per coupling band coupling co-ordinates */
-			uint16_t cplcoexp[5][18];
-			uint16_t cplcomant[5][18];
-			/* Phase flags for dual mono */
-			uint16_t phsflg[18];
 	/* Is there a rematrixing strategy */
 	uint16_t rematstr;
 		/* Rematrixing bits */
