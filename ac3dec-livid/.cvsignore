@@ -1,6 +1,7 @@
 .*.swp
 *~
 Makefile
+Makefile.in
 decode
 config.cache
 config.guess
