@@ -570,17 +570,24 @@ int parse_audblk (ac3_state_t * state, audblk_t * audblk)
     if (bitstream_get (1)) {	// cplstre
 	audblk->cplinu = bitstream_get (1);
 	if (audblk->cplinu) {
+	    static int bndtab[16] = {31, 35, 37, 39, 41, 42, 43, 44,
+				     45, 45, 46, 46, 47, 47, 48, 48};
+	    int cplbegf;
+	    int cplendf;
+
 	    for (i = 0; i < state->nfchans; i++)
 		audblk->chincpl[i] = bitstream_get (1);
 	    if (state->acmod == 0x2)
 		audblk->phsflginu = bitstream_get (1);
-	    audblk->cplbegf = bitstream_get (4);
-	    audblk->cplendf = bitstream_get (4);
+	    cplbegf = bitstream_get (4);
+	    cplendf = bitstream_get (4);
 
-	    audblk->cplstrtmant = audblk->cplbegf * 12 + 37;
-	    audblk->cplendmant = audblk->cplendf * 12 + 73;
-	    audblk->ncplsubnd = audblk->cplendf + 3 - audblk->cplbegf;
-	    audblk->ncplbnd = audblk->ncplsubnd;
+	    if (cplendf + 3 - cplbegf < 0)
+		return 1;
+	    audblk->ncplbnd = audblk->ncplsubnd = cplendf + 3 - cplbegf;
+	    audblk->cplstrtbnd = bndtab[cplbegf];
+	    audblk->cplstrtmant = cplbegf * 12 + 37;
+	    audblk->cplendmant = cplendf * 12 + 73;
 
 	    for (i = 0; i < audblk->ncplsubnd - 1; i++) {
 		audblk->cplbndstrc[i] = bitstream_get (1);
@@ -618,14 +625,14 @@ int parse_audblk (ac3_state_t * state, audblk_t * audblk)
     }
 
     if ((state->acmod == 0x2) && (bitstream_get (1))) {	// rematstr
-	if ((audblk->cplbegf > 2) || (audblk->cplinu == 0))
+	if ((!audblk->cplinu) || (audblk->cplstrtmant > 61))
 	    for (i = 0; i < 4; i++) 
 		audblk->rematflg[i] = bitstream_get (1);
-	else if ((audblk->cplbegf == 0) && audblk->cplinu)
-	    for (i = 0; i < 2; i++)
+	else if (audblk->cplstrtmant > 37)
+	    for (i = 0; i < 3; i++)
 		audblk->rematflg[i] = bitstream_get (1);
-	else if ((audblk->cplbegf <= 2) && audblk->cplinu)
-	    for(i = 0; i < 3; i++)
+	else
+	    for (i = 0; i < 2; i++)
 		audblk->rematflg[i] = bitstream_get (1);
     }
 
@@ -733,12 +740,9 @@ int parse_audblk (ac3_state_t * state, audblk_t * audblk)
 	    memset (audblk->fbw_bap, 0, sizeof (audblk->fbw_bap));
 	    memset (audblk->lfe_bap, 0, sizeof (audblk->lfe_bap));
 	} else {
-	    static int bndtab[16] = {31, 35, 37, 39, 41, 42, 43, 44,
-				     45, 45, 46, 46, 47, 47, 48, 48};
-
 	    if (audblk->cplinu)
 		bit_allocate (state->fscod, audblk, &audblk->cplba,
-			      bndtab[audblk->cplbegf], audblk->cplstrtmant,
+			      audblk->cplstrtbnd, audblk->cplstrtmant,
 			      audblk->cplendmant,
 			      2304 - (audblk->cplfleak << 8),
 			      2304 - (audblk->cplsleak << 8),

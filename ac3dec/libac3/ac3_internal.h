@@ -99,12 +99,11 @@ typedef struct audblk_s {
     uint16_t cplinu;		// coupling in use
     uint16_t chincpl[5];	// channel coupled
     uint16_t phsflginu;		// phase flags in use (stereo only)
-    uint16_t cplbegf;		// coupling begin frequency code
-    uint16_t cplendf;		// coupling end frequency code
     uint16_t cplbndstrc[18];	// coupling band structure
     // derived information
     uint16_t cplstrtmant;	// coupling channel start mantissa
     uint16_t cplendmant;	// coupling channel end mantissa
+    uint16_t cplstrtbnd;	// coupling start band (for bit allocation)
     uint16_t ncplsubnd;		// number of coupling sub-bands
     uint16_t ncplbnd;		// number of coupling bands
     float cplco[5][18];		// coupling coordinates

@@ -57,9 +57,9 @@ void rematrix(audblk_t *audblk, stream_samples_t samples)
     uint32_t i,j;
     float left,right;
 
-    if(!audblk->cplinu || audblk->cplbegf > 2)
+    if ((!audblk->cplinu) || (audblk->cplstrtmant > 61))
 	num_bands = 4;
-    else if (audblk->cplbegf > 0)
+    else if (audblk->cplstrtmant > 37)
 	num_bands = 3;
     else
 	num_bands = 2;
@@ -69,7 +69,7 @@ void rematrix(audblk_t *audblk, stream_samples_t samples)
 	    continue;
 
 	start = rematrix_band[i].start;
-	end = min(rematrix_band[i].end ,12 * audblk->cplbegf + 36);
+	end = min(rematrix_band[i].end ,audblk->cplstrtmant-1);
 	// apparently bug if coupling not used - end is not right
 	
 	for(j=start;j < end; j++) {
