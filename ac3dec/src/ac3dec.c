@@ -112,7 +112,7 @@ static void print_usage (char * argv[])
 	     "\t-s\tuse program stream demultiplexer, track 0-7 or 0x80-0x87\n"
 	     "\t-c\tuse c implementation, disables all accelerations\n"
 	     "\t-r\tdisable dynamic range compression\n"
-	     "\t-o\taudioo output mode\n", argv[0]);
+	     "\t-o\taudio output mode\n", argv[0]);
 
     drivers = ao_drivers ();
     for (i = 0; drivers[i].name; i++)
