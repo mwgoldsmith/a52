@@ -124,8 +124,9 @@ static inline void exp_unpack_ch(uint16_t type,uint16_t expstr,uint16_t ngrps,ui
 
 	return;
 error:
-	if (!error_flag)
-		fprintf (stderr,"** Invalid exponent - skipping frame **\n");
-	error_flag = 1;
+#ifdef DEBUG
+	fprintf (stderr,"** Invalid exponent - skipping frame **\n");
+#endif
+	HANDLE_ERROR ();
 }
 

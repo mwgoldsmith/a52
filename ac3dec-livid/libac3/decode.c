@@ -19,6 +19,13 @@
  *  along with GNU Make; see the file COPYING.  If not, write to
  *  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA. 
  *
+ *------------------------------------------------------------
+ *
+ *	Thomas Mirlacher <dent@cosy.sbg.ac.at>
+ *	added OMS support
+ * 11 Jan 2001
+ *	Thomas Mirlacher <dent@cosy.sbg.ac.at>
+ *	faster error response using jmp functions
  *
  */
 
@@ -57,7 +64,6 @@
 #endif
 //our global config structure
 ac3_config_t ac3_config;
-uint32_t error_flag = 0;
 
 static audblk_t audblk;
 static bsi_t bsi;
@@ -83,6 +89,8 @@ static dm_par_t dm_par;
 #define BUFFER_MAX_SIZE 4096
 static uint8_t buffer[BUFFER_MAX_SIZE];
 static uint32_t buffer_size = 0;;
+// for error handling
+jmp_buf error_jmp_mark;
 
 static uint32_t decode_buffer_syncframe (syncinfo_t *syncinfo, uint8_t **start, uint8_t *end)
 {
@@ -90,9 +98,7 @@ static uint32_t decode_buffer_syncframe (syncinfo_t *syncinfo, uint8_t **start, 
 	uint16_t syncword = syncinfo->syncword;
 	uint32_t ret = 0;
 
-	// 
 	// Find an ac3 sync frame.
-	// 
 	while (syncword != 0x0b77) {
 		if (cur >= end)
 			goto done;
@@ -123,15 +129,12 @@ static uint32_t decode_buffer_syncframe (syncinfo_t *syncinfo, uint8_t **start, 
 	crc_process_frame (buffer, syncinfo->frame_size * 2 - 2);
 
 	if (!crc_validate()) {
-		error_flag = 1;
 		fprintf(stderr,"** CRC failed - skipping frame **\n");
 		goto done;
 	}
 #endif
 
-	//
 	//if we got to this point, we found a valid ac3 frame to decode
-	//
 
 	bitstream_init (buffer);
 	//get rid of the syncinfo struct as we already parsed it
@@ -153,7 +156,6 @@ void inline decode_mute (void)
 {
 	//mute the frame
 	memset (s16_samples, 0, sizeof(int16_t) * 256 * 2 * 6);
-	error_flag = 0;
 }
 
 
@@ -165,9 +167,11 @@ void ac3dec_init (void)
 
 	imdct_init ();
 	downmix_init ();
+	memset (&syncinfo, 0, sizeof (syncinfo));
+	memset (&bsi, 0, sizeof (bsi));
+	memset (&audblk, 0, sizeof (audblk));
 	sanity_check_init (&syncinfo,&bsi,&audblk);
 }
-
 
 #ifdef __OMS__
 size_t ac3dec_decode_data (plugin_output_audio_t *output, uint8_t *data_start, uint8_t *data_end)
@@ -176,11 +180,13 @@ size_t ac3dec_decode_data (ac3_config_t *config, ao_functions_t *ao_functions, u
 #endif
 {
 	uint32_t i;
+	
+	if (setjmp (error_jmp_mark) < 0) {
+		ac3dec_init ();
+		return 0;
+	}
 
 	while (decode_buffer_syncframe (&syncinfo, &data_start, data_end)) {
-		if (error_flag)
-			goto error;
-
 		parse_bsi (&bsi);
 
 #ifndef __OMS__
@@ -214,8 +220,6 @@ size_t ac3dec_decode_data (ac3_config_t *config, ao_functions_t *ao_functions, u
 			// Take the differential exponent data and turn it into
 			// absolute exponents 
 			exponent_unpack (&bsi,&audblk); 
-			if (error_flag)
-				goto error;
 
 			// Figure out how many bits per mantissa 
 			bit_allocate (syncinfo.fscod,&bsi,&audblk);
@@ -223,8 +227,6 @@ size_t ac3dec_decode_data (ac3_config_t *config, ao_functions_t *ao_functions, u
 			// Extract the mantissas from the stream and
 			// generate floating point frequency coefficients
 			coeff_unpack (&bsi,&audblk,samples);
-			if (error_flag)
-				goto error;
 
 			if (bsi.acmod == 0x2)
 				rematrix (&audblk,samples);
@@ -236,8 +238,10 @@ size_t ac3dec_decode_data (ac3_config_t *config, ao_functions_t *ao_functions, u
 			// and convert floating point to int16_t
 			// downmix(&bsi,samples,&s16_samples[i * 2 * 256]);
 
-			if (sanity_check(&syncinfo,&bsi,&audblk) < 0)
-				sanity_check_init (&syncinfo,&bsi,&audblk);
+			if (sanity_check(&syncinfo,&bsi,&audblk) < 0) {
+				HANDLE_ERROR ();
+				return 0;
+			}
 
 			continue;
 		}
@@ -266,10 +270,9 @@ size_t ac3dec_decode_data (ac3_config_t *config, ao_functions_t *ao_functions, u
 		ao_functions->play(s16_samples, 256 * 6 * 2);
 #endif
 
-error:
-		decode_mute ();
 	}
+
+	decode_mute ();
 
 	return 0;	
 }
-

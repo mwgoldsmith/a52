@@ -32,6 +32,7 @@
 #include "dither.h"
 #include "coeff.h"
 
+
 //
 //Lookup tables of 0.15 two's complement quantization values
 //
@@ -309,6 +310,7 @@ static float inline coeff_get_float (uint16_t bap, uint16_t dithflag, uint16_t e
 		case 0:
 			if(dithflag)
 				return (dither_gen() * scale_factor[exp]);
+
 			return 0.0;
 
 		case 1:
@@ -368,11 +370,10 @@ static float inline coeff_get_float (uint16_t bap, uint16_t dithflag, uint16_t e
 	}
 
 error:
-	if(!error_flag)
-		fprintf(stderr,"** Invalid mantissa - skipping frame **\n");
-	error_flag = 1;
-
-	return 0.0;
+#ifdef DEBUG
+	fprintf(stderr,"** Invalid mantissa - skipping frame **\n");
+#endif
+	HANDLE_ERROR();
 }
 
 

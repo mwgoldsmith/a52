@@ -25,6 +25,8 @@
 #define inline 
 #endif
 
+#include <setjmp.h>
+
 /* Exponent strategy constants */
 #define EXP_REUSE (0)
 #define EXP_D15   (1)
@@ -43,7 +45,8 @@ typedef float stream_samples_t[6][256];
 /* global config structure */
 extern ac3_config_t ac3_config;
 /* global error flag */
-extern uint32_t error_flag;
+extern jmp_buf error_jmp_mark;
+#define HANDLE_ERROR() longjmp (error_jmp_mark, -1)
 
 /* Everything you wanted to know about band structure */
 /*

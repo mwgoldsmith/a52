@@ -98,7 +98,6 @@ void parse_syncinfo(syncinfo_t *syncinfo, uint8_t *data)
 
 	if(syncinfo->fscod == 3) {
 		//invalid sampling rate code
-		error_flag = 1;	
 		return;
 	}
 	else if(syncinfo->fscod == 2)
