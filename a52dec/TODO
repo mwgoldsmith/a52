@@ -8,13 +8,3 @@
 * make dynrng work in dual-channel streams
 
 * update bitstream code
-
-
-from aaron:
-
-- Detect hrtime on solaris and enable it via config.h
-- Add multilevel debug output
-- change the divides/moduluos in coeff_get_mantissa to table
-  lookups. Need to look at stats first though.
-- rewrite imdct to use split 2/4 radix fft
-- investigate strangeness in 256 point imdct (weird transients?)
