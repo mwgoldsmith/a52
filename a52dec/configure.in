@@ -15,9 +15,9 @@ dnl Checks for compiler
 AC_PROG_CC
 AC_PROG_GCC_TRADITIONAL
 
-dnl GCC-specific flags - try to optimize them sometime
 if test x"$GCC" = x"yes"; then
 
+    dnl GCC-specific flags - try to optimize them sometime
     dnl -Wall -Werror moved to the end to not disturb the configure script
 
     dnl -O3

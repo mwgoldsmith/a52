@@ -1,8 +1,5 @@
 /* vc++/config.h - manually adapted from include/config.h.in */
 
-/* a52dec profiling */
-/* #undef A52DEC_GPROF */
-
 /* maximum supported data alignment */
 /* #undef ATTRIBUTE_ALIGNED_MAX */
 
