@@ -228,14 +228,12 @@ static int parse_deltba (int8_t * deltba)
     return 0;
 }
 
-static inline int zero_snr_offsets (int nfchans, int lfeon,
-				    ac3_state_t * state)
+static inline int zero_snr_offsets (int nfchans, ac3_state_t * state)
 {
     int i;
 
-    if ((state->csnroffst) ||
-	(state->cplinu && state->cplba.fsnroffst) ||
-	(lfeon && state->lfeba.fsnroffst))
+    if ((state->csnroffst) || (state->cplinu && state->cplba.fsnroffst) ||
+	(state->lfeon && state->lfeba.fsnroffst))
 	return 0;
     for (i = 0; i < nfchans; i++)
 	if (state->ba[i].fsnroffst)
@@ -361,7 +359,7 @@ static void coeff_get (float * coeff, uint8_t * exp, int8_t * bap,
     i++;								\
     continue;
 
-int ac3_block (ac3_state_t * state, audblk_t * audblk)
+int ac3_block (ac3_state_t * state)
 {
     static const uint8_t nfchans_tbl[8] = {2, 1, 2, 3, 3, 4, 4, 5};
     static int rematrix_band[4] = {25, 37, 61, 253};
@@ -449,7 +447,7 @@ int ac3_block (ac3_state_t * state, audblk_t * audblk)
     if ((state->acmod == 2) && (bitstream_get (1))) {	// rematstr
 	int end;
 
-	end = (state->cplinu) ? state->cplstrtmant : 73;
+	end = (state->cplinu) ? state->cplstrtmant : 253;
 	i = 0;
 	do
 	    state->rematflg[i] = bitstream_get (1);
@@ -497,8 +495,8 @@ int ac3_block (ac3_state_t * state, audblk_t * audblk)
 	    int grp_size, nchgrps;
 
 	    do_bit_alloc = 1;
-	    grp_size = 3 * (1 << (chexpstr[i] - 1));
-	    nchgrps = (state->endmant[i] - 1 + (grp_size - 3)) / grp_size;
+	    grp_size = 3 << (chexpstr[i] - 1);
+	    nchgrps = (state->endmant[i] + grp_size - 4) / grp_size;
 	    state->fbw_exp[i][0] = bitstream_get (4);
 	    if (parse_exponents (chexpstr[i], nchgrps, state->fbw_exp[i][0],
 				 state->fbw_exp[i] + 1))
@@ -559,25 +557,22 @@ int ac3_block (ac3_state_t * state, audblk_t * audblk)
     }
 
     if (do_bit_alloc) {
-	if (zero_snr_offsets (nfchans, state->lfeon, state)) {
+	if (zero_snr_offsets (nfchans, state)) {
 	    memset (state->cpl_bap, 0, sizeof (state->cpl_bap));
 	    memset (state->fbw_bap, 0, sizeof (state->fbw_bap));
 	    memset (state->lfe_bap, 0, sizeof (state->lfe_bap));
 	} else {
 	    if (state->cplinu)
-		bit_allocate (state->fscod, state->halfrate, state,
-			      &state->cplba, state->cplstrtbnd,
+		bit_allocate (state, &state->cplba, state->cplstrtbnd,
 			      state->cplstrtmant, state->cplendmant,
 			      state->cplfleak, state->cplsleak,
 			      state->cpl_exp, state->cpl_bap);
 	    for (i = 0; i < nfchans; i++)
-		bit_allocate (state->fscod, state->halfrate, state,
-			      state->ba + i, 0, 0, state->endmant[i], 0, 0,
-			      state->fbw_exp[i], state->fbw_bap[i]);
+		bit_allocate (state, state->ba + i, 0, 0, state->endmant[i],
+			      0, 0, state->fbw_exp[i], state->fbw_bap[i]);
 	    if (state->lfeon) {
 		state->lfeba.deltbae = DELTA_BIT_NONE;
-		bit_allocate (state->fscod, state->halfrate, state,
-			      &state->lfeba, 0, 0, 7, 0, 0,
+		bit_allocate (state, &state->lfeba, 0, 0, 7, 0, 0,
 			      state->lfe_exp, state->lfe_bap);
 	    }
 	}

@@ -195,7 +195,6 @@ static inline void float_to_int (float * _f, int16_t * s16)
 
 int ac3_decode_data (uint8_t * start, uint8_t * end)
 {
-    static audblk_t audblk;
     static ac3_state_t state;
 
     static uint8_t buf[3840];
@@ -231,7 +230,7 @@ int ac3_decode_data (uint8_t * start, uint8_t * end)
 		if (ac3_frame (&state, buf, &flags, &level, 384))
 		    goto error;
 		for (i = 0; i < 6; i++) {
-		    if (ac3_block (&state, &audblk))
+		    if (ac3_block (&state))
 			goto error;
 		    float_to_int (*samples, s16_samples + i * 512);
 		}

@@ -81,9 +81,6 @@ typedef struct ac3_state_s {
     int8_t lfe_bap[7];
 } ac3_state_t;
 
-typedef struct audblk_s {
-} audblk_t;
-
 #define AC3_CHANNEL 0
 #define AC3_MONO 1
 #define AC3_STEREO 2
@@ -105,4 +102,4 @@ int ac3_syncinfo (uint8_t * buf, int * flags,
 		  int * sample_rate, int * bit_rate);
 int ac3_frame (ac3_state_t * state, uint8_t * buf, int * flags,
 	       float * level, float bias);
-int ac3_block (ac3_state_t * state, audblk_t * audblk);
+int ac3_block (ac3_state_t * state);

@@ -41,9 +41,9 @@
 /* samples work structure */
 typedef float stream_samples_t[6][256];
 
-void bit_allocate (int fscod, int halfrate, ac3_state_t * state, ac3_ba_t * ba,
-		   int bndstart, int start, int end, int fastleak,
-		   int slowleak, uint8_t * exp, int8_t * bap);
+void bit_allocate (ac3_state_t * state, ac3_ba_t * ba, int bndstart,
+		   int start, int end, int fastleak, int slowleak,
+		   uint8_t * exp, int8_t * bap);
 
 int downmix_init (int input, int flags, float * level, float clev, float slev);
 void downmix (float * samples, int acmod, int output, float level, float bias,

@@ -120,9 +120,9 @@ do {						\
     mask -= floor;				\
 } while (0)
 
-void bit_allocate (int fscod, int halfrate, ac3_state_t * state, ac3_ba_t * ba,
-		   int bndstart, int start, int end, int fastleak,
-		   int slowleak, uint8_t * exp, int8_t * bap)
+void bit_allocate (ac3_state_t * state, ac3_ba_t * ba, int bndstart,
+		   int start, int end, int fastleak, int slowleak,
+		   uint8_t * exp, int8_t * bap)
 {
     static int slowgain[4] = {0x540, 0x4d8, 0x478, 0x410};
     static int dbpbtab[4]  = {0xc00, 0x500, 0x300, 0x100};
@@ -134,13 +134,15 @@ void bit_allocate (int fscod, int halfrate, ac3_state_t * state, ac3_ba_t * ba,
     int psd, mask;
     int8_t * deltba;
     int * hth;
+    int halfrate;
 
+    halfrate = state->halfrate;
     fdecay = (63 + 20 * state->fdcycod) >> halfrate;
     fgain = 128 + 128 * ba->fgaincod;
     sdecay = (15 + 2 * state->sdcycod) >> halfrate;
     sgain = slowgain[state->sgaincod];
     dbknee = dbpbtab[state->dbpbcod];
-    hth = hthtab[fscod];
+    hth = hthtab[state->fscod];
     /*
      * if there is no delta bit allocation, make deltba point to an area
      * known to contain zeroes. baptab+156 here.
