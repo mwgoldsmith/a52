@@ -43,10 +43,10 @@ static FILE * in_file;
 static uint32_t frame_counter = 0;
 
 static struct timeval tv_beg, tv_end, tv_start;
-static uint32_t elapsed;
-static uint32_t total_elapsed;
-static uint32_t last_count = 0;
-static uint32_t demux_ps = 0;
+static int elapsed;
+static int total_elapsed;
+static int last_count = 0;
+static int demux_ps = 0;
 static ao_open_t * output_open = NULL;
 static ao_instance_t * output;
 
