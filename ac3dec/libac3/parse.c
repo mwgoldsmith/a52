@@ -365,21 +365,9 @@ void parse_audblk(bsi_t *bsi,audblk_t *audblk)
 
     /* Check to see if there's any dummy info to get */
     if((audblk->skiple =  bitstream_get (1))) {
-	uint16_t skip_data;
-
 	audblk->skipl = bitstream_get (9);
-	//XXX remove
-	//fprintf(stderr,"(parse) skipping %d bytes\n",audblk->skipl);
-
 	for(i = 0; i < audblk->skipl ; i++) {
-	    skip_data = bitstream_get (8);
-	    //XXX remove
-	    //fprintf(stderr,"skipped data %2x\n",skip_data);
-	    //if(skip_data != 0)
-	    //{	
-	    //dprintf("(parse) Invalid skipped data %2x\n",skip_data);
-	    //exit(1);
-	    //}
+	    bitstream_get (8);
 	}
     }
 
