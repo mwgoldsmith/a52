@@ -71,7 +71,7 @@ static complex_t pre2[64];
 static complex_t post2[32];
 
 /* Windowing function for Modified DCT - Thank you acroread */
-sample_t a52_imdct_window[] = {
+static const sample_t a52_imdct_window[] = {
     0.00014, 0.00024, 0.00037, 0.00051, 0.00067, 0.00086, 0.00107, 0.00130,
     0.00157, 0.00187, 0.00220, 0.00256, 0.00297, 0.00341, 0.00390, 0.00443,
     0.00501, 0.00564, 0.00632, 0.00706, 0.00785, 0.00871, 0.00962, 0.01061,
@@ -281,7 +281,7 @@ void a52_imdct_512 (sample_t * data, sample_t * delay, sample_t bias)
 {
     int i, k;
     sample_t t_r, t_i, a_r, a_i, b_r, b_i, w_1, w_2;
-    sample_t * window;
+    const sample_t * window = a52_imdct_window;
 	
     for (i = 0; i < 128; i++) {
 	k = fftorder[i];
@@ -293,8 +293,6 @@ void a52_imdct_512 (sample_t * data, sample_t * delay, sample_t bias)
     }
 
     ifft128 (buf);
-
-    window = a52_imdct_window;
 
     /* Post IFFT complex multiply plus IFFT complex conjugate*/
     /* Window and convert to real valued signal */
@@ -325,10 +323,9 @@ void a52_imdct_512 (sample_t * data, sample_t * delay, sample_t bias)
 void a52_imdct_256(sample_t data[],sample_t delay[],sample_t bias)
 {
     int i, k;
-
     sample_t t_r, t_i, a_r, a_i, b_r, b_i, c_r, c_i, d_r, d_i, w_1, w_2;
-    sample_t * window;
-    complex_t * buf1, *buf2;
+    complex_t * buf1, * buf2;
+    const sample_t * window = a52_imdct_window;
 
     buf1 = &buf[0];
     buf2 = &buf[64];
@@ -348,8 +345,6 @@ void a52_imdct_256(sample_t data[],sample_t delay[],sample_t bias)
 
     ifft64 (buf1);
     ifft64 (buf2);
-
-    window = a52_imdct_window;
 
     /* Post IFFT complex multiply */
     /* Window and convert to real valued signal */
