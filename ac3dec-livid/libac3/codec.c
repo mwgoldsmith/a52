@@ -306,7 +306,7 @@ int plugin_init (char *whoami)
 {
 	pluginRegister (whoami,
 		PLUGIN_ID_CODEC_AUDIO,
-		"ac3",
+		"ac3 ",
 		NULL,
 		NULL,
 		&codec_ac3dec);
