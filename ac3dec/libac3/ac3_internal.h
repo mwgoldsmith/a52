@@ -70,14 +70,17 @@ extern uint32_t error_flag;
 
 typedef struct ac3_state_s 
 {
-    uint16_t fscod;	// sample rate
+    int nfchans;	// number of channels, derived from acmod
 
-    uint16_t acmod;	// coded channels
-    uint16_t cmixlev;	// centre channel mix level
-    uint16_t surmixlev;	// surround channels mix level
-    uint16_t lfeon;	// coded lfe channel
+    /* from syncinfo */
+    uint8_t fscod;	// sample rate
 
-    uint16_t nfchans;	// number of channels, derived from acmod
+    /* from bsi */
+    uint8_t acmod;	// coded channels
+    uint8_t cmixlev;	// centre channel mix level
+    uint8_t surmixlev;	// surround channels mix level
+    uint8_t lfeon;	// coded lfe channel
+
 } ac3_state_t;
 
 /* more pain */

@@ -75,31 +75,26 @@ int parse_bsi (ac3_state_t *state, uint8_t * buf)
 {
     int chaninfo;
 
+    state->fscod = buf[4] >> 6;
+
     if (buf[5] >= 0x48)		// bsid >= 9
 	return 1;
 
-    /* Get the audio coding mode (ie how many channels)*/
     state->acmod = buf[6] >> 5;
-    /* Predecode the number of full bandwidth channels as we use this
-     * number a lot */
     state->nfchans = nfchans[state->acmod];
 
     bitstream_set_ptr (buf + 6);
     bitstream_get (3);	// skip acmod we already parsed
 
-    /* If it is in use, get the centre channel mix level */
     if ((state->acmod & 0x1) && (state->acmod != 0x1))
 	state->cmixlev = bitstream_get (2);
 
-    /* If it is in use, get the surround channel mix level */
     if (state->acmod & 0x4)
 	state->surmixlev = bitstream_get (2);
 
-    /* Get the dolby surround mode if in 2/0 mode */
     if (state->acmod == 0x2)
 	bitstream_get (2);	// dsurmod
 
-    /* Is the low frequency effects channel on? */
     state->lfeon = bitstream_get (1);
 
     chaninfo = (state->acmod) ? 0 : 1;

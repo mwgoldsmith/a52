@@ -82,7 +82,6 @@ ac3_decode_frame(uint8_t * buf)
 
     if (!parse_syncinfo (buf, &frame.sampling_rate, &dummy))
 	goto error;
-    state.fscod = buf[4] >> 6;
 
     dprintf("(decode) begin frame %d\n",frame_count++);
 
