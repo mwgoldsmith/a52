@@ -1,4 +1,3 @@
-* put a52_* prefix in all global symbols/functions
 * get rid of globals in bitstream parsing
 * get rid of statics in imdct.c
 * avoid overflows, including reading the a52 stream !!!
