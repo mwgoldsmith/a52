@@ -41,6 +41,22 @@ also includes a demultiplexer for mpeg-1 and mpeg-2 program streams.
 The liba52 source code is always distributed in the a52dec package, to
 make sure it easier for people to test it.
 
+The basic usage is to just type "a52dec file" where file is an ATSC
+A/52 file.
+
+The "-s" option must be used for multiplexed (audio and video) mpeg-2
+files. These files are usualy found on the internet or on unencrypted
+DVDs.
+
+The "-o" option is used to select a given output layer. By default
+a52dec does a stereo downmix and outputs to your speakers, but you can
+try other choices using this option. This is also used for performance
+testing and conformance testing.
+
+The "-c" option is used to disable all optimizations (currently only mlib).
+
+The "-r" option is used to disable the dynamic range compression.
+
 
 OTHER PROJECTS USING LIBA52
 
