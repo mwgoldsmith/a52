@@ -35,6 +35,7 @@
 
 #include "a52.h"
 #include "audio_out.h"
+#include "audio_out_internal.h"
 
 typedef struct solaris_instance_s {
     ao_instance_t ao;
@@ -58,27 +59,6 @@ int solaris_setup (ao_instance_t * _instance, int sample_rate, int * flags,
     *bias = 384;
 
     return 0;
-}
-
-static inline int16_t convert (int32_t i)
-{
-    if (i > 0x43c07fff)
-	return 32767;
-    else if (i < 0x43bf8000)
-	return -32768;
-    else
-	return i - 0x43c00000;
-}
-
-static inline void float_to_int (float * _f, int16_t * s16, int flags)
-{
-    int i;
-    int32_t * f = (int32_t *) _f;
-
-    for (i = 0; i < 256; i++) {
-	s16[2*i] = convert (f[i]);
-	s16[2*i+1] = convert (f[i+256]);
-    }
 }
 
 int solaris_play (ao_instance_t * _instance, int flags, sample_t * _samples)
@@ -137,7 +117,7 @@ int solaris_play (ao_instance_t * _instance, int flags, sample_t * _samples)
     } else if (flags != instance->flags)
 	return 1;
 
-    float_to_int (samples, int16_samples, flags);
+    float2s16_2 (samples, int16_samples);
     write (instance->fd, int16_samples, 256 * sizeof (int16_t) * 2);
 
     return 0;
