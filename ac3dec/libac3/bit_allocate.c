@@ -21,10 +21,11 @@
  *
  */
 
+#include <inttypes.h>
 #include <stdlib.h>
 #include <string.h>
-#include "ac3.h"
 #include "ac3_internal.h"
+#include "ac3.h"
 #include "bit_allocate.h"
 
 static int hthtab[3][50] = {

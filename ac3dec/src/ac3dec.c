@@ -34,9 +34,8 @@
 #include <unistd.h>
 #endif
 
-#include "ac3.h"
 #include "ac3_internal.h"
-#include "parse.h"
+#include "ac3.h"
 #include "libao.h"
 
 #define BUFFER_SIZE 262144
@@ -49,8 +48,6 @@ static uint32_t elapsed;
 static uint32_t total_elapsed;
 static uint32_t last_count = 0;
 static uint32_t demux_ps = 0;
-
-void float_to_int (float * _f, int16_t * s16);
 
 stream_samples_t samples;
 
@@ -175,6 +172,27 @@ static void handle_args (int argc, char * argv[])
 	in_file = stdin;
 }
 
+static inline int16_t blah (int32_t i)
+{
+    if (i > 0x43c07fff)
+	return 32767;
+    else if (i < 0x43bf8000)
+	return -32768;
+    else
+	return i - 0x43c00000;
+}
+
+static inline void float_to_int (float * _f, int16_t * s16) 
+{
+    int i;
+    int32_t * f = (int32_t *) _f;	// XXX assumes IEEE float format
+
+    for (i = 0; i < 256; i++) {
+	s16[2*i] = blah (f[i]);
+	s16[2*i+1] = blah (f[i+256]);
+    }
+}
+
 int ac3_decode_data (uint8_t * start, uint8_t * end)
 {
     static audblk_t audblk;
@@ -194,7 +212,7 @@ int ac3_decode_data (uint8_t * start, uint8_t * end)
 	    if (bufpos == buf + 5) {
 		int length;
 
-		length = parse_syncinfo (buf, &sample_rate, &bit_rate);
+		length = ac3_syncinfo (buf, &sample_rate, &bit_rate);
 		if (!length) {
 		    printf ("skip\n");
 		    for (bufptr = buf; bufptr < buf + 4; bufptr++)
@@ -206,10 +224,11 @@ int ac3_decode_data (uint8_t * start, uint8_t * end)
 		static int do_init = 1;
 		int i;
 
-		if (parse_bsi (&state, buf))
+		if (ac3_bsi (&state, buf))
 		    goto error;
 		for (i = 0; i < 6; i++) {
-		    if (parse_audblk (&state, &audblk)) 
+		    float level = 1;
+		    if (ac3_audblk (&state, &audblk, 34, &level, 384)) 
 			goto error;
 		    float_to_int (*samples, s16_samples + i * 512);
 		}

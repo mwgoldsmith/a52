@@ -22,28 +22,8 @@
  *
  */
 
-#include <inttypes.h>
-
-#define AC3_DOLBY_SURR_ENABLE 0x1
-
-typedef struct ac3_config_s
-{
-    //Bit flags that enable various things
-    uint32_t flags;
-    //Callback that points the decoder to new stream data
-    void (* fill_buffer_callback) (uint8_t **, uint8_t **);
-    //Number of discrete channels in final output (for downmixing)
-    uint16_t num_output_ch;
-    //Which channel of a dual mono stream to select
-    uint16_t dual_mono_ch_sel;
-} ac3_config_t;
-
-typedef struct ac3_frame_s
-{
-    uint32_t sampling_rate;
-    int16_t * audio_data;
-} ac3_frame_t;
-
 void ac3_init(void);
-int ac3_frame_length(uint8_t * buf);
-ac3_frame_t* ac3_decode_frame(uint8_t * buf);
+int ac3_syncinfo (uint8_t * buf, int * sample_rate, int * bit_rate);
+int ac3_bsi (ac3_state_t * state, uint8_t * buf);
+int ac3_audblk (ac3_state_t * state, audblk_t * audblk, int output_flags,
+		float * output_level, float output_bias);

@@ -22,12 +22,13 @@
  *
  */
 
+#include <inttypes.h>
 #include <string.h>
-#include "ac3.h"
+
 #include "ac3_internal.h"
+#include "ac3.h"
 
 #include "bitstream.h"
-#include "parse.h"
 #include "bit_allocate.h"
 #include "dither.h"
 #include "imdct.h"
@@ -38,7 +39,12 @@ static float delay[6][256];
 
 static const uint8_t nfchans[8] = {2, 1, 2, 3, 3, 4, 4, 5};
 
-int parse_syncinfo (uint8_t * buf, int * sample_rate, int * bit_rate)
+void ac3_init (void)
+{
+    imdct_init ();
+}
+
+int ac3_syncinfo (uint8_t * buf, int * sample_rate, int * bit_rate)
 {
     static int rate[] = { 32,  40,  48,  56,  64,  80,  96, 112,
 			 128, 160, 192, 224, 256, 320, 384, 448,
@@ -69,7 +75,7 @@ int parse_syncinfo (uint8_t * buf, int * sample_rate, int * bit_rate)
     }
 }
 
-int parse_bsi (ac3_state_t * state, uint8_t * buf)
+int ac3_bsi (ac3_state_t * state, uint8_t * buf)
 {
     int chaninfo;
 #define LEVEL_3DB 0.7071067811865476
@@ -550,7 +556,8 @@ static void coeff_get_cpl (ac3_state_t * state, audblk_t * audblk,
 #undef exp
 }
 
-int parse_audblk (ac3_state_t * state, audblk_t * audblk)
+int ac3_audblk (ac3_state_t * state, audblk_t * audblk, int output_flags, 
+		float * output_level, float output_bias)
 {
     static int rematrix_band[4] = {25, 37, 61, 253};
     int i, chaninfo;
@@ -841,7 +848,8 @@ int parse_audblk (ac3_state_t * state, audblk_t * audblk)
 	imdct_512 (samples[5], delay[5]);
 #endif
 
-    downmix (*samples, state->acmod, 2, 1, 1, state->clev, state->slev, 384);
+    downmix (*samples, state->acmod, output_flags, output_level, output_bias,
+	     state->clev, state->slev);
 
     return 0;
 }
