@@ -30,7 +30,6 @@
 #include "parse.h"
 #include "bit_allocate.h"
 #include "dither.h"
-#include "rematrix.h"
 #include "imdct.h"
 #include "downmix.h"
 
@@ -553,6 +552,7 @@ static void coeff_get_cpl (ac3_state_t * state, audblk_t * audblk,
 
 int parse_audblk (ac3_state_t * state, audblk_t * audblk)
 {
+    static int rematrix_band[4] = {25, 37, 61, 253};
     int i, chaninfo;
     uint8_t cplexpstr, chexpstr[5], lfeexpstr, do_bit_alloc, done_cpl;
     uint8_t blksw[5], dithflag[5];
@@ -633,15 +633,13 @@ int parse_audblk (ac3_state_t * state, audblk_t * audblk)
     }
 
     if ((state->acmod == 0x2) && (bitstream_get (1))) {	// rematstr
-	if ((!audblk->cplinu) || (audblk->cplstrtmant > 61))
-	    for (i = 0; i < 4; i++) 
-		audblk->rematflg[i] = bitstream_get (1);
-	else if (audblk->cplstrtmant > 37)
-	    for (i = 0; i < 3; i++)
-		audblk->rematflg[i] = bitstream_get (1);
-	else
-	    for (i = 0; i < 2; i++)
-		audblk->rematflg[i] = bitstream_get (1);
+	int end;
+
+	end = (audblk->cplinu) ? audblk->cplstrtmant : 73;
+	i = 0;
+	do
+	    audblk->rematflg[i] = bitstream_get (1);
+	while (rematrix_band[i++] < end);
     }
 
     cplexpstr = EXP_REUSE;
@@ -797,8 +795,32 @@ int parse_audblk (ac3_state_t * state, audblk_t * audblk)
 	    samples[i][j] = 0;
     }
 
-    if (state->acmod == 2)
-	rematrix (audblk, samples);
+    if (state->acmod == 2) {
+	int j, end, band;
+
+	end = ((audblk->endmant[0] < audblk->endmant[1]) ?
+	       audblk->endmant[0] : audblk->endmant[1]);
+
+	i = 0;
+	j = 13;
+	do {
+	    if (!audblk->rematflg[i]) {
+		j = rematrix_band[i++];
+		continue;
+	    }
+	    band = rematrix_band[i++];
+	    if (band > end)
+		band = end;
+	    do {
+		float tmp0, tmp1;
+
+		tmp0 = samples[0][j];
+		tmp1 = samples[1][j];
+		samples[0][j] = tmp0 + tmp1;
+		samples[1][j] = tmp0 - tmp1;
+	    } while (++j < band);
+	} while (j < end);
+    }
 
     if (state->lfeon) {
 	coeff_get (samples[5], audblk->lfe_exp, audblk->lfe_bap, 0, 7);
