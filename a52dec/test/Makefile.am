@@ -1,4 +1,4 @@
-bin_PROGRAMS = compare
+noinst_PROGRAMS = compare
 compare_SOURCES = compare.c
 compare_LDADD = -lm
 
