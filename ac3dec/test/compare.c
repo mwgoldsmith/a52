@@ -4,8 +4,8 @@ int main (int argc, char ** argv)
 {
     FILE * f1;
     FILE * f2;
-    short buf1[3072];
-    short buf2[3072];
+    short buf1[512];
+    short buf2[512];
     int i, j, total = 0, max = 0;
     long long err = 0, square = 0;
 
@@ -15,14 +15,14 @@ int main (int argc, char ** argv)
     f2 = fopen (argv[2], "rb");
     if ((f1 == NULL) || (f2 == NULL)) {
 	printf ("cannot open file %s\n", (f1 == NULL) ? argv[1] : argv[2]);
-	return 0;
+	return 1;
     }
     while (1) {
-	i = fread (buf1, sizeof (short), 3072, f1);
-	j = fread (buf2, sizeof (short), 3072, f2);
-	if ((i < 3072) || (j < 3072))
+	i = fread (buf1, sizeof (short), 512, f1);
+	j = fread (buf2, sizeof (short), 512, f2);
+	if ((i < 512) || (j < 512))
 	    break;
-	for (i = 0; i < 3072; i++) {
+	for (i = 0; i < 512; i++) {
 	    j = buf2[i] - buf1[i];
 	    if (j) {
 		err += j;
@@ -33,7 +33,7 @@ int main (int argc, char ** argv)
 		    max = -j;
 	    }
 	}
-	total += 3072;
+	total += 512;
     }
     if (i < j)
 	printf ("%s is too short\n", argv[1]);
@@ -42,5 +42,5 @@ int main (int argc, char ** argv)
     else
 	printf ("max error %d mean error %f mean square error %f\n",
 		max, (float)err/total, (float)square/total);
-    return 0;
+    return (i != j) || (max > 1);
 }

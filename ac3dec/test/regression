@@ -1,18 +1,36 @@
 #!/bin/sh
 
-if test x"$srcdir" = x""; then srcdir="."; fi
+if test x"$srcdir" != x""; then
+    builddir="."	# running from make check, but it does not define that
+else
+    srcdir=`echo "$0" | sed s,[^/]*$,,`
+    test "$srcdir" = "$0" && srcdir=.
+    test -z "$srcdir" && srcdir=.
+    builddir="$srcdir"	# running manually, have to assume
+fi
+
+srcdir=`cd $srcdir;pwd`
+builddir=`cd $builddir;pwd`
 
 testfile=$srcdir/tests
 if [ $# -ge 1 ]; then testfile=$1; fi
 
-basedir=`head -n 1 $testfile | awk '{print $2}'`
-home=`pwd`; cd $srcdir; if [ ! -d $basedir ]; then exit 77; else cd $home; fi
-
 dirs=`awk -F '#' '{print $1}' $testfile`
+
+basedir=`head -n 1 $testfile | awk '{print $2}'`
+cd $srcdir; if [ ! -d $basedir ]; then
+    cd ..; if [ ! -d $basedir ]; then exit 77; fi	# for make distcheck
+fi
+basedir=`cd $basedir;pwd`
+
+cd $builddir
+error=0
 
 for dir in $dirs; do
     echo $dir
     ../src/ac3dec $basedir/$dir/stream >/dev/null 2>&1
-    ./compare output.pcm $basedir/$dir/output.pcm
+    ./compare output.pcm $basedir/$dir/output.pcm || error=1
     rm -f output.pcm
 done
+
+exit $error
