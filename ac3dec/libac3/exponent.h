@@ -25,4 +25,4 @@
 #define UNPACK_CPL  2
 #define UNPACK_LFE  4
 
-void exponent_unpack( bsi_t *bsi, audblk_t *audblk);
+void exponent_unpack(ac3_state_t * state, audblk_t *audblk);

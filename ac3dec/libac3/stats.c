@@ -51,16 +51,16 @@ static const struct mixlev_s smixlev_tbl[4] =
 	{  0.0,   "off    "}, {  1.0, "Invalid"}
 };
 
-void stats_print_banner(bsi_t *bsi)
+void stats_print_banner(ac3_state_t * state)
 {
-	fprintf(stdout,"%d.%d Mode\n",bsi->nfchans,bsi->lfeon);
+	fprintf(stdout,"%d.%d Mode\n",state->nfchans,state->lfeon);
 }
 
-void stats_print_syncinfo(syncinfo_t *syncinfo)
+void stats_print_syncinfo(ac3_state_t * state)
 {
 	dprintf("(syncinfo) ");
 	
-	switch (syncinfo->fscod)
+	switch (state->fscod)
 	{
 		case 2:
 			dprintf("32 KHz   ");
@@ -77,21 +77,21 @@ void stats_print_syncinfo(syncinfo_t *syncinfo)
 	}
 }
 	
-void stats_print_bsi(bsi_t *bsi)
+void stats_print_bsi(ac3_state_t * state)
 {
 	dprintf("(bsi) ");
-	dprintf(" %d.%d Mode ",bsi->nfchans,bsi->lfeon);
-	if ((bsi->acmod & 0x1) && (bsi->acmod != 0x1))
-		dprintf(" Centre Mix Level %s ",cmixlev_tbl[bsi->cmixlev].desc);
-	if (bsi->acmod & 0x4)
-		dprintf(" Sur Mix Level %s ",smixlev_tbl[bsi->cmixlev].desc);
+	dprintf(" %d.%d Mode ",state->nfchans,state->lfeon);
+	if ((state->acmod & 0x1) && (state->acmod != 0x1))
+		dprintf(" Centre Mix Level %s ",cmixlev_tbl[state->cmixlev].desc);
+	if (state->acmod & 0x4)
+		dprintf(" Sur Mix Level %s ",smixlev_tbl[state->cmixlev].desc);
 	dprintf("\n");
 
 }
 
 char *exp_strat_tbl[4] = {"R   ","D15 ","D25 ","D45 "};
 
-void stats_print_audblk(bsi_t *bsi,audblk_t *audblk)
+void stats_print_audblk(ac3_state_t * state,audblk_t *audblk)
 {
 	uint32_t i;
 
@@ -105,7 +105,7 @@ void stats_print_audblk(bsi_t *bsi,audblk_t *audblk)
 		exp_strat_tbl[audblk->chexpstr[1]],exp_strat_tbl[audblk->chexpstr[2]],
 		exp_strat_tbl[audblk->chexpstr[3]],exp_strat_tbl[audblk->chexpstr[4]]);
 	dprintf("[");
-	for(i=0;i<bsi->nfchans;i++)
+	for(i=0;i<state->nfchans;i++)
 		dprintf("%1d",audblk->blksw[i]);
 	dprintf("]");
 

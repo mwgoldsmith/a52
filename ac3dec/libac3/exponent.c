@@ -37,11 +37,11 @@ static void exp_unpack_ch(uint16_t type,uint16_t expstr,uint16_t ngrps,
 			  uint16_t *dest);
 
 void
-exponent_unpack( bsi_t *bsi, audblk_t *audblk)
+exponent_unpack(ac3_state_t * state, audblk_t *audblk)
 {
     uint16_t i;
 
-    for(i=0; i< bsi->nfchans; i++)
+    for(i=0; i< state->nfchans; i++)
 	exp_unpack_ch(UNPACK_FBW, audblk->chexpstr[i], audblk->nchgrps[i],
 		      audblk->exps[i][0], &audblk->exps[i][1],
 		      audblk->fbw_exp[i]);
@@ -51,7 +51,7 @@ exponent_unpack( bsi_t *bsi, audblk_t *audblk)
 		      audblk->cplabsexp << 1, audblk->cplexps,
 		      &audblk->cpl_exp[audblk->cplstrtmant]);
 
-    if(bsi->lfeon)
+    if(state->lfeon)
 	exp_unpack_ch(UNPACK_LFE, audblk->lfeexpstr, 2, audblk->lfeexps[0], 
 		      &audblk->lfeexps[1], audblk->lfe_exp);
 }

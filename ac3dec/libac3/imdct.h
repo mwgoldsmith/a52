@@ -22,5 +22,5 @@
  *
  */
 
-void imdct(bsi_t *bsi,audblk_t *audblk, stream_samples_t samples);
+void imdct(ac3_state_t *state,audblk_t *audblk, stream_samples_t samples);
 void imdct_init(void);

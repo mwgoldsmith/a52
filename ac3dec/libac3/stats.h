@@ -21,7 +21,7 @@
  *
  */
 
-void stats_print_syncinfo(syncinfo_t *syncinfo);
-void stats_print_bsi(bsi_t *bsi);
-void stats_print_audblk(bsi_t *bsi,audblk_t *audblk);
-void stats_print_banner(bsi_t *bsi);
+void stats_print_syncinfo(ac3_state_t * state);
+void stats_print_bsi(ac3_state_t * state);
+void stats_print_audblk(ac3_state_t * state,audblk_t *audblk);
+void stats_print_banner(ac3_state_t * state);

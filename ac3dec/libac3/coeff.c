@@ -117,7 +117,7 @@ static uint16_t qnttztab[16] = { 0, 0, 0, 3, 0 , 4, 5, 6, 7, 8, 9, 10, 11, 12, 1
 
 static void    coeff_reset(void);
 static int16_t coeff_get_mantissa(uint16_t bap, uint16_t dithflag);
-static void    coeff_uncouple_ch(float samples[],bsi_t *bsi,audblk_t *audblk,uint32_t ch);
+static void    coeff_uncouple_ch(float samples[],ac3_state_t *state,audblk_t *audblk,uint32_t ch);
 
 //
 // Convert a 0.15 fixed point number into IEEE single
@@ -135,7 +135,7 @@ convert_to_float(uint16_t exp, int16_t mantissa)
 }
 
 void
-coeff_unpack(bsi_t *bsi, audblk_t *audblk, stream_samples_t samples)
+coeff_unpack(ac3_state_t *state, audblk_t *audblk, stream_samples_t samples)
 {
     uint16_t i,j;
     uint32_t done_cpl = 0;
@@ -143,7 +143,7 @@ coeff_unpack(bsi_t *bsi, audblk_t *audblk, stream_samples_t samples)
 
     coeff_reset();
 
-    for(i=0; i< bsi->nfchans; i++) {
+    for(i=0; i< state->nfchans; i++) {
 	for(j=0; j < audblk->endmant[i]; j++) {
 	    mantissa = coeff_get_mantissa(audblk->fbw_bap[i][j],audblk->dithflag[i]);
 	    samples[i][j] = convert_to_float(audblk->fbw_exp[i][j],mantissa);
@@ -161,13 +161,13 @@ coeff_unpack(bsi_t *bsi, audblk_t *audblk, stream_samples_t samples)
 
     //uncouple the channel if necessary
     if(audblk->cplinu) {
-	for(i=0; i< bsi->nfchans; i++) {
+	for(i=0; i< state->nfchans; i++) {
 	    if(audblk->chincpl[i])
-		coeff_uncouple_ch(samples[i],bsi,audblk,i);
+		coeff_uncouple_ch(samples[i],state,audblk,i);
 	}
     }
 
-    if(bsi->lfeon) {
+    if(state->lfeon) {
 	// There are always 7 mantissas for lfe, no dither for lfe 
 	for(j=0; j < 7 ; j++) {
 	    mantissa = coeff_get_mantissa(audblk->lfe_bap[j],0);
@@ -294,7 +294,7 @@ coeff_reset(void)
 // Uncouple the coupling channel into a fbw channel
 //
 static void
-coeff_uncouple_ch(float samples[],bsi_t *bsi,audblk_t *audblk,uint32_t ch)
+coeff_uncouple_ch(float samples[],ac3_state_t *state,audblk_t *audblk,uint32_t ch)
 {
     uint32_t bnd = 0;
     uint32_t sub_bnd = 0;
@@ -315,7 +315,7 @@ coeff_uncouple_ch(float samples[],bsi_t *bsi,audblk_t *audblk,uint32_t ch)
 	    cpl_coord = convert_to_float(cpl_exp_tmp,cpl_mant_tmp) * 8.0f;
 
 	    //Invert the phase for the right channel if necessary
-	    if(bsi->acmod == 0x2 && audblk->phsflginu && ch == 1 && audblk->phsflg[bnd])
+	    if(state->acmod == 0x2 && audblk->phsflginu && ch == 1 && audblk->phsflg[bnd])
 		cpl_coord *= -1;
 
 	    bnd++;

@@ -68,33 +68,17 @@ extern uint32_t error_flag;
  * conditional fields.
  */
 
-typedef struct syncinfo_s
+typedef struct ac3_state_s 
 {
-	uint32_t	magic;
-	/* Stream Sampling Rate (kHz) 0 = 48, 1 = 44.1, 2 = 32, 3 = reserved */
-	uint16_t		fscod;	
-} syncinfo_t;
+    uint16_t fscod;	// sample rate
 
-typedef struct bsi_s
-{
-	uint32_t	magic;
-	/* Audio coding mode */
-	uint16_t acmod;
-	/* If we're using the centre channel then */
-		/* centre mix level */
-		uint16_t cmixlev;
-	/* If we're using the surround channel then */
-		/* surround mix level */
-		uint16_t surmixlev;
-	/* Low frequency effects on */
-	uint16_t lfeon;
+    uint16_t acmod;	// coded channels
+    uint16_t cmixlev;	// centre channel mix level
+    uint16_t surmixlev;	// surround channels mix level
+    uint16_t lfeon;	// coded lfe channel
 
-	/* Information not in the AC-3 bitstream, but derived */
-	/* Number of channels (excluding LFE)
-	 * Derived from acmod */
-	uint16_t nfchans;
-} bsi_t;
-
+    uint16_t nfchans;	// number of channels, derived from acmod
+} ac3_state_t;
 
 /* more pain */
 typedef struct audblk_s

@@ -29,31 +29,17 @@
 
 
 void 
-sanity_check_init(syncinfo_t *syncinfo, bsi_t *bsi, audblk_t *audblk)
+sanity_check_init(ac3_state_t * state, audblk_t *audblk)
 {
-	syncinfo->magic = AC3_MAGIC_NUMBER;
-	bsi->magic = AC3_MAGIC_NUMBER;
-	audblk->magic1 = AC3_MAGIC_NUMBER;
-	audblk->magic2 = AC3_MAGIC_NUMBER;
-	audblk->magic3 = AC3_MAGIC_NUMBER;
+    audblk->magic1 = AC3_MAGIC_NUMBER;
+    audblk->magic2 = AC3_MAGIC_NUMBER;
+    audblk->magic3 = AC3_MAGIC_NUMBER;
 }
 
 void 
-sanity_check(syncinfo_t *syncinfo, bsi_t *bsi, audblk_t *audblk)
+sanity_check(ac3_state_t * state, audblk_t *audblk)
 {
 	int i;
-
-	if(syncinfo->magic != AC3_MAGIC_NUMBER)
-	{
-		fprintf(stderr,"\n** Sanity check failed -- syncinfo magic number **");
-		error_flag = 1;
-	}
-	
-	if(bsi->magic != AC3_MAGIC_NUMBER)
-	{
-		fprintf(stderr,"\n** Sanity check failed -- bsi magic number **");
-		error_flag = 1;
-	}
 
 	if(audblk->magic1 != AC3_MAGIC_NUMBER)
 	{
@@ -118,7 +104,7 @@ sanity_check(syncinfo_t *syncinfo, bsi_t *bsi, audblk_t *audblk)
 		error_flag = 1;
 	}
 
-	for(i=0; i < bsi->nfchans; i++)
+	for(i=0; i < state->nfchans; i++)
 	{
 		if((audblk->chincpl[i] == 0) && (audblk->chbwcod[i] > 60))
 		{

@@ -25,6 +25,7 @@
 #include <string.h>
 #include "ac3.h"
 #include "ac3_internal.h"
+#include "bit_allocate.h"
 
 
 
@@ -185,7 +186,7 @@ static inline int16_t logadd(int16_t a,int16_t  b)
 }
 
 
-void bit_allocate(uint16_t fscod, bsi_t *bsi, audblk_t *audblk)
+void bit_allocate(ac3_state_t * state, audblk_t *audblk)
 {
     uint16_t i;
     int16_t fgain;
@@ -222,7 +223,7 @@ void bit_allocate(uint16_t fscod, bsi_t *bsi, audblk_t *audblk)
 	return;
     }
 
-    for(i = 0; i < bsi->nfchans; i++) {
+    for(i = 0; i < state->nfchans; i++) {
 	start = 0;
 	end = audblk->endmant[i] ; 
 	fgain = fastgain[audblk->fgaincod[i]]; 
@@ -234,7 +235,7 @@ void bit_allocate(uint16_t fscod, bsi_t *bsi, audblk_t *audblk)
 
 	ba_compute_excitation(start, end , fgain, fastleak, slowleak, 0, bndpsd, excite);
 
-	ba_compute_mask(start, end, fscod, audblk->deltbae[i], audblk->deltnseg[i], 
+	ba_compute_mask(start, end, state->fscod, audblk->deltbae[i], audblk->deltnseg[i], 
 			audblk->deltoffst[i], audblk->deltba[i], audblk->deltlen[i], excite, mask);
 	ba_compute_bap(start, end, snroffset, psd, mask, audblk->fbw_bap[i]);
     }
@@ -251,13 +252,13 @@ void bit_allocate(uint16_t fscod, bsi_t *bsi, audblk_t *audblk)
 
 	ba_compute_excitation(start, end , fgain, fastleak, slowleak, 0, bndpsd, excite);
 
-	ba_compute_mask(start, end, fscod, audblk->cpldeltbae, audblk->cpldeltnseg, 
+	ba_compute_mask(start, end, state->fscod, audblk->cpldeltbae, audblk->cpldeltnseg, 
 			audblk->cpldeltoffst, audblk->cpldeltba, audblk->cpldeltlen, excite, mask);
 
 	ba_compute_bap(start, end, snroffset, psd, mask, audblk->cpl_bap);
     }
 
-    if(bsi->lfeon) {
+    if(state->lfeon) {
 	start = 0;
 	end = 7;
 	fgain = fastgain[audblk->lfefgaincod];
@@ -270,7 +271,7 @@ void bit_allocate(uint16_t fscod, bsi_t *bsi, audblk_t *audblk)
 	ba_compute_excitation(start, end , fgain, fastleak, slowleak, 1, bndpsd, excite);
 
 	/* Perform no delta bit allocation for lfe */
-	ba_compute_mask(start, end, fscod, 2, 0, 0, 0, 0, excite, mask);
+	ba_compute_mask(start, end, state->fscod, 2, 0, 0, 0, 0, excite, mask);
 
 	ba_compute_bap(start, end, snroffset, psd, mask, audblk->lfe_bap);
     }

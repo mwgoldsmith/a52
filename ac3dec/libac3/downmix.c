@@ -42,7 +42,7 @@ static float cmixlev_lut[4] = { 0.2928, 0.2468, 0.2071, 0.2468 };
 static float smixlev_lut[4] = { 0.2928, 0.2071, 0.0   , 0.2071 };
 
 static void 
-downmix_3f_2r_to_2ch(bsi_t* bsi, stream_samples_t samples,int16_t *s16_samples)
+downmix_3f_2r_to_2ch(ac3_state_t * state, stream_samples_t samples,int16_t *s16_samples)
 {
 	uint32_t j;
 	float right_tmp;
@@ -56,8 +56,8 @@ downmix_3f_2r_to_2ch(bsi_t* bsi, stream_samples_t samples,int16_t *s16_samples)
 	left_sur  = samples[3];
 	right_sur = samples[4];
 
-	clev = cmixlev_lut[bsi->cmixlev];
-	slev = smixlev_lut[bsi->surmixlev];
+	clev = cmixlev_lut[state->cmixlev];
+	slev = smixlev_lut[state->surmixlev];
 
 	for (j = 0; j < 256; j++) 
 	{
@@ -70,7 +70,7 @@ downmix_3f_2r_to_2ch(bsi_t* bsi, stream_samples_t samples,int16_t *s16_samples)
 }
 
 static void
-downmix_2f_2r_to_2ch(bsi_t* bsi, stream_samples_t samples,int16_t *s16_samples)
+downmix_2f_2r_to_2ch(ac3_state_t * state, stream_samples_t samples,int16_t *s16_samples)
 {
 	uint32_t j;
 	float right_tmp;
@@ -83,7 +83,7 @@ downmix_2f_2r_to_2ch(bsi_t* bsi, stream_samples_t samples,int16_t *s16_samples)
 	left_sur  = samples[2];
 	right_sur = samples[3];
 
-	slev = smixlev_lut[bsi->surmixlev];
+	slev = smixlev_lut[state->surmixlev];
 
 	for (j = 0; j < 256; j++) 
 	{
@@ -96,7 +96,7 @@ downmix_2f_2r_to_2ch(bsi_t* bsi, stream_samples_t samples,int16_t *s16_samples)
 }
 
 static void
-downmix_3f_1r_to_2ch(bsi_t* bsi, stream_samples_t samples,int16_t *s16_samples)
+downmix_3f_1r_to_2ch(ac3_state_t * state, stream_samples_t samples,int16_t *s16_samples)
 {
 	uint32_t j;
 	float right_tmp;
@@ -110,8 +110,8 @@ downmix_3f_1r_to_2ch(bsi_t* bsi, stream_samples_t samples,int16_t *s16_samples)
 	//Mono surround
 	sur = samples[3];
 
-	clev = cmixlev_lut[bsi->cmixlev];
-	slev = smixlev_lut[bsi->surmixlev];
+	clev = cmixlev_lut[state->cmixlev];
+	slev = smixlev_lut[state->surmixlev];
 
 	for (j = 0; j < 256; j++) 
 	{
@@ -125,7 +125,7 @@ downmix_3f_1r_to_2ch(bsi_t* bsi, stream_samples_t samples,int16_t *s16_samples)
 
 
 static void
-downmix_2f_1r_to_2ch(bsi_t* bsi, stream_samples_t samples,int16_t *s16_samples)
+downmix_2f_1r_to_2ch(ac3_state_t * state, stream_samples_t samples,int16_t *s16_samples)
 {
 	uint32_t j;
 	float right_tmp;
@@ -138,7 +138,7 @@ downmix_2f_1r_to_2ch(bsi_t* bsi, stream_samples_t samples,int16_t *s16_samples)
 	//Mono surround
 	sur = samples[2];
 
-	slev = smixlev_lut[bsi->surmixlev];
+	slev = smixlev_lut[state->surmixlev];
 
 	for (j = 0; j < 256; j++) 
 	{
@@ -151,7 +151,7 @@ downmix_2f_1r_to_2ch(bsi_t* bsi, stream_samples_t samples,int16_t *s16_samples)
 }
 
 static void
-downmix_3f_0r_to_2ch(bsi_t* bsi, stream_samples_t samples,int16_t *s16_samples)
+downmix_3f_0r_to_2ch(ac3_state_t * state, stream_samples_t samples,int16_t *s16_samples)
 {
 	uint32_t j;
 	float right_tmp;
@@ -163,7 +163,7 @@ downmix_3f_0r_to_2ch(bsi_t* bsi, stream_samples_t samples,int16_t *s16_samples)
 	centre    = samples[1];
 	right     = samples[2];
 
-	clev = cmixlev_lut[bsi->cmixlev];
+	clev = cmixlev_lut[state->cmixlev];
 
 	for (j = 0; j < 256; j++) 
 	{
@@ -176,7 +176,7 @@ downmix_3f_0r_to_2ch(bsi_t* bsi, stream_samples_t samples,int16_t *s16_samples)
 }
 				
 static void
-downmix_2f_0r_to_2ch(bsi_t* bsi, stream_samples_t samples,int16_t *s16_samples)
+downmix_2f_0r_to_2ch(ac3_state_t * state, stream_samples_t samples,int16_t *s16_samples)
 {
 	uint32_t j;
 	float *left = 0, *right = 0;
@@ -220,9 +220,9 @@ downmix_1f_0r_to_2ch(float *centre,int16_t *s16_samples)
 //       [_dolby] = with or without dolby surround mix
 //
 
-void downmix(bsi_t* bsi, stream_samples_t samples,int16_t *s16_samples)
+void downmix(ac3_state_t * state, stream_samples_t samples,int16_t *s16_samples)
 {
-	if(bsi->acmod > 7)
+	if(state->acmod > 7)
 		dprintf("(downmix) invalid acmod number\n"); 
 
 #if 0
@@ -237,35 +237,35 @@ void downmix(bsi_t* bsi, stream_samples_t samples,int16_t *s16_samples)
 #endif
 
 	//Non-Dolby surround downmixes
-	switch(bsi->acmod)
+	switch(state->acmod)
 	{
 		// 3/2
 		case 7:
-			downmix_3f_2r_to_2ch(bsi,samples,s16_samples);
+			downmix_3f_2r_to_2ch(state, samples,s16_samples);
 		break;
 
 		// 2/2
 		case 6:
-			downmix_2f_2r_to_2ch(bsi,samples,s16_samples);
+			downmix_2f_2r_to_2ch(state, samples,s16_samples);
 		break;
 
 		// 3/1
 		case 5:
-			downmix_3f_1r_to_2ch(bsi,samples,s16_samples);
+			downmix_3f_1r_to_2ch(state, samples,s16_samples);
 		break;
 
 		// 2/1
 		case 4:
-			downmix_2f_1r_to_2ch(bsi,samples,s16_samples);
+			downmix_2f_1r_to_2ch(state, samples,s16_samples);
 		break;
 
 		// 3/0
 		case 3:
-			downmix_3f_0r_to_2ch(bsi,samples,s16_samples);
+			downmix_3f_0r_to_2ch(state, samples,s16_samples);
 		break;
 
 		case 2:
-			downmix_2f_0r_to_2ch(bsi,samples,s16_samples);
+			downmix_2f_0r_to_2ch(state, samples,s16_samples);
 		break;
 
 		// 1/0
@@ -287,7 +287,7 @@ void downmix(bsi_t* bsi, stream_samples_t samples,int16_t *s16_samples)
 #if 0 
 
 	//the dolby mixes lay here for the time being
-	switch(bsi->acmod)
+	switch(state->acmod)
 	{
 		// 3/2
 		case 7:

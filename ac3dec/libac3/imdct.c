@@ -430,11 +430,11 @@ imdct_do_256(float data[],float delay[])
 }
 
 void 
-imdct(bsi_t *bsi,audblk_t *audblk, stream_samples_t samples) {
+imdct(ac3_state_t *state,audblk_t *audblk, stream_samples_t samples) {
     int i;
 
 #ifdef LIBAC3_MLIB
-    for(i=0; i<bsi->nfchans;i++) {
+    for(i=0; i<state->nfchans;i++) {
 	if(audblk->blksw[i])
 	    imdct_do_256_mlib(samples[i],delay[i]);
 	else
@@ -443,7 +443,7 @@ imdct(bsi_t *bsi,audblk_t *audblk, stream_samples_t samples) {
     return;
 #endif
 
-    for(i=0; i<bsi->nfchans;i++) {
+    for(i=0; i<state->nfchans;i++) {
 	if(audblk->blksw[i])
 	    imdct_do_256(samples[i],delay[i]);
 	else
@@ -452,7 +452,7 @@ imdct(bsi_t *bsi,audblk_t *audblk, stream_samples_t samples) {
 
     //XXX We don't bother with the IMDCT for the LFE as it's currently
     //unused.
-    //if (bsi->lfeon)
+    //if (state->lfeon)
     //	imdct_do_512(coeffs->lfe,samples->channel[5],delay[5]);
     //	
 }
