@@ -146,6 +146,8 @@ int a52_frame (a52_state_t * state, uint8_t * buf, int * flags,
     if ((acmod == 2) && (bitstream_get (state, 2) == 2))	/* dsurmod */
 	acmod = A52_DOLBY;
 
+    state->clev = state->slev = 0;
+
     if ((acmod & 1) && (acmod != 1))
 	state->clev = clev[bitstream_get (state, 2)];	/* cmixlev */
 

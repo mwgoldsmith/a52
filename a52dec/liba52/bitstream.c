@@ -38,6 +38,7 @@ void a52_bitstream_set_ptr (a52_state_t * state, uint8_t * buf)
     align = (long)buf & 3;
     state->buffer_start = (uint32_t *) (buf - align);
     state->bits_left = 0;
+    state->current_word = 0;
     bitstream_get (state, align * 8);
 }
 
