@@ -33,12 +33,6 @@
 #include "debug.h"
 
 
-static const char *service_ids[8] = 
-{
-	"CM","ME","VI","HI",
-	 "D", "C","E", "VO"
-};
-
 struct mixlev_s
 {
 	float clev;
@@ -57,61 +51,9 @@ static const struct mixlev_s smixlev_tbl[4] =
 	{  0.0,   "off    "}, {  1.0, "Invalid"}
 };
 
-static const char *language[128] = 
+void stats_print_banner(bsi_t *bsi)
 {
-	"unknown", "Albanian", "Breton", "Catalan", "Croatian", "Welsh", "Czech", "Danish", 
-	"German", "English", "Spanish", "Esperanto", "Estonian", "Basque", "Faroese", "French", 
-	"Frisian", "Irish", "Gaelic", "Galician", "Icelandic", "Italian", "Lappish", "Latin", 
-	"Latvian", "Luxembourgian", "Lithuanian", "Hungarian", "Maltese", "Dutch", "Norwegian", "Occitan", 
-	"Polish", "Portugese", "Romanian", "Romansh", "Serbian", "Slovak", "Slovene", "Finnish", 
-	"Swedish", "Turkish", "Flemish", "Walloon", "0x2c", "0x2d", "0x2e", "0x2f", 
-	"0x30", "0x31", "0x32", "0x33", "0x34", "0x35", "0x36", "0x37", 
-	"0x38", "0x39", "0x3a", "0x3b", "0x3c", "0x3d", "0x3e", "0x3f", 
-	"background", "0x41", "0x42", "0x43", "0x44", "Zulu", "Vietnamese", "Uzbek", 
-	"Urdu", "Ukrainian", "Thai", "Telugu", "Tatar", "Tamil", "Tadzhik", "Swahili", 
-	"Sranan Tongo", "Somali", "Sinhalese", "Shona", "Serbo-Croat", "Ruthenian", "Russian", "Quechua", 
-	"Pustu", "Punjabi", "Persian", "Papamiento", "Oriya", "Nepali", "Ndebele", "Marathi", 
-	"Moldavian", "Malaysian", "Malagasay", "Macedonian", "Laotian", "Korean", "Khmer", "Kazakh",
-	"Kannada", "Japanese", "Indonesian", "Hindi", "Hebrew", "Hausa", "Gurani", "Gujurati", 
-	"Greek", "Georgian", "Fulani", "Dari", "Churash", "Chinese", "Burmese", "Bulgarian", 
-	"Bengali", "Belorussian", "Bambora", "Azerbijani", "Assamese", "Armenian", "Arabic", "Amharic"
-};
-
-void stats_print_banner(syncinfo_t *syncinfo,bsi_t *bsi)
-{
-	fprintf(stdout,"%d.%d Mode ",bsi->nfchans,bsi->lfeon);
-	fprintf(stdout,"%2.1f KHz",syncinfo->sampling_rate * 1e-3);
-	fprintf(stdout,"%4d kbps ",syncinfo->bit_rate);
-	if (bsi->langcode && (bsi->langcod < 128))
-		fprintf(stdout,"%s ", language[bsi->langcod]);
-
-	switch(bsi->bsmod)
-	{
-		case 0:
-			fprintf(stdout,"Complete Main Audio Service");
-			break;
-		case 1:
-			fprintf(stdout,"Music and Effects Audio Service");
-		case 2:
-			fprintf(stdout,"Visually Impaired Audio Service");
-			break;
-		case 3:
-			fprintf(stdout,"Hearing Impaired Audio Service");
-			break;
-		case 4:
-			fprintf(stdout,"Dialogue Audio Service");
-			break;
-		case 5:
-			fprintf(stdout,"Commentary Audio Service");
-			break;
-		case 6:
-			fprintf(stdout,"Emergency Audio Service");
-			break;
-		case 7:
-			fprintf(stdout,"Voice Over Audio Service");
-			break;
-	}
-	fprintf(stdout,"\n");
+	fprintf(stdout,"%d.%d Mode\n",bsi->nfchans,bsi->lfeon);
 }
 
 void stats_print_syncinfo(syncinfo_t *syncinfo)
@@ -133,16 +75,11 @@ void stats_print_syncinfo(syncinfo_t *syncinfo)
 			dprintf("Invalid sampling rate ");
 			break;
 	}
-
-	dprintf("%4d kbps %4d words per frame\n",syncinfo->bit_rate, 
-			syncinfo->frame_size);
-
 }
 	
 void stats_print_bsi(bsi_t *bsi)
 {
 	dprintf("(bsi) ");
-	dprintf("%s",service_ids[bsi->bsmod]);
 	dprintf(" %d.%d Mode ",bsi->nfchans,bsi->lfeon);
 	if ((bsi->acmod & 0x1) && (bsi->acmod != 0x1))
 		dprintf(" Centre Mix Level %s ",cmixlev_tbl[bsi->cmixlev].desc);

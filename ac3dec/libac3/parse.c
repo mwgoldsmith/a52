@@ -36,108 +36,56 @@
 /* Misc LUT */
 static const uint16_t nfchans[8] = {2,1,2,3,3,4,4,5};
 
-struct frmsize_s
+int parse_syncinfo (uint8_t * buf, int * sample_rate, int * bit_rate)
 {
-    uint16_t bit_rate;
-    uint16_t frm_size[3];
-};
+    static int rate[] = { 32,  40,  48,  56,  64,  80,  96, 112,
+			 128, 160, 192, 224, 256, 320, 384, 448,
+			 512, 576, 640};
+    int frmsizecod;
+    int bitrate;
 
-static const struct frmsize_s frmsizecod_tbl[64] = 
-{
-	{ 32  ,{64   ,69   ,96   } },
-	{ 32  ,{64   ,70   ,96   } },
-	{ 40  ,{80   ,87   ,120  } },
-	{ 40  ,{80   ,88   ,120  } },
-	{ 48  ,{96   ,104  ,144  } },
-	{ 48  ,{96   ,105  ,144  } },
-	{ 56  ,{112  ,121  ,168  } },
-	{ 56  ,{112  ,122  ,168  } },
-	{ 64  ,{128  ,139  ,192  } },
-	{ 64  ,{128  ,140  ,192  } },
-	{ 80  ,{160  ,174  ,240  } },
-	{ 80  ,{160  ,175  ,240  } },
-	{ 96  ,{192  ,208  ,288  } },
-	{ 96  ,{192  ,209  ,288  } },
-	{ 112 ,{224  ,243  ,336  } },
-	{ 112 ,{224  ,244  ,336  } },
-	{ 128 ,{256  ,278  ,384  } },
-	{ 128 ,{256  ,279  ,384  } },
-	{ 160 ,{320  ,348  ,480  } },
-	{ 160 ,{320  ,349  ,480  } },
-	{ 192 ,{384  ,417  ,576  } },
-	{ 192 ,{384  ,418  ,576  } },
-	{ 224 ,{448  ,487  ,672  } },
-	{ 224 ,{448  ,488  ,672  } },
-	{ 256 ,{512  ,557  ,768  } },
-	{ 256 ,{512  ,558  ,768  } },
-	{ 320 ,{640  ,696  ,960  } },
-	{ 320 ,{640  ,697  ,960  } },
-	{ 384 ,{768  ,835  ,1152 } },
-	{ 384 ,{768  ,836  ,1152 } },
-	{ 448 ,{896  ,975  ,1344 } },
-	{ 448 ,{896  ,976  ,1344 } },
-	{ 512 ,{1024 ,1114 ,1536 } },
-	{ 512 ,{1024 ,1115 ,1536 } },
-	{ 576 ,{1152 ,1253 ,1728 } },
-	{ 576 ,{1152 ,1254 ,1728 } },
-	{ 640 ,{1280 ,1393 ,1920 } },
-	{ 640 ,{1280 ,1394 ,1920 } }
-};
+    if ((buf[0] != 0x0b) || (buf[1] != 0x77))	// check syncword
+	return 0;
 
-/* Parse a syncinfo structure, minus the sync word */
-void parse_syncinfo(syncinfo_t *syncinfo, uint8_t * buf)
-{
-    uint32_t tmp = 0;
+    frmsizecod = buf[4] & 63;
+    if (frmsizecod >= 38)
+	return 0;
+    *bit_rate = bitrate = rate [frmsizecod >> 1];
 
-    //
-    // We need to read in the entire syncinfo struct (0x0b77 + 24 bits)
-    // in order to determine how big the frame is
-    //
-    tmp = (buf[2] << 16) | (buf[3] << 8) | buf[4];
-
-    // Get the sampling rate 
-    syncinfo->fscod  = (tmp >> 6) & 0x3;
-
-    if(syncinfo->fscod == 3) {
-	//invalid sampling rate code
-	error_flag = 1;	
-	return;
+    switch (buf[4] & 0xc0) {
+    case 0:	// 48 KHz
+	*sample_rate = 48000;
+	return 4 * bitrate;
+    case 0x40:
+	*sample_rate = 44100;
+	return 2 * (320 * bitrate / 147 + (frmsizecod & 1));
+    case 0x80:
+	*sample_rate = 32000;
+	return 6 * bitrate;
+    default:
+	return 0;
     }
-    else if(syncinfo->fscod == 2)
-	syncinfo->sampling_rate = 32000;
-    else if(syncinfo->fscod == 1)
-	syncinfo->sampling_rate = 44100;
-    else
-	syncinfo->sampling_rate = 48000;
-
-    // Get the frame size code 
-    syncinfo->frmsizecod = tmp & 0x3f;
-
-    // Calculate the frame size and bitrate
-    syncinfo->frame_size = 
-	frmsizecod_tbl[syncinfo->frmsizecod].frm_size[syncinfo->fscod];
-    syncinfo->bit_rate = frmsizecod_tbl[syncinfo->frmsizecod].bit_rate;
-
-    stats_print_syncinfo(syncinfo);
 }
 
 /*
  * This routine fills a bsi struct from the AC3 stream
  */
 
-void parse_bsi(bsi_t *bsi)
+int parse_bsi(bsi_t *bsi, uint8_t * buf)
 {
-    /* Check the AC-3 version number */
-    bsi->bsid = bitstream_get(5);
+    int chaninfo;
 
-    /* Get the audio service provided by the steram */
-    bsi->bsmod = bitstream_get(3);
+    if (buf[5] >= 0x48)		// bsid >= 9
+	return 1;
 
     /* Get the audio coding mode (ie how many channels)*/
-    bsi->acmod = bitstream_get(3);
+    bsi->acmod = buf[6] >> 5;
     /* Predecode the number of full bandwidth channels as we use this
      * number a lot */
     bsi->nfchans = nfchans[bsi->acmod];
+
+    bitstream_set_ptr (buf + 6);
+    bitstream_get (3);	// skip acmod we already parsed
 
     /* If it is in use, get the centre channel mix level */
     if ((bsi->acmod & 0x1) && (bsi->acmod != 0x1))
@@ -149,67 +97,21 @@ void parse_bsi(bsi_t *bsi)
 
     /* Get the dolby surround mode if in 2/0 mode */
     if(bsi->acmod == 0x2)
-	bsi->dsurmod= bitstream_get(2);
+	bitstream_get(2);	// dsurmod
 
     /* Is the low frequency effects channel on? */
     bsi->lfeon = bitstream_get(1);
 
-    /* Get the dialogue normalization level */
-    bsi->dialnorm = bitstream_get(5);
-
-    /* Does compression gain exist? */
-    bsi->compre = bitstream_get(1);
-    if (bsi->compre) {
-	/* Get compression gain */
-	bsi->compr = bitstream_get(8);
-    }
-
-    /* Does language code exist? */
-    bsi->langcode = bitstream_get(1);
-    if (bsi->langcode) {
-	/* Get langauge code */
-	bsi->langcod = bitstream_get(8);
-    }
-
-    /* Does audio production info exist? */
-    bsi->audprodie = bitstream_get(1);
-    if (bsi->audprodie) {
-	/* Get mix level */
-	bsi->mixlevel = bitstream_get(5);
-
-	/* Get room type */
-	bsi->roomtyp = bitstream_get(2);
-    }
-
-    /* If we're in dual mono mode then get some extra info */
-    if (bsi->acmod ==0) {
-	/* Get the dialogue normalization level two */
-	bsi->dialnorm2 = bitstream_get(5);
-
-	/* Does compression gain two exist? */
-	bsi->compr2e = bitstream_get(1);
-	if (bsi->compr2e) {
-	    /* Get compression gain two */
-	    bsi->compr2 = bitstream_get(8);
-	}
-
-	/* Does language code two exist? */
-	bsi->langcod2e = bitstream_get(1);
-	if (bsi->langcod2e) {
-	    /* Get langauge code two */
-	    bsi->langcod2 = bitstream_get(8);
-	}
-
-	/* Does audio production info two exist? */
-	bsi->audprodi2e = bitstream_get(1);
-	if (bsi->audprodi2e) {
-	    /* Get mix level two */
-	    bsi->mixlevel2 = bitstream_get(5);
-
-	    /* Get room type two */
-	    bsi->roomtyp2 = bitstream_get(2);
-	}
-    }
+    chaninfo = (bsi->acmod) ? 1 : 2;
+    do {
+	bitstream_get(5);	// dialnorm
+	if (bitstream_get(1))	// compre
+	    bitstream_get(8);	// compr
+	if (bitstream_get(1))	// langcode
+	    bitstream_get(8);	// langcod
+	if (bitstream_get(1))	// audprodie
+	    bitstream_get(7);	// mixlevel + roomtyp
+    } while (--chaninfo);
 
     /* Get the copyright bit */
     bsi->copyrightb = bitstream_get(1);
@@ -241,6 +143,7 @@ void parse_bsi(bsi_t *bsi)
     }
 
     stats_print_bsi(bsi);
+    return 0;
 }
 
 /* More pain inducing parsing */

@@ -27,6 +27,7 @@
 #include <errno.h>
 #include <string.h>
 #include <sys/time.h>
+#include <inttypes.h>
 #include "ac3.h"
 #include "ac3_internal.h"
 #include "bitstream.h"
@@ -69,55 +70,27 @@ ac3_init(void)
 
 int ac3_frame_length(uint8_t * buf)
 {
-    static int rate[] = { 32,  40,  48,  56,  64,  80,  96, 112,
-			 128, 160, 192, 224, 256, 320, 384, 448,
-			 512, 576, 640};
-    int bitrate;
+    int dummy;
 
-    if ((buf[0] != 0x0b) || (buf[1] != 0x77)) {
-	fprintf (stderr, "bad sync word\n");
-	exit (1);
-    }
-
-    bitrate = (buf[4] >> 1) & 31;
-    if (bitrate > 18) {
-	fprintf (stderr, "bad bit rate\n");
-	exit (1);
-    }
-    bitrate = rate[bitrate];
-
-    switch (buf[4] & 0xc0) {
-    case 0:	// 48 KHz
-	return 4 * bitrate;
-    case 0x40:
-	return 2 * (320 * bitrate / 147 + (buf[4] & 1));
-    case 0x80:
-	return 6 * bitrate;
-    default:
-	fprintf (stderr, "bad sample rate\n");
-	exit (1);
-    }
+    return parse_syncinfo (buf, &dummy, &dummy);
 }
 
 ac3_frame_t*
 ac3_decode_frame(uint8_t * buf)
 {
     uint32_t i;
+    int dummy;
 
-    //find a syncframe and parse
-    parse_syncinfo(&syncinfo, buf);
-    if(error_flag)
+    if (!parse_syncinfo (buf, &frame.sampling_rate, &dummy))
 	goto error;
-
-    bitstream_set_ptr (buf + 5);
+    syncinfo.fscod = buf[4] >> 6;
 
     dprintf("(decode) begin frame %d\n",frame_count++);
-    frame.sampling_rate = syncinfo.sampling_rate;
 
-    parse_bsi(&bsi);
+    parse_bsi(&bsi, buf);
 
     if(!done_banner) {
-	stats_print_banner(&syncinfo,&bsi);
+	stats_print_banner(&bsi);
 	done_banner = 1;
     }
 

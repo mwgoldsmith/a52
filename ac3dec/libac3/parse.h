@@ -21,8 +21,8 @@
  *
  */
 
-void parse_syncinfo(syncinfo_t *syncinfo, uint8_t * buf);
+int parse_syncinfo(uint8_t * buf, int * sample_rate, int * bit_rate);
 void parse_audblk(bsi_t *bsi,audblk_t *audblk);
-void parse_bsi(bsi_t *bsi);
+int parse_bsi(bsi_t *bsi, uint8_t * buf);
 void parse_auxdata(syncinfo_t *syncinfo);
 

@@ -71,32 +71,13 @@ extern uint32_t error_flag;
 typedef struct syncinfo_s
 {
 	uint32_t	magic;
-	/* Sync word == 0x0B77 */
-	/* uint16_t   syncword; */
-	/* crc for the first 5/8 of the sync block */
-	/* uint16_t   crc1; */
 	/* Stream Sampling Rate (kHz) 0 = 48, 1 = 44.1, 2 = 32, 3 = reserved */
 	uint16_t		fscod;	
-	/* Frame size code */
-	uint16_t		frmsizecod;
-
-	/* Information not in the AC-3 bitstream, but derived */
-	/* Frame size in 16 bit words */
-	uint16_t frame_size;
-	/* Bit rate in kilobits */
-	uint16_t bit_rate;
-	/* sampling rate in hertz */
-	uint32_t sampling_rate;
-
 } syncinfo_t;
 
 typedef struct bsi_s
 {
 	uint32_t	magic;
-	/* Bit stream identification == 0x8 */
-	uint16_t bsid;	
-	/* Bit stream mode */
-	uint16_t bsmod;
 	/* Audio coding mode */
 	uint16_t acmod;
 	/* If we're using the centre channel then */
@@ -105,34 +86,8 @@ typedef struct bsi_s
 	/* If we're using the surround channel then */
 		/* surround mix level */
 		uint16_t surmixlev;
-	/* If we're in 2/0 mode then */
-		/* Dolby surround mix level - NOT USED - */
-		uint16_t dsurmod;
 	/* Low frequency effects on */
 	uint16_t lfeon;
-	/* Dialogue Normalization level */
-	uint16_t dialnorm;
-	/* Compression exists */
-	uint16_t compre;
-		/* Compression level */
-		uint16_t compr;
-	/* Language code exists */
-	uint16_t langcode;
-		/* Language code */
-		uint16_t langcod;
-	/* Audio production info exists*/
-	uint16_t audprodie;
-		uint16_t mixlevel;
-		uint16_t roomtyp;
-	/* If we're in dual mono mode (acmod == 0) then extra stuff */
-		uint16_t dialnorm2;
-		uint16_t compr2e;
-			uint16_t compr2;
-		uint16_t langcod2e;
-			uint16_t langcod2;
-		uint16_t audprodi2e;
-			uint16_t mixlevel2;
-			uint16_t roomtyp2;
 	/* Copyright bit */
 	uint16_t copyrightb;
 	/* Original bit */
