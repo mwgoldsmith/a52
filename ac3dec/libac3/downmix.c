@@ -366,6 +366,19 @@ static void mix32toS (sample_t * samples,
     }
 }
 
+static void zero (sample_t * samples)
+{
+    int i;
+
+    for (i = 0; i < 256; i++)
+	samples[i] = 0;
+}
+
+void downmix_lfe (sample_t * samples, sample_t level, sample_t bias)
+{
+    mix1to1 (samples, level, bias);
+}
+
 void downmix (sample_t * samples, int acmod, int output,
 	      sample_t level, sample_t bias, sample_t clev, sample_t slev)
 {
@@ -494,6 +507,8 @@ void downmix (sample_t * samples, int acmod, int output,
 	    goto mix_3to3;
 	mix21to2 (samples, samples + 512, level, level * slev * LEVEL_3DB,
 		  bias);
+	mix1to1 (samples + 256, level, bias);
+	break;
 
     case CONVERT (AC3_3F2R, AC3_3F):
 	if (slev == 0)
@@ -540,7 +555,96 @@ void downmix (sample_t * samples, int acmod, int output,
 	move1to1 (samples + 1024, samples + 768, level, bias);
 	break;
     }
+}
 
-    if (output & AC3_LFE)
-	mix1to1 (samples - 256, level, bias);
+void upmix (sample_t * samples, int acmod, int output, sample_t level)
+{
+    level = 1 / level;
+
+    switch (CONVERT (acmod, output & AC3_CHANNEL_MASK)) {
+
+    case CONVERT (AC3_CHANNEL, AC3_CHANNEL1):
+	zero (samples + 256);
+    mix_1to1:
+	mix1to1 (samples, level, 0);
+	break;
+
+    case CONVERT (AC3_CHANNEL, AC3_CHANNEL2):
+	move1to1 (samples, samples + 256, level, 0);
+	zero (samples);
+	break;
+
+    case CONVERT (AC3_3F2R, AC3_MONO):
+	zero (samples + 1024);
+    case CONVERT (AC3_3F1R, AC3_MONO):
+    case CONVERT (AC3_2F2R, AC3_MONO):
+	zero (samples + 768);
+    case CONVERT (AC3_3F, AC3_MONO):
+    case CONVERT (AC3_2F1R, AC3_MONO):
+	zero (samples + 512);
+    case CONVERT (AC3_STEREO, AC3_MONO):
+	zero (samples + 256);
+	mix1to1 (samples, level * LEVEL_PLUS3DB, 0);
+	break;
+
+    case CONVERT (AC3_CHANNEL, AC3_MONO):
+	zero (samples + 256);
+	mix1to1 (samples, level * LEVEL_PLUS6DB, 0);
+	break;
+
+    case CONVERT (AC3_3F2R, AC3_STEREO):
+    case CONVERT (AC3_3F2R, AC3_DOLBY):
+	zero (samples + 1024);
+    case CONVERT (AC3_3F1R, AC3_STEREO):
+    case CONVERT (AC3_3F1R, AC3_DOLBY):
+	zero (samples + 768);
+    case CONVERT (AC3_3F, AC3_STEREO):
+    case CONVERT (AC3_3F, AC3_DOLBY):
+    mix_3to2:
+	move1to1 (samples + 256, samples + 512, level, 0);
+	zero (samples + 256);
+	goto mix_1to1;
+
+    case CONVERT (AC3_2F2R, AC3_STEREO):
+    case CONVERT (AC3_2F2R, AC3_DOLBY):
+	zero (samples + 768);
+    case CONVERT (AC3_2F1R, AC3_STEREO):
+    case CONVERT (AC3_2F1R, AC3_DOLBY):
+	zero (samples + 512);
+    mix_2to2:
+	mix1to1 (samples + 256, level, 0);
+	goto mix_1to1;
+
+    case CONVERT (AC3_3F2R, AC3_3F):
+	zero (samples + 1024);
+    case CONVERT (AC3_3F1R, AC3_3F):
+	zero (samples + 768);
+    mix_3to3:
+	mix1to1 (samples + 512, level, 0);
+	goto mix_2to2;
+
+    case CONVERT (AC3_2F2R, AC3_2F1R):
+	zero (samples + 768);
+	mix1to1 (samples + 512, level * LEVEL_PLUS3DB, 0);
+	goto mix_2to2;
+
+    case CONVERT (AC3_3F2R, AC3_3F1R):
+	zero (samples + 1024);
+	mix1to1 (samples + 768, level * LEVEL_PLUS3DB, 0);
+	goto mix_3to3;
+
+    case CONVERT (AC3_3F1R, AC3_2F1R):
+	move1to1 (samples + 512, samples + 768, level, 0);
+	goto mix_3to2;
+
+    case CONVERT (AC3_3F2R, AC3_2F1R):
+	zero (samples + 1024);
+	move1to1 (samples + 512, samples + 768, level * LEVEL_PLUS3DB, 0);
+	goto mix_3to2;
+
+    case CONVERT (AC3_3F2R, AC3_2F2R):
+	move1to1 (samples + 768, samples + 1024, level, 0);
+	move1to1 (samples + 512, samples + 768, level, 0);
+	goto mix_3to2;
+    }
 }

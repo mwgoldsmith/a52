@@ -21,6 +21,7 @@
  *
  */
 
+#define LEVEL_PLUS6DB 2.0
 #define LEVEL_PLUS3DB 1.4142135623730951
 #define LEVEL_3DB 0.7071067811865476
 #define LEVEL_45DB 0.5946035575013605
@@ -42,11 +43,13 @@ void bit_allocate (ac3_state_t * state, ac3_ba_t * ba, int bndstart,
 
 int downmix_init (int input, int flags, sample_t * level,
 		  sample_t clev, sample_t slev);
+void downmix_lfe (sample_t * samples, sample_t level, sample_t bias);
 void downmix (sample_t * samples, int acmod, int output,
 	      sample_t level, sample_t bias, sample_t clev, sample_t slev);
+void upmix (sample_t * samples, int acmod, int output, sample_t level);
 
 void imdct_init (uint32_t mm_accel);
-extern void (* imdct_256) (sample_t * data, sample_t * delay);
-extern void (* imdct_512) (sample_t * data, sample_t * delay);
-void imdct_do_256_mlib (sample_t * data, sample_t * delay);
-void imdct_do_512_mlib (sample_t * data, sample_t * delay);
+extern void (* imdct_256) (sample_t * data, sample_t * delay, sample_t bias);
+extern void (* imdct_512) (sample_t * data, sample_t * delay, sample_t bias);
+void imdct_do_256_mlib (sample_t * data, sample_t * delay, sample_t bias);
+void imdct_do_512_mlib (sample_t * data, sample_t * delay, sample_t bias);

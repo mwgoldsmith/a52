@@ -474,7 +474,7 @@ static void coeff_get_coupling (ac3_state_t * state, int nfchans,
 
 int ac3_block (ac3_state_t * state, sample_t * samples)
 {
-    static const uint8_t nfchans_tbl[8] = {2, 1, 2, 3, 3, 4, 4, 5};
+    static const uint8_t nfchans_tbl[] = {2, 1, 2, 3, 3, 4, 4, 5, 1, 1, 2};
     static int rematrix_band[4] = {25, 37, 61, 253};
     int i, nfchans, chaninfo;
     uint8_t cplexpstr, chexpstr[5], lfeexpstr, do_bit_alloc, done_cpl;
@@ -755,21 +755,55 @@ int ac3_block (ac3_state_t * state, sample_t * samples)
 	    coeff_get (samples - 256, state->lfe_exp, state->lfe_bap, 0, 7);
 	    for (i = 7; i < 256; i++)
 		(samples-256)[i] = 0;
-	    imdct_512 (samples - 256, samples + 1536 - 256);
+	    imdct_512 (samples - 256, samples + 1536 - 256, 0);
+	    downmix_lfe (samples - 256, state->level, state->bias);
 	} else {
 	    /* just skip the LFE coefficients */
 	    coeff_get (samples + 1280, state->lfe_exp, state->lfe_bap, 0, 7);
 	}
     }
 
-    for (i = 0; i < nfchans; i++)
-	if (blksw[i])
-            imdct_256 (samples + 256 * i, samples + 1536 + 256 * i);
-        else 
-            imdct_512 (samples + 256 * i, samples + 1536 + 256 * i);
+    i = 0;
+    if (nfchans_tbl[state->output & AC3_CHANNEL_MASK] < nfchans)
+	for (i = 1; i < nfchans; i++)
+	    if (blksw[i] != blksw[0])
+		break;
 
-    downmix (samples, state->acmod, state->output, state->level, state->bias,
-	     state->clev, state->slev);
+    if (i < nfchans) {
+	if (samples[2 * 1536 - 1] == (sample_t)0x776b6e21) {
+	    samples[2 * 1536 - 1] = 0;
+	    upmix (samples + 1536, state->acmod, state->output, state->level);
+	}
+
+	for (i = 0; i < nfchans; i++)
+	    if (blksw[i])
+		imdct_256 (samples + 256 * i, samples + 1536 + 256 * i, 0);
+	    else 
+		imdct_512 (samples + 256 * i, samples + 1536 + 256 * i, 0);
+
+	downmix (samples, state->acmod, state->output, state->level,
+		 state->bias, state->clev, state->slev);
+    } else {
+	nfchans = nfchans_tbl[state->output & AC3_CHANNEL_MASK];
+
+	downmix (samples, state->acmod, state->output, state->level, 0,
+		 state->clev, state->slev);
+
+	if (samples[2 * 1536 - 1] != (sample_t)0x776b6e21) {
+	    downmix (samples + 1536, state->acmod, state->output, state->level,
+		     0, state->clev, state->slev);
+	    samples[2 * 1536 - 1] = (sample_t)0x776b6e21;
+	}
+
+	if (blksw[0])
+	    for (i = 0; i < nfchans; i++)
+		imdct_256 (samples + 256 * i, samples + 1536 + 256 * i,
+			   state->bias);
+	else 
+	    for (i = 0; i < nfchans; i++)
+		imdct_512 (samples + 256 * i, samples + 1536 + 256 * i,
+			   state->bias);
+    }
 
     return 0;
 }

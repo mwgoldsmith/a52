@@ -30,8 +30,8 @@
 #include "ac3.h"
 #include "ac3_internal.h"
 
-void (* imdct_256) (sample_t data[], sample_t delay[]);
-void (* imdct_512) (sample_t data[], sample_t delay[]);
+void (* imdct_256) (sample_t data[], sample_t delay[], sample_t bias);
+void (* imdct_512) (sample_t data[], sample_t delay[], sample_t bias);
 
 typedef struct complex_s {
     sample_t real;
@@ -144,7 +144,7 @@ static inline complex_t cmplx_mult(complex_t a, complex_t b)
 }
 
 void
-imdct_do_512(sample_t data[],sample_t delay[])
+imdct_do_512(sample_t data[],sample_t delay[], sample_t bias)
 {
     int i,k;
     int p,q;
@@ -217,13 +217,13 @@ imdct_do_512(sample_t data[],sample_t delay[])
 
     /* Window and convert to real valued signal */
     for(i=0; i< 64; i++) { 
-	*data_ptr++   = 2.0f * (-buf[64+i].imag   * *window_ptr++ + *delay_ptr++); 
-	*data_ptr++   = 2.0f * ( buf[64-i-1].real * *window_ptr++ + *delay_ptr++); 
+	*data_ptr++   = 2.0f * (-buf[64+i].imag   * *window_ptr++ + *delay_ptr++) + bias; 
+	*data_ptr++   = 2.0f * ( buf[64-i-1].real * *window_ptr++ + *delay_ptr++) + bias; 
     }
 
     for(i=0; i< 64; i++) { 
-	*data_ptr++  = 2.0f * (-buf[i].real       * *window_ptr++ + *delay_ptr++); 
-	*data_ptr++  = 2.0f * ( buf[128-i-1].imag * *window_ptr++ + *delay_ptr++); 
+	*data_ptr++  = 2.0f * (-buf[i].real       * *window_ptr++ + *delay_ptr++) + bias; 
+	*data_ptr++  = 2.0f * ( buf[128-i-1].imag * *window_ptr++ + *delay_ptr++) + bias; 
     }
 
     /* The trailing edge of the window goes into the delay line */
@@ -241,7 +241,7 @@ imdct_do_512(sample_t data[],sample_t delay[])
 }
 
 void
-imdct_do_256(sample_t data[],sample_t delay[])
+imdct_do_256(sample_t data[],sample_t delay[],sample_t bias)
 {
     int i,k;
     int p,q;
@@ -346,13 +346,13 @@ imdct_do_256(sample_t data[],sample_t delay[])
 
     /* Window and convert to real valued signal */
     for(i=0; i< 64; i++) { 
-	*data_ptr++  = 2.0f * (-buf_1[i].imag      * *window_ptr++ + *delay_ptr++);
-	*data_ptr++  = 2.0f * ( buf_1[64-i-1].real * *window_ptr++ + *delay_ptr++);
+	*data_ptr++  = 2.0f * (-buf_1[i].imag      * *window_ptr++ + *delay_ptr++) + bias;
+	*data_ptr++  = 2.0f * ( buf_1[64-i-1].real * *window_ptr++ + *delay_ptr++) + bias;
     }
 
     for(i=0; i< 64; i++) {
-	*data_ptr++  = 2.0f * (-buf_1[i].real      * *window_ptr++ + *delay_ptr++);
-	*data_ptr++  = 2.0f * ( buf_1[64-i-1].imag * *window_ptr++ + *delay_ptr++);
+	*data_ptr++  = 2.0f * (-buf_1[i].real      * *window_ptr++ + *delay_ptr++) + bias;
+	*data_ptr++  = 2.0f * ( buf_1[64-i-1].imag * *window_ptr++ + *delay_ptr++) + bias;
     }
 	
     delay_ptr = delay;
