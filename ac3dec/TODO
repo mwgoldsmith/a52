@@ -7,7 +7,6 @@
 	* use sensible data types
 	* move some arrays into bit fields
 * imdct.c
-	* use flags to define function pointers, not just a #define
 	* maybe use a single w[] array with only positive values
 	* use split-radix algorithm
 * clean up coeff_get_cpl
