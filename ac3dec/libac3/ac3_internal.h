@@ -86,35 +86,25 @@ typedef struct ac3_state_s
 /* more pain */
 typedef struct audblk_s
 {
-	uint32_t	magic1;
-	/* block switch bit indexed by channel num */
-	uint16_t blksw[5];
-	/* dither enable bit indexed by channel num */
-	uint16_t dithflag[5];
-	/* dynamic range gain exists */
-	uint16_t dynrnge;
-		/* dynamic range gain */
-		uint16_t dynrng;
-	/* if acmod==0 then */
-	/* dynamic range 2 gain exists */
-	uint16_t dynrng2e;
-		/* dynamic range 2 gain */
-		uint16_t dynrng2;
-	/* coupling strategy exists */
-	uint16_t cplstre;
-		/* coupling in use */
-		uint16_t cplinu;
-			/* channel coupled */
-			uint16_t chincpl[5];
-			/* if acmod==2 then */
-				/* Phase flags in use */
-				uint16_t phsflginu;
-			/* coupling begin frequency code */
-			uint16_t cplbegf;
-			/* coupling end frequency code */
-			uint16_t cplendf;
-			/* coupling band structure bits */
-			uint16_t cplbndstrc[18];
+    uint32_t magic1;
+
+    // not reused between blocks
+    uint16_t blksw[5];		// imdct block transform switch
+    uint16_t dithflag[5];	// channel dither flag
+
+    uint16_t cplinu;		// coupling in use
+    uint16_t chincpl[5];	// channel coupled
+    uint16_t phsflginu;		// phase flags in use (stereo only)
+    uint16_t cplbegf;		// coupling begin frequency code
+    uint16_t cplendf;		// coupling end frequency code
+    uint16_t cplbndstrc[18];	// coupling band structure
+    // derived information
+    uint16_t cplstrtmant;	// coupling channel start mantissa
+    uint16_t cplendmant;	// coupling channel end mantissa
+    uint16_t ncplsubnd;		// number of coupling sub-bands
+    uint16_t ncplbnd;		// number of coupling bands
+
+
 			/* Do coupling co-ords exist for this channel? */
 			uint16_t cplcoe[5];
 			/* Master coupling co-ordinate */
@@ -228,13 +218,6 @@ typedef struct audblk_s
 
 	/*  -- Information not in the bitstream, but derived thereof  -- */
 
-	/* Number of coupling sub-bands */
-	uint16_t ncplsubnd;
-
-	/* Number of combined coupling sub-bands
-	 * Derived from ncplsubnd and cplbndstrc */
-	uint16_t ncplbnd;
-
 	/* Number of exponent groups by channel
 	 * Derived from strmant, endmant */
 	uint16_t nchgrps[5];
@@ -245,10 +228,6 @@ typedef struct audblk_s
 			
 	/* End mantissa numbers of fbw channels */
 	uint16_t endmant[5];
-
-	/* Start and end mantissa numbers for the coupling channel */
-	uint16_t cplstrtmant;
-	uint16_t cplendmant;
 
 	/* Decoded exponent info */
 	uint16_t fbw_exp[5][256];

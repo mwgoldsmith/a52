@@ -128,61 +128,40 @@ int parse_bsi (ac3_state_t *state, uint8_t * buf)
     return 0;
 }
 
-/* More pain inducing parsing */
-void parse_audblk(ac3_state_t * state,audblk_t *audblk)
+void parse_audblk (ac3_state_t * state, audblk_t * audblk)
 {
-    int i,j;
+    int i, chaninfo;
 
-    for (i=0;i < state->nfchans; i++) {
-	/* Is this channel an interleaved 256 + 256 block ? */
+    for (i = 0; i < state->nfchans; i++) {
 	audblk->blksw[i] = bitstream_get (1);
     }
 
-    for (i=0;i < state->nfchans; i++) {
-	/* Should we dither this channel? */
+    for (i = 0; i < state->nfchans; i++) {
 	audblk->dithflag[i] = bitstream_get (1);
     }
 
-    /* Does dynamic range control exist? */
-    audblk->dynrnge = bitstream_get (1);
-    if (audblk->dynrnge) {
-	/* Get dynamic range info */
-	audblk->dynrng = bitstream_get (8);
-    }
+    chaninfo = (state->acmod) ? 0 : 1;
+    do {
+	if (bitstream_get (1))	// dynrnge
+	    bitstream_get (8);	// dynrng
+    } while (chaninfo--);
 
-    /* If we're in dual mono mode then get the second channel DR info */
-    if (state->acmod == 0) {
-	/* Does dynamic range control two exist? */
-	audblk->dynrng2e = bitstream_get (1);
-	if (audblk->dynrng2e) {
-	    /* Get dynamic range info */
-	    audblk->dynrng2 = bitstream_get (8);
-	}
-    }
-
-    /* Does coupling strategy exist? */
-    audblk->cplstre = bitstream_get (1);
-    if (audblk->cplstre) {
-	/* Is coupling turned on? */
+    if (bitstream_get (1)) {	// cplstre
 	audblk->cplinu = bitstream_get (1);
 	if(audblk->cplinu) {
-	    for(i=0;i < state->nfchans; i++)
+	    for(i = 0; i < state->nfchans; i++)
 		audblk->chincpl[i] = bitstream_get (1);
 	    if(state->acmod == 0x2)
 		audblk->phsflginu = bitstream_get (1);
 	    audblk->cplbegf = bitstream_get (4);
 	    audblk->cplendf = bitstream_get (4);
-	    audblk->ncplsubnd = (audblk->cplendf + 2) - audblk->cplbegf + 1;
 
-	    /* Calculate the start and end bins of the coupling channel */
-	    audblk->cplstrtmant = (audblk->cplbegf * 12) + 37 ; 
-	    audblk->cplendmant =  ((audblk->cplendf + 3) * 12) + 37;
+	    audblk->cplstrtmant = audblk->cplbegf * 12 + 37;
+	    audblk->cplendmant = audblk->cplendf * 12 + 73;
+	    audblk->ncplsubnd = audblk->cplendf + 3 - audblk->cplbegf;
+	    audblk->ncplbnd = audblk->ncplsubnd;
 
-	    /* The number of combined subbands is ncplsubnd minus each combined
-	     * band */
-	    audblk->ncplbnd = audblk->ncplsubnd; 
-
-	    for(i=1; i< audblk->ncplsubnd; i++) {
+	    for(i = 1; i< audblk->ncplsubnd; i++) {
 		audblk->cplbndstrc[i] = bitstream_get (1);
 		audblk->ncplbnd -= audblk->cplbndstrc[i];
 	    }
@@ -198,6 +177,7 @@ void parse_audblk(ac3_state_t * state,audblk_t *audblk)
 	    /* Is there new coupling co-ordinate info? */
 	    audblk->cplcoe[i] = bitstream_get (1);
 	    if(audblk->cplcoe[i]) {
+		int j;
 		audblk->mstrcplco[i] = bitstream_get (2); 
 		for(j=0;j < audblk->ncplbnd; j++) {
 		    audblk->cplcoexp[i][j] = bitstream_get (4); 
@@ -207,8 +187,9 @@ void parse_audblk(ac3_state_t * state,audblk_t *audblk)
 	}
 
 	/* If we're in dual mono mode, there's going to be some phase info */
-	if( (state->acmod == 0x2) && audblk->phsflginu && 
+	if( (state->acmod == 0x2) && audblk->phsflginu &&
 	    (audblk->cplcoe[0] || audblk->cplcoe[1])) {
+	    int j;
 	    for(j=0;j < audblk->ncplbnd; j++)
 		audblk->phsflg[j] = bitstream_get (1);
 	}
@@ -275,7 +256,8 @@ void parse_audblk(ac3_state_t * state,audblk_t *audblk)
     /* Get the fwb channel exponents */
     for(i=0;i < state->nfchans; i++) {
 	if(audblk->chexpstr[i] != EXP_REUSE) {
-	    audblk->exps[i][0] = bitstream_get (4);			
+	    int j;
+	    audblk->exps[i][0] = bitstream_get (4);
 	    for(j=1;j<=audblk->nchgrps[i];j++)
 		audblk->exps[i][j] = bitstream_get (7);
 	    audblk->gainrng[i] = bitstream_get (2);
@@ -348,6 +330,7 @@ void parse_audblk(ac3_state_t * state,audblk_t *audblk)
 
 	for(i = 0;i < state->nfchans; i++) {
 	    if (audblk->deltbae[i] == DELTA_BIT_NEW) {
+		int j;
 		audblk->deltnseg[i] = bitstream_get (3);
 		for(j = 0; j < audblk->deltnseg[i] + 1; j++) {
 		    audblk->deltoffst[i][j] = bitstream_get (5);
