@@ -64,14 +64,15 @@ static RETSIGTYPE signal_handler (int sig)
     raise (sig);
 }
 
-static void print_fps (int final) 
+static void print_fps (int final)
 {
     static uint32_t frame_counter = 0;
     static struct timeval tv_beg, tv_start;
     static int total_elapsed;
     static int last_count = 0;
     struct timeval tv_end;
-    int fps, tfps, frames, elapsed;
+    float fps, tfps;
+    int frames, elapsed;
 
     gettimeofday (&tv_end, NULL);
 
@@ -86,15 +87,13 @@ static void print_fps (int final)
 	(tv_end.tv_usec - tv_start.tv_usec) / 10000;
 
     if (final) {
-	if (total_elapsed) 
-	    tfps = frame_counter * 10000 / total_elapsed;
+	if (total_elapsed)
+	    tfps = frame_counter * 100.0 / total_elapsed;
 	else
 	    tfps = 0;
 
-	fprintf (stderr,"\n%d frames decoded in %d.%02d "
-		 "seconds (%d.%02d fps)\n", frame_counter,
-		 total_elapsed / 100, total_elapsed % 100,
-		 tfps / 100, tfps % 100);
+	fprintf (stderr,"\n%d frames decoded in %.2f seconds (%.2f fps)\n",
+		 frame_counter, total_elapsed / 100.0, tfps);
 
 	return;
     }
@@ -107,14 +106,12 @@ static void print_fps (int final)
     tv_beg = tv_end;
     frames = frame_counter - last_count;
 
-    fps = frames * 10000 / elapsed;			/* 100x */
-    tfps = frame_counter * 10000 / total_elapsed;	/* 100x */
+    fps = frames * 100.0 / elapsed;
+    tfps = frame_counter * 100.0 / total_elapsed;
 
-    fprintf (stderr, "%d frames in %d.%02d sec (%d.%02d fps), "
-	     "%d last %d.%02d sec (%d.%02d fps)\033[K\r", frame_counter,
-	     total_elapsed / 100, total_elapsed % 100,
-	     tfps / 100, tfps % 100, frames, elapsed / 100, elapsed % 100,
-	     fps / 100, fps % 100);
+    fprintf (stderr, "%d frames in %.2f sec (%.2f fps), "
+	     "%d last %.2f sec (%.2f fps)\033[K\r", frame_counter,
+	     total_elapsed / 100.0, tfps, frames, elapsed / 100.0, fps);
 
     last_count = frame_counter;
 }
