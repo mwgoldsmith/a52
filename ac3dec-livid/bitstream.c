@@ -15,7 +15,7 @@
 
 //FIXME this is ugly
 #undef LITTLE_ENDIAN
-#define LITTLE_ENDIAN
+//#define LITTLE_ENDIAN
 
 #ifdef LITTLE_ENDIAN 
 #define SWAP_ENDIAN32(x)  ((((uint_8*)&x)[0] << 24) |  \
@@ -43,16 +43,17 @@ uint_32
 bitstream_get(bitstream_t *bs,uint_32 num_bits)
 {
 	uint_32 result;
+	uint_32 bits_read;
 
-	bs->total_bits_read += num_bits;
 
 	if(num_bits == 0)
 		return 0;
 
+	bits_read = num_bits; 
+
 	if (num_bits < bs->bits_left)
 	{
 		result = (bs->current_word & bit_mask[num_bits]) >> (32 - num_bits);
-		/*printf("case 1 current_word = %lx result = %lx\n",bs->current_word,result);*/
 		bs->current_word <<= num_bits;
 		bs->bits_left -= num_bits;
 	}
@@ -69,7 +70,8 @@ bitstream_get(bitstream_t *bs,uint_32 num_bits)
 		bs->bits_left -= num_bits;
 	}
 	
-	crc_process(result,num_bits);
+	bs->total_bits_read += bits_read;
+	crc_process(result,bits_read);
 	return result;
 }
 

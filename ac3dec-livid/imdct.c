@@ -26,6 +26,11 @@ typedef struct complex_s
 static complex_t pre_trans[N/4];
 static complex_t post_trans[N/4];
 static complex_t pre_window[N/4];
+
+/* LUTs for DFT */
+static float cos_dft[128][128];
+static float sin_dft[128][128];
+
 /* Twiddle factors for IMDCT */
 static float xcos1[N/4];
 static float xsin1[N/4];
@@ -66,14 +71,20 @@ static float w[] = {
 
 void imdct_init(void)
 {
-	int i;
+	int i,k;
 
 	for( i=0; i < N/4; i++)
 	{
 		xcos1[i] = -cos(2 * M_PI * (8*i+1)/(8*N)) ; 
 		xsin1[i] = -sin(2 * M_PI * (8*i+1)/(8*N)) ;
 	}
-
+	
+	for( i=0; i < N/4; i++)
+		for( k=0; k < N/4; k++)
+		{
+			cos_dft[i][k] = cos(8*M_PI*k*i/N);
+			sin_dft[i][k] = sin(8*M_PI*k*i/N);
+		}
 }
 
 void 
@@ -108,8 +119,8 @@ imdct_do(float x[],float y[])
 
 		for(k=0; k<N/4; k++) 
 		{ 
-			post_trans[i].real += (pre_trans[k].real * cos(8*M_PI*k*i/N)) - (pre_trans[k].imag * sin(8*M_PI*k*i/N));
-			post_trans[i].imag += (pre_trans[k].real * sin(8*M_PI*k*i/N)) + (pre_trans[k].imag * cos(8*M_PI*k*i/N));
+			post_trans[i].real += (pre_trans[k].real * cos_dft[i][k]) - (pre_trans[k].imag * sin_dft[i][k]);
+			post_trans[i].imag += (pre_trans[k].real * sin_dft[i][k]) + (pre_trans[k].imag * cos_dft[i][k]);
 		} 
 	}
 

@@ -25,7 +25,7 @@ crc_process(uint_32 data, uint_32 num_bits)
 
 	while(num_bits)
 	{
-		crc_process_bit((data & 0x8000000) == 0x80000000);
+		crc_process_bit(data >> 31);
 
 		data <<= 1;
 		num_bits--;
@@ -41,8 +41,8 @@ crc_process_bit(uint_32 bit)
 
 	state <<= 1;
 	
-	if(bit)
-		state = (state ^ 0x8004) + 1;
+	if(xor_val)
+		state = (state ^ 0x8005);
 }
 
 int
