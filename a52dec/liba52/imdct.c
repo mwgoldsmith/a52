@@ -295,13 +295,13 @@ void a52_imdct_512 (sample_t * data, sample_t * delay, sample_t bias)
 
     ifft128 (buf);
 
-    /* Post IFFT complex multiply  plus IFFT complex conjugate*/
+    /* Post IFFT complex multiply plus IFFT complex conjugate*/
     for (i = 0; i < 128; i++) {
 	/* y[n] = z[n] * (xcos1[n] + j * xsin1[n]) ; */
-	tmp_a_r =        buf[i].real;
-	tmp_a_i = -1.0 * buf[i].imag;
-	buf[i].real = (tmp_a_r * xcos1[i]) - (tmp_a_i * xsin1[i]);
-	buf[i].imag = (tmp_a_r * xsin1[i]) + (tmp_a_i * xcos1[i]);
+	tmp_a_r = buf[i].real;
+	tmp_a_i = buf[i].imag;
+	buf[i].real = (tmp_a_r * xcos1[i]) + (tmp_a_i * xsin1[i]);
+	buf[i].imag = (tmp_a_r * xsin1[i]) - (tmp_a_i * xcos1[i]);
     }
 	
     data_ptr = data;
@@ -356,10 +356,10 @@ void a52_imdct_256(sample_t data[],sample_t delay[],sample_t bias)
 	q = k;
 	k = k / 4;
 	/* z1[i] = (X1[128-2*k-1] + j * X1[2*k]) * (xcos2[k] + j * xsin2[k]); */
-	buf_1[i].real =         (data[p] * xcos2[k])  -  (data[q] * xsin2[k]);
-	buf_1[i].imag = -1.0 * ((data[q] * xcos2[k])  +  (data[p] * xsin2[k]));
-	buf_2[i].real =         (data[p+1] * xcos2[k])  -  (data[q+1] * xsin2[k]);
-	buf_2[i].imag = -1.0 * ((data[q+1] * xcos2[k])  +  (data[p+1] * xsin2[k]));
+	buf_1[i].real = (data[p] * xcos2[k]) - (data[q] * xsin2[k]);
+	buf_1[i].imag = -((data[q] * xcos2[k]) + (data[p] * xsin2[k]));
+	buf_2[i].real = (data[p+1] * xcos2[k]) - (data[q+1] * xsin2[k]);
+	buf_2[i].imag = -((data[q+1] * xcos2[k]) + (data[p+1] * xsin2[k]));
     }
 
     ifft64 (buf_1);
@@ -368,15 +368,15 @@ void a52_imdct_256(sample_t data[],sample_t delay[],sample_t bias)
     /* Post IFFT complex multiply */
     for (i = 0; i < 64; i++) {
 	/* y1[n] = z1[n] * (xcos2[n] + j * xs in2[n]) ; */ 
-	tmp_a_r =  buf_1[i].real;
-	tmp_a_i = -buf_1[i].imag;
-	buf_1[i].real = (tmp_a_r * xcos2[i]) - (tmp_a_i * xsin2[i]);
-	buf_1[i].imag = (tmp_a_r * xsin2[i]) + (tmp_a_i * xcos2[i]);
+	tmp_a_r = buf_1[i].real;
+	tmp_a_i = buf_1[i].imag;
+	buf_1[i].real = (tmp_a_r * xcos2[i]) + (tmp_a_i * xsin2[i]);
+	buf_1[i].imag = (tmp_a_r * xsin2[i]) - (tmp_a_i * xcos2[i]);
 	/* y2[n] = z2[n] * (xcos2[n] + j * xsin2[n]) ; */ 
-	tmp_a_r =  buf_2[i].real;
-	tmp_a_i = -buf_2[i].imag;
-	buf_2[i].real = (tmp_a_r * xcos2[i]) - (tmp_a_i * xsin2[i]);
-	buf_2[i].imag = (tmp_a_r * xsin2[i]) + (tmp_a_i * xcos2[i]);
+	tmp_a_r = buf_2[i].real;
+	tmp_a_i = buf_2[i].imag;
+	buf_2[i].real = (tmp_a_r * xcos2[i]) + (tmp_a_i * xsin2[i]);
+	buf_2[i].imag = (tmp_a_r * xsin2[i]) - (tmp_a_i * xcos2[i]);
     }
 	
     data_ptr = data;
