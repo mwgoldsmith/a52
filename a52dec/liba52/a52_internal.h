@@ -138,7 +138,10 @@ typedef int16_t quantizer_t;
 #define SAMPLE(x) (sample_t)((x) * (1 << 30))
 #define LEVEL(x) (level_t)((x) * (1 << 26))
 
-#if 1
+#if 0
+#define MUL(a,b) ((int)(((int64_t)(a) * (b) + (1 << 29)) >> 30))
+#define MUL_L(a,b) ((int)(((int64_t)(a) * (b) + (1 << 25)) >> 26))
+#elif 1
 #define MUL(a,b) \
 ({ int32_t _ta=(a), _tb=(b), _tc; \
    _tc=(_ta & 0xffff)*(_tb >> 16)+(_ta >> 16)*(_tb & 0xffff); (int32_t)(((_tc >> 14))+ (((_ta >> 16)*(_tb >> 16)) << 2 )); })
