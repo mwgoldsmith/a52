@@ -68,8 +68,7 @@ extern uint32_t error_flag;
  * conditional fields.
  */
 
-typedef struct ac3_state_s 
-{
+typedef struct ac3_state_s {
     int nfchans;	// number of channels, derived from acmod
 
     /* from syncinfo */
@@ -80,12 +79,20 @@ typedef struct ac3_state_s
     uint8_t cmixlev;	// centre channel mix level
     uint8_t surmixlev;	// surround channels mix level
     uint8_t lfeon;	// coded lfe channel
-
 } ac3_state_t;
 
+typedef struct ac3_ba_s {
+    uint16_t fsnroffst;	// fine SNR offset
+    uint16_t fgaincod;	// fast gain
+    uint16_t deltbae;	// delta bit allocation exists
+    uint16_t deltnseg;	// number of delta bit segments
+    uint16_t deltoffst[8];	// delta bit offset
+    uint16_t deltlen[8];	// delta bit length
+    uint16_t deltba[8];		// delta bit value
+} ac3_ba_t;
+
 /* more pain */
-typedef struct audblk_s
-{
+typedef struct audblk_s {
     uint32_t magic1;
 
     // not reused between blocks
@@ -123,36 +130,13 @@ typedef struct audblk_s
     uint16_t floorcod;		// masking floor
 
     uint16_t csnroffst;		// coarse SNR offset
-    uint16_t cplfsnroffst;	// coupling fine SNR offset
-    uint16_t cplfgaincod;	// coupling fast gain
-    uint16_t fsnroffst[5];	// channel fine SNR offset
-    uint16_t fgaincod[5];	// channel fast gain
-    uint16_t lfefsnroffst;	// lfe fast SNR offset
-    uint16_t lfefgaincod;	// lfe fast gain
-	
+    ac3_ba_t cplba;		// coupling bit allocation parameters
+    ac3_ba_t ba[5];		// channel bit allocation parameters
+    ac3_ba_t lfeba;		// lfe bit allocation parameters
+
     uint16_t cplfleak;		// coupling fast leak init
     uint16_t cplsleak;		// coupling slow leak init
 	
-		/* coupling delta bit allocation exists */
-		uint16_t cpldeltbae;
-		/* fbw delta bit allocation exists */
-		uint16_t deltbae[5];
-		/* number of cpl delta bit segments */
-		uint16_t cpldeltnseg;
-			/* coupling delta bit allocation offset */
-			uint16_t cpldeltoffst[8];
-			/* coupling delta bit allocation length */
-			uint16_t cpldeltlen[8];
-			/* coupling delta bit allocation length */
-			uint16_t cpldeltba[8];
-		/* number of delta bit segments */
-		uint16_t deltnseg[5];
-			/* fbw delta bit allocation offset */
-			uint16_t deltoffst[5][8];
-			/* fbw delta bit allocation length */
-			uint16_t deltlen[5][8];
-			/* fbw delta bit allocation length */
-			uint16_t deltba[5][8];
 
 
 
