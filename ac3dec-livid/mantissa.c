@@ -78,7 +78,7 @@ mantissa_get(bitstream_t *bs, uint_16 bap)
 			break;
 
 		default:
-			result = bitstream_get(bs,qnttztab[bap]);
+			result = bitstream_get(bs,qnttztab[bap] << qnttztab[bap]);
 	}
 
 	return result;
@@ -100,8 +100,9 @@ uint_16 mantissa_get_dither(void)
 }
 
 //FIXME
-uint_16 mantissa_left_justify(uint_16 src,uint_16 size)
+inline uint_16 
+mantissa_left_justify(uint_16 src,uint_16 size)
 {
-
+	return
 }
 
