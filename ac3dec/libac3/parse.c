@@ -132,13 +132,11 @@ void parse_audblk (ac3_state_t * state, audblk_t * audblk)
 {
     int i, chaninfo;
 
-    for (i = 0; i < state->nfchans; i++) {
+    for (i = 0; i < state->nfchans; i++)
 	audblk->blksw[i] = bitstream_get (1);
-    }
 
-    for (i = 0; i < state->nfchans; i++) {
+    for (i = 0; i < state->nfchans; i++)
 	audblk->dithflag[i] = bitstream_get (1);
-    }
 
     chaninfo = (state->acmod) ? 0 : 1;
     do {
@@ -172,7 +170,7 @@ void parse_audblk (ac3_state_t * state, audblk_t * audblk)
 	int cplcoe = 0;
 	int j;
 
-	for (i = 0; i < state->nfchans; i++) {
+	for (i = 0; i < state->nfchans; i++)
 	    if (audblk->chincpl[i])
 		if (bitstream_get (1)) {	// cplcoe
 		    cplcoe = 1;
@@ -182,31 +180,34 @@ void parse_audblk (ac3_state_t * state, audblk_t * audblk)
 			audblk->cplcomant[i][j] = bitstream_get (4);
 		    }
 		}
-	}
-	if ((state->acmod == 0x2) && audblk->phsflginu && cplcoe) {
+	if ((state->acmod == 0x2) && audblk->phsflginu && cplcoe)
 	    for (j = 0; j < audblk->ncplbnd; j++)
 		audblk->phsflg[j] = bitstream_get (1);
+    }
+
+    if(state->acmod == 0x2) {	// stereo mode
+	if (bitstream_get (1)) {	// rematstr
+	    if ((audblk->cplbegf > 2) || (audblk->cplinu == 0))
+		for (i = 0; i < 4; i++) 
+		    audblk->rematflg[i] = bitstream_get (1);
+	    else if ((audblk->cplbegf == 0) && audblk->cplinu)
+		for (i = 0; i < 2; i++)
+		    audblk->rematflg[i] = bitstream_get (1);
+	    else if ((audblk->cplbegf <= 2) && audblk->cplinu)
+		for(i = 0; i < 3; i++)
+		    audblk->rematflg[i] = bitstream_get (1);
 	}
     }
 
-    /* If we're in dual mono mode, there may be a rematrix strategy */
-    if(state->acmod == 0x2) {
-	audblk->rematstr = bitstream_get (1);
-	if(audblk->rematstr) {
-	    if (audblk->cplinu == 0)
-		for(i = 0; i < 4; i++) 
-		    audblk->rematflg[i] = bitstream_get (1);
-	    if((audblk->cplbegf > 2) && audblk->cplinu)
-		for(i = 0; i < 4; i++) 
-		    audblk->rematflg[i] = bitstream_get (1);
-	    if((audblk->cplbegf <= 2) && audblk->cplinu)
-		for(i = 0; i < 3; i++) 
-		    audblk->rematflg[i] = bitstream_get (1);
-	    if((audblk->cplbegf == 0) && audblk->cplinu) 
-		for(i = 0; i < 2; i++) 
-		    audblk->rematflg[i] = bitstream_get (1);
-	}
-    }
+
+
+
+
+
+
+
+
+
 
     if (audblk->cplinu) {
 	/* Get the coupling channel exponent strategy */

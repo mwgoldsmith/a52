@@ -110,10 +110,8 @@ typedef struct audblk_s
     uint16_t cplcomant[5][18];	// per band coupling mantissa
     uint16_t phsflg[18];	// per band phase flags for stereo
 
-	/* Is there a rematrixing strategy */
-	uint16_t rematstr;
-		/* Rematrixing bits */
-		uint16_t rematflg[4];
+    uint16_t rematflg[4];	// stereo rematrixing
+
 	/* Coupling exponent strategy */
 	uint16_t cplexpstr;
 	/* Exponent strategy for full bandwidth channels */
