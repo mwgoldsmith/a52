@@ -1,3 +1,6 @@
+ac3dec-0.6.1 Mon Mar 27 20:27:06 EST 2000
+-Fix another 2.0 problem (rematrix was wrong)
+
 ac3dec-0.6.0 Sat Mar 18 19:43:25 EST 2000
 -New library interface 
 -Fix bug wrt coupling channels that was causing sound quality problems. 
