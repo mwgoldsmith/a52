@@ -105,23 +105,19 @@ typedef struct audblk_s
     uint16_t ncplbnd;		// number of coupling bands
 
     // should we simply have float cplco[5][18] instead of these 4 ?
-    uint16_t mstrcplco[5];	// per channel master coupling coordinate
-    uint16_t cplcoexp[5][18];	// per band coupling exponent
-    uint16_t cplcomant[5][18];	// per band coupling mantissa
-    uint16_t phsflg[18];	// per band phase flags for stereo
+    uint8_t mstrcplco[5];	// per channel master coupling coordinate
+    uint8_t cplcoexp[5][18];	// per band coupling exponent
+    uint8_t cplcomant[5][18];	// per band coupling mantissa
+    uint8_t phsflg[18];		// per band phase flags for stereo
 
     uint16_t rematflg[4];	// stereo rematrixing
 
-	/* Coupling exponent strategy */
-	uint16_t cplexpstr;
-	/* Exponent strategy for full bandwidth channels */
-	uint16_t chexpstr[5];
-	/* Exponent strategy for lfe channel */
-	uint16_t lfeexpstr;
-	/* Channel bandwidth for independent channels */
-	uint16_t chbwcod[5];
-	/* Sanity checking constant */
-	uint32_t	magic2;
+    uint8_t cplexpstr;		// coupling exponent strategy
+    uint8_t chexpstr[5];	// channel exponent strategy
+    uint8_t lfeexpstr;		// lfe exponent strategy
+    uint16_t chbwcod[5];	// channel bandwidth for independant channels
+
+    uint32_t	magic2;
 
 
 	/* Bit allocation info */
@@ -189,35 +185,20 @@ typedef struct audblk_s
 		/* skip length */
 		uint16_t skipl;
 
-	//Removed Feb 2000 -ah
-	/* channel mantissas */
-	//uint16_t chmant[5][256];
 
 	/* coupling mantissas */
 	uint16_t cplmant[256];
 
-	//Removed Feb 2000 -ah
-	/* coupling mantissas */
-	//uint16_t lfemant[7];
-
 
 	/*  -- Information not in the bitstream, but derived thereof  -- */
 
-	/* Number of exponent groups by channel
-	 * Derived from strmant, endmant */
-	uint16_t nchgrps[5];
-
-	/* Number of coupling exponent groups
-	 * Derived from cplbegf, cplendf, cplexpstr */
-	uint16_t ncplgrps;
-			
 	/* End mantissa numbers of fbw channels */
 	uint16_t endmant[5];
 
 	/* Decoded exponent info */
-	uint16_t fbw_exp[5][256];
-	uint16_t cpl_exp[256];
-	uint16_t lfe_exp[7];
+	uint8_t fbw_exp[5][256];
+	uint8_t cpl_exp[256];
+	uint8_t lfe_exp[7];
 
 	/* Bit allocation pointer results */
 	uint16_t fbw_bap[5][256];

@@ -122,75 +122,61 @@ int parse_bsi (ac3_state_t * state, uint8_t * buf)
     return 0;
 }
 
-
-
-#define UNPACK_FBW  1 
-#define UNPACK_CPL  2 
-#define UNPACK_LFE  4 
-
-
-static int parse_exponents (uint16_t type,uint16_t expstr,uint16_t ngrps,
-	      uint16_t initial_exp, uint16_t *dest)
+static int parse_exponents (int expstr, int ngrps, uint8_t exponent,
+			    uint8_t * dest)
 {
-    uint16_t i,j;
-    int16_t exp_acc;
-    int16_t exp_1,exp_2,exp_3;
+    int exps;
+    int8_t exp_1, exp_2, exp_3;
 
-    /* Handle the initial absolute exponent */
-    exp_acc = initial_exp;
-    j = 0;
-
-    /* In the case of a fbw channel then the initial absolute values is 
-     * also an exponent */
-    if(type != UNPACK_CPL)
-	dest[j++] = exp_acc;
-
-    /* Loop through the groups and fill the dest array appropriately */
-    for(i = 0; i< ngrps; i++) {
-	int exps;
-
+    while (ngrps--) {
 	exps = bitstream_get (7);
-	if(exps > 124)
+	if (exps >= 125)
 	    return 1;
 
 	exp_1 = exps / 25;
 	exp_2 = (exps - (exp_1 * 25)) / 5;
 	exp_3 = exps - (exp_1 * 25) - (exp_2 * 5) ;
 
-	exp_acc += (exp_1 - 2);
+	exponent += (exp_1 - 2);
+	if (exponent > 24)
+	    return 1;
 
-	switch(expstr) {
+	switch (expstr) {
 	case EXP_D45:
-	    dest[j++] = exp_acc;
-	    dest[j++] = exp_acc;
+	    *(dest++) = exponent;
+	    *(dest++) = exponent;
 	case EXP_D25:
-	    dest[j++] = exp_acc;
+	    *(dest++) = exponent;
 	case EXP_D15:
-	    dest[j++] = exp_acc;
+	    *(dest++) = exponent;
 	}
 
-	exp_acc += (exp_2 - 2);
+	exponent += (exp_2 - 2);
+	if (exponent > 24)
+	    return 1;
 
-	switch(expstr) {
+	switch (expstr) {
 	case EXP_D45:
-	    dest[j++] = exp_acc;
-	    dest[j++] = exp_acc;
+	    *(dest++) = exponent;
+	    *(dest++) = exponent;
 	case EXP_D25:
-	    dest[j++] = exp_acc;
+	    *(dest++) = exponent;
 	case EXP_D15:
-	    dest[j++] = exp_acc;
+	    *(dest++) = exponent;
 	}
 
-	exp_acc += (exp_3 - 2);
+	exponent += (exp_3 - 2);
+	if (exponent > 24)
+	    return 1;
 
-	switch(expstr) {
+	switch (expstr) {
 	case EXP_D45:
-	    dest[j++] = exp_acc;
-	    dest[j++] = exp_acc;
+	    *(dest++) = exponent;
+	    *(dest++) = exponent;
 	case EXP_D25:
-	    dest[j++] = exp_acc;
+	    *(dest++) = exponent;
 	case EXP_D15:
-	    dest[j++] = exp_acc;
+	    *(dest++) = exponent;
 	}
     }	
 
@@ -270,25 +256,14 @@ int parse_audblk (ac3_state_t * state, audblk_t * audblk)
 	}
     }
 
-
-
-
-
-
-
-    if (audblk->cplinu) {
+    if (audblk->cplinu)
 	audblk->cplexpstr = bitstream_get (2);
-	audblk->ncplgrps = (audblk->cplendmant - audblk->cplstrtmant) /
-	    (3 << (audblk->cplexpstr-1));
-    }
     for (i = 0; i < state->nfchans; i++)
 	audblk->chexpstr[i] = bitstream_get (2);
     if (state->lfeon) 
 	audblk->lfeexpstr = bitstream_get (1);
 
     for (i = 0; i < state->nfchans; i++) { 
-	int grp_size;
-
 	if (audblk->chexpstr[i] != EXP_REUSE) {
 	    if (audblk->cplinu && audblk->chincpl[i])
 		audblk->endmant[i] = audblk->cplstrtmant;
@@ -296,48 +271,45 @@ int parse_audblk (ac3_state_t * state, audblk_t * audblk)
 		audblk->chbwcod[i] = bitstream_get (6);
 		audblk->endmant[i] = ((audblk->chbwcod[i] + 12) * 3) + 37;
 	    }
-
-	    /* Calculate the number of exponent groups to fetch */
-	    grp_size = 3 * (1 << (audblk->chexpstr[i] - 1));
-	    audblk->nchgrps[i] = (audblk->endmant[i] - 1 + (grp_size - 3)) /
-		grp_size;
 	}
     }
-
-
-
-
 
     if (audblk->cplinu && (audblk->cplexpstr != EXP_REUSE)) {
-	int cplabsexp;
+	int cplabsexp, ncplgrps;
 
+	ncplgrps = ((audblk->cplendmant - audblk->cplstrtmant) /
+		    (3 << (audblk->cplexpstr - 1)));
 	cplabsexp = bitstream_get (4) << 1;
-	if (parse_exponents (UNPACK_CPL, audblk->cplexpstr, audblk->ncplgrps,
-			     cplabsexp, audblk->cpl_exp + audblk->cplstrtmant))
+	if (parse_exponents (audblk->cplexpstr, ncplgrps, cplabsexp,
+			     audblk->cpl_exp + audblk->cplstrtmant))
 	    return 1;
     }
-
     for (i = 0; i < state->nfchans; i++) {
 	if (audblk->chexpstr[i] != EXP_REUSE) {
-	    int exps_0;
+	    int grp_size, nchgrps;
 
-	    exps_0 = bitstream_get (4);
-	    if (parse_exponents (UNPACK_FBW, audblk->chexpstr[i],
-				 audblk->nchgrps[i], exps_0,
-				 audblk->fbw_exp[i]))
+	    grp_size = 3 * (1 << (audblk->chexpstr[i] - 1));
+	    nchgrps = (audblk->endmant[i] - 1 + (grp_size - 3)) / grp_size;
+	    audblk->fbw_exp[i][0] = bitstream_get (4);
+	    if (parse_exponents (audblk->chexpstr[i], nchgrps,
+				 audblk->fbw_exp[i][0],
+				 audblk->fbw_exp[i] + 1))
 		return 1;
-	    bitstream_get (2);		// gainrng
+	    bitstream_get (2);	// gainrng
 	}
     }
-
     if (state->lfeon && (audblk->lfeexpstr != EXP_REUSE)) {
-	int lfeexps_0;
-
-	lfeexps_0 = bitstream_get (4);
-	if (parse_exponents (UNPACK_LFE, audblk->lfeexpstr, 2, lfeexps_0,
-			     audblk->lfe_exp))
+	audblk->lfe_exp[0] = bitstream_get (4);
+	if (parse_exponents (audblk->lfeexpstr, 2,
+			     audblk->lfe_exp[0], audblk->lfe_exp + 1))
 	    return 1;
     }
+
+
+
+
+
+
 
     /* Get the parametric bit allocation parameters */
     audblk->baie = bitstream_get (1);

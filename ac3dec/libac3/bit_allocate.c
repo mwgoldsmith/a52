@@ -33,7 +33,7 @@ static inline int16_t logadd(int16_t a,int16_t  b);
 static int16_t calc_lowcomp(int16_t a,int16_t b0,int16_t b1,int16_t bin);
 static inline uint16_t min(int16_t a,int16_t b);
 static inline uint16_t max(int16_t a,int16_t b);
-static void ba_compute_psd(int16_t start, int16_t end, int16_t exps[], 
+static void ba_compute_psd(int16_t start, int16_t end, uint8_t exps[], 
 			   int16_t psd[], int16_t bndpsd[]);
 
 static void ba_compute_excitation(int16_t start, int16_t end,int16_t fgain,
@@ -278,7 +278,7 @@ void bit_allocate(ac3_state_t * state, audblk_t *audblk)
 }
 
 
-static void ba_compute_psd(int16_t start, int16_t end, int16_t exps[], 
+static void ba_compute_psd(int16_t start, int16_t end, uint8_t exps[], 
 			   int16_t psd[], int16_t bndpsd[])
 {
     int bin,i,j,k;
