@@ -31,8 +31,6 @@
 #include "bitstream.h"
 #include "tables.h"
 
-static sample_t delay[6][256];
-
 void ac3_init (void)
 {
     imdct_init ();
@@ -86,7 +84,7 @@ int ac3_syncinfo (uint8_t * buf, int * flags,
 }
 
 int ac3_frame (ac3_state_t * state, uint8_t * buf, int * flags,
-	       sample_t * level, sample_t bias)
+	       sample_t * level, sample_t bias, sample_t * delay)
 {
     static sample_t clev[4] = {LEVEL_3DB, LEVEL_45DB, LEVEL_6DB, LEVEL_45DB};
     static sample_t slev[4] = {LEVEL_3DB, LEVEL_6DB, 0, LEVEL_6DB};
@@ -118,6 +116,7 @@ int ac3_frame (ac3_state_t * state, uint8_t * buf, int * flags,
     *flags = state->output;
     state->level = *level;
     state->bias = bias;
+    state->delay = delay;
 
     chaninfo = !acmod;
     do {
@@ -667,13 +666,13 @@ int ac3_block (ac3_state_t * state, sample_t samples[][256])
 
     for (i = 0; i < nfchans; i++)
 	if (blksw[i])
-            imdct_256 (samples[i], delay[i]);
+            imdct_256 (samples[i], state->delay + i * 256);
         else 
-            imdct_512 (samples[i], delay[i]);
+            imdct_512 (samples[i], state->delay + i * 256);
 
 #if 0
     if (state->lfeon)
-	imdct_512 (samples[5], delay[5]);
+	imdct_512 (samples[5], delay + 5 * 256);
 #endif
 
     downmix (*samples, state->acmod, state->output, state->level, state->bias,

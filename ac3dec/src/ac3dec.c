@@ -50,6 +50,7 @@ static uint32_t last_count = 0;
 static uint32_t demux_ps = 0;
 
 sample_t samples[6][256];
+sample_t delay[6*256];
 
 static void print_fps (int final) 
 {
@@ -97,7 +98,7 @@ static void print_fps (int final)
 
     last_count = frame_counter;
 }
- 
+
 static RETSIGTYPE signal_handler (int sig)
 {
     print_fps (1);
@@ -227,7 +228,7 @@ int ac3_decode_data (uint8_t * start, uint8_t * end)
 
 		flags = AC3_STEREO | AC3_ADJUST_LEVEL;
 		level = 1;
-		if (ac3_frame (&state, buf, &flags, &level, 384))
+		if (ac3_frame (&state, buf, &flags, &level, 384, delay))
 		    goto error;
 		for (i = 0; i < 6; i++) {
 #if 0
@@ -251,6 +252,7 @@ int ac3_decode_data (uint8_t * start, uint8_t * end)
 		output_play (s16_samples, 256 * 6 * 2);
 		bufptr = buf;
 		bufpos = buf + 7;
+		print_fps (0);
 		continue;
 	    error:
 		printf ("error\n");
