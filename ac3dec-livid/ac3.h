@@ -242,10 +242,10 @@ typedef struct audblk_s
 		/*uint_16 skipl;*/
 
 	/* channel mantissas */
-	uint_16 chmant[5][253];
+	uint_16 chmant[5][256];
 
 	/* coupling mantissas */
-	uint_16 cplmant[253];
+	uint_16 cplmant[256];
 
 	/* coupling mantissas */
 	uint_16 lfemant[7];
@@ -277,15 +277,17 @@ typedef struct audblk_s
 	uint_16 cplstrtmant;
 	uint_16 cplendmant;
 
+	/* Decoded exponent info */
+	uint_16 fbw_exp[5][256];
+	uint_16 cpl_exp[256];
+	uint_16 lfe_exp[7];
+
 	/* Bit allocation pointer results */
-	uint_16 fbw_bap[5][253];
+	uint_16 fbw_bap[5][256];
 	//FIXME figure out exactly how many entries there should be (253-37?) 
-	uint_16 cpl_bap[253];
+	uint_16 cpl_bap[256];
 	uint_16 lfe_bap[7];
-
-
-
-
+	
 } audblk_t;
 
 
@@ -293,7 +295,8 @@ typedef struct audblk_s
 /*
  * The entire frequency domain is represented by 256 real
  * floating point fourier coefficients. Only the lower 253
- * coefficients are actually utilized however.
+ * coefficients are actually utilized however. We use arrays
+ * of 256 to be efficient in some cases.
  *
  * The 5 full bandwidth channels (fbw) can have their higher
  * frequencies coupled together. These coupled channels then

@@ -12,7 +12,7 @@
 #include "exponent.h"
 
 static void exp_unpack_ch(uint_16 type,uint_16 expstr,uint_16 ngrps,uint_16 initial_exp, 
-		uint_16 exps[], sint_32 *dest);
+		uint_16 exps[], uint_16 *dest);
 
 void
 exponent_unpack( bsi_t *bsi, audblk_t *audblk, stream_coeffs_t *coeffs)
@@ -21,21 +21,21 @@ exponent_unpack( bsi_t *bsi, audblk_t *audblk, stream_coeffs_t *coeffs)
 
 	for(i=0; i< bsi->nfchans; i++)
 		exp_unpack_ch(UNPACK_FBW, audblk->chexpstr[i], audblk->nchgrps[i], audblk->exps[i][0], 
-				&audblk->exps[i][1], (uint_32*)coeffs->fbw[i]);
+				&audblk->exps[i][1], audblk->fbw_exp[i]);
 
 	if(audblk->cplinu)
 		exp_unpack_ch(UNPACK_CPL, audblk->cplexpstr,audblk->ncplgrps, audblk->cplabsexp,	
-				audblk->cplexps, (uint_32*)coeffs->cpl);
+				audblk->cplexps, audblk->cpl_exp);
 
 	if(bsi->lfeon)
 		exp_unpack_ch(UNPACK_LFE, audblk->lfeexpstr, 2, audblk->lfeexps[0], 
-				&audblk->lfeexps[1], (uint_32*)coeffs->lfe);
+				&audblk->lfeexps[1], audblk->lfe_exp);
 }
 
 
 static void
 exp_unpack_ch(uint_16 type,uint_16 expstr,uint_16 ngrps,uint_16 initial_exp, 
-		uint_16 exps[], sint_32 *dest)
+		uint_16 exps[], uint_16 *dest)
 {
 	uint_16 i,j;
 	sint_16 exp_acc;

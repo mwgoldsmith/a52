@@ -46,7 +46,9 @@ static uint_16 m_4_pointer;
 //zeros account for cases 0,1,2,4 which are special cased
 static uint_16 qnttztab[16] = { 0, 0, 0, 3, 0 , 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 16};
 
-uint_16 mantissa_get_dither(void);
+static uint_16 mantissa_get_dither(void);
+static uint_16 mantissa_get(bitstream_t *bs, uint_16 bap);
+static void mantissa_reset(void);
 
 void
 mantissa_unpack(bsi_t *bsi, audblk_t *audblk,bitstream_t *bs)
@@ -83,7 +85,7 @@ mantissa_unpack(bsi_t *bsi, audblk_t *audblk,bitstream_t *bs)
 }
 
 /* Fetch an unpacked, left justified, and properly biased/dithered mantissa value */
-uint_16
+static uint_16
 mantissa_get(bitstream_t *bs, uint_16 bap)
 {
 	uint_16 result;
@@ -94,6 +96,7 @@ mantissa_get(bitstream_t *bs, uint_16 bap)
 	switch(bap)
 	{
 		case 0:
+			//FIXME change to respect the dither flag
 			result = mantissa_get_dither();
 			break;
 
@@ -153,7 +156,7 @@ mantissa_get(bitstream_t *bs, uint_16 bap)
 	return result;
 }
 
-void 
+static void 
 mantissa_reset(void)
 {
 	m_1[2] = m_1[1] = m_1[0] = 0;
@@ -162,7 +165,7 @@ mantissa_reset(void)
 	m_1_pointer = m_2_pointer = m_4_pointer = 3;
 }
 
-uint_16 mantissa_get_dither(void)
+static uint_16 mantissa_get_dither(void)
 {
 	return 0;
 }

@@ -5,5 +5,4 @@
  *
  */
 
-void mantissa_reset(void);
-uint_16 mantissa_get(bitstream_t *bs, uint_16 bap);
+void mantissa_unpack(bsi_t *bsi, audblk_t *audblk,bitstream_t *bs);

@@ -13,6 +13,7 @@
 #include "imdct.h"
 #include "exponent.h"
 #include "mantissa.h"
+#include "bit_allocate.h"
 #include "stats.h"
 
 static void decode_fill_syncinfo(bitstream_t *bs);
@@ -52,13 +53,13 @@ int main(int argc,char *argv[])
 			/* Take the differential exponent data and turn it into
 			 * absolute exponents */
 			exponent_unpack(&bsi,&audblk,&stream_coeffs); 
-#if 0
 			/* Figure out how many bits per mantissa */
-			bit_allocate(&bsi,&audblk);
+			bit_allocate(syncinfo.fscod,&bsi,&audblk);
 
 			/* Extract the mantissas from the data stream */
 			mantissa_unpack(&bsi,&audblk,bs);
 
+#if 0
 			/* Uncouple coupled channels */
 			uncouple(&bsi,&audblk,&stream_coeffs); 
 

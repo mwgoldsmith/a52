@@ -8,30 +8,37 @@
 #include <stdlib.h>
 #include "ac3.h"
 
+static sint_16 logadd(sint_16 a,sint_16  b);
+static sint_16 calc_lowcomp(sint_16 a,sint_16 b0,sint_16 b1,sint_16 bin);
+static inline uint_16 min(sint_16 a,sint_16 b);
+static inline uint_16 max(sint_16 a,sint_16 b);
+static void bit_allocate_channel(uint_16 fscod, sint_16 exps[],sint_16 start,
+		sint_16 end, sint_16 fgain, sint_16 snroffset, uint_16 bap[]);
+
 /* Misc LUTs for bit allocation process */
 
-sint_16 slowdec[]  = { 0x0f,  0x11,  0x13,  0x15  };
-sint_16 fastdec[]  = { 0x3f,  0x53,  0x67,  0x7b  };
-sint_16 slowgain[] = { 0x540, 0x4d8, 0x478, 0x410 };
-sint_16 dbpbtab[]  = { 0x000, 0x700, 0x900, 0xb00 };
+static sint_16 slowdec[]  = { 0x0f,  0x11,  0x13,  0x15  };
+static sint_16 fastdec[]  = { 0x3f,  0x53,  0x67,  0x7b  };
+static sint_16 slowgain[] = { 0x540, 0x4d8, 0x478, 0x410 };
+static sint_16 dbpbtab[]  = { 0x000, 0x700, 0x900, 0xb00 };
 
-sint_16 floortab[] = { 0x2f0, 0x2b0, 0x270, 0x230, 0x1f0, 0x170, 0x0f0, 0xf800 };
-sint_16 fastgain[] = { 0x080, 0x100, 0x180, 0x200, 0x280, 0x300, 0x380, 0x400  };
+static sint_16 floortab[] = { 0x2f0, 0x2b0, 0x270, 0x230, 0x1f0, 0x170, 0x0f0, 0xf800 };
+static sint_16 fastgain[] = { 0x080, 0x100, 0x180, 0x200, 0x280, 0x300, 0x380, 0x400  };
 
 
-sint_16 bndtab[] = {  0,  1,  2,   3,   4,   5,   6,   7,   8,   9, 
+static sint_16 bndtab[] = {  0,  1,  2,   3,   4,   5,   6,   7,   8,   9, 
                      10, 11, 12,  13,  14,  15,  16,  17,  18,  19,
                      20, 21, 22,  23,  24,  25,  26,  27,  28,  31,
                      34, 37, 40,  43,  46,  49,  55,  61,  67,  73,
                      79, 85, 97, 109, 121, 133, 157, 181, 205, 229 };
 
-sint_16 bndsz[]  = { 1,  1,  1,  1,  1,  1,  1,  1,  1,  1,
+static sint_16 bndsz[]  = { 1,  1,  1,  1,  1,  1,  1,  1,  1,  1,
                      1,  1,  1,  1,  1,  1,  1,  1,  1,  1,
                      1,  1,  1,  1,  1,  1,  1,  1,  3,  3,
                      3,  3,  3,  3,  3,  6,  6,  6,  6,  6,
                      6, 12, 12, 12, 12, 24, 24, 24, 24, 24 };
 
-sint_16 masktab[] = { 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15,
+static sint_16 masktab[] = { 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15,
                      16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 28, 28, 29,
                      29, 29, 30, 30, 30, 31, 31, 31, 32, 32, 32, 33, 33, 33, 34, 34,
                      34, 35, 35, 35, 35, 35, 35, 36, 36, 36, 36, 36, 36, 37, 37, 37,
@@ -49,7 +56,7 @@ sint_16 masktab[] = { 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14,
                      49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49,  0,  0,  0 };
 
 
-sint_16 latab[] = { 0x0040, 0x003f, 0x003e, 0x003d, 0x003c, 0x003b, 0x003a, 0x0039,
+static sint_16 latab[] = { 0x0040, 0x003f, 0x003e, 0x003d, 0x003c, 0x003b, 0x003a, 0x0039,
                     0x0038, 0x0037, 0x0036, 0x0035, 0x0034, 0x0034, 0x0033, 0x0032,
                     0x0031, 0x0030, 0x002f, 0x002f, 0x002e, 0x002d, 0x002c, 0x002c,
                     0x002b, 0x002a, 0x0029, 0x0029, 0x0028, 0x0027, 0x0026, 0x0026,
@@ -83,7 +90,7 @@ sint_16 latab[] = { 0x0040, 0x003f, 0x003e, 0x003d, 0x003c, 0x003b, 0x003a, 0x00
                     0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
                     0x0000, 0x0000, 0x0000, 0x0000};
 
-sint_16 hth[][50] = {{ 0x04d0, 0x04d0, 0x0440, 0x0400, 0x03e0, 0x03c0, 0x03b0, 0x03b0,  
+static sint_16 hth[][50] = {{ 0x04d0, 0x04d0, 0x0440, 0x0400, 0x03e0, 0x03c0, 0x03b0, 0x03b0,  
                       0x03a0, 0x03a0, 0x03a0, 0x03a0, 0x03a0, 0x0390, 0x0390, 0x0390,  
                       0x0380, 0x0380, 0x0370, 0x0370, 0x0360, 0x0360, 0x0350, 0x0350,  
                       0x0340, 0x0340, 0x0330, 0x0320, 0x0310, 0x0300, 0x02f0, 0x02f0,
@@ -108,62 +115,101 @@ sint_16 hth[][50] = {{ 0x04d0, 0x04d0, 0x0440, 0x0400, 0x03e0, 0x03c0, 0x03b0, 0
                       0x0450, 0x04e0 }};
 
 
-sint_16 baptab[] = { 0,  1,  1,  1,  1,  1,  2,  2,  3,  3,  3,  4,  4,  5,  5,  6,
+static sint_16 baptab[] = { 0,  1,  1,  1,  1,  1,  2,  2,  3,  3,  3,  4,  4,  5,  5,  6,
                      6,  6,  6,  7,  7,  7,  7,  8,  8,  8,  8,  9,  9,  9,  9, 10, 
                      10, 10, 10, 11, 11, 11, 11, 12, 12, 12, 12, 13, 13, 13, 13, 14,
                      14, 14, 14, 14, 14, 14, 14, 15, 15, 15, 15, 15, 15, 15, 15, 15 };
 
+static sint_16 sdecay;
+static sint_16 fdecay;
+static sint_16 sgain;
+static sint_16 dbknee;
+static sint_16 floor;
 
-
-
-void bit_allocate( bsi_t *bsi, audblk_t *audblk)
+void bit_allocate(uint_16 fscod, bsi_t *bsi, audblk_t *audblk)
 {
-	uint_16 ch;
+	uint_16 i;
+	sint_16 fgain;
+	sint_16 snroffset;
+	sint_16 start;
+	sint_16 end;
 
 	/* Do some setup calculations before we do the bit alloc */
+	sdecay = slowdec[audblk->sdcycod]; 
+	fdecay = fastdec[audblk->fdcycod];
+	sgain = slowgain[audblk->sgaincod]; 
+	dbknee = dbpbtab[audblk->dbpbcod]; 
+	floor = floortab[audblk->floorcod]; 
 
-	for(ch=0; ch<bsi->nfchans; ch++) 
-	{ 
-		audblk->strtmant[ch] = 0; 
-		if(chincpl[ch]) 
-			audblk->endmant[ch] = 37 + (12 * audblk->cplbegf); /* channel is coupled */ 
-		else 
-			audblk->endmant[ch] = 37 + (3 * (audblk->chbwcod + 12)); /* channel is not coupled */ 
-	} 
+	/* if all the SNR offset constants are zero then the whole block is zero */
+	if(!audblk->csnroffst    && !audblk->fsnroffst[0] && 
+		 !audblk->fsnroffst[1] && !audblk->fsnroffst[2] && 
+		 !audblk->fsnroffst[3] && !audblk->fsnroffst[4] &&
+		 !audblk->cplfsnroffst && !audblk->lfefsnroffst)
+	{
+		memset(audblk->fbw_bap,0,sizeof(uint_16) * 256 * 5);
+		memset(audblk->cpl_bap,0,sizeof(uint_16) * 256);
+		memset(audblk->lfe_bap,0,sizeof(uint_16) * 7);
+		return;
+	}
+		 
 
-	/* for coupling channel */ 
-	cplstrtmant = 37 + (12 * cplbegf); 
-	cplendmant = 37 + (12 * (cplendf + 3)); 
+	for(i = 0; i < bsi->nfchans; i++)
+	{
+		start = 0;
+		end = audblk->endmant[i] ; 
+		fgain = fastgain[audblk->fgaincod[i]]; 
+		snroffset = (((audblk->csnroffst - 15) << 4) + audblk->fsnroffst[i]) << 2 ;
 
-	/* for lfe channel */ 
-	//lfestartmant = 0 ; lfeendmant = 7 ;
+		bit_allocate_channel(fscod, audblk->fbw_exp[i],start,end,fgain,snroffset,audblk->fbw_bap[i]);
+	}
 
-	start = strtmant[ch] ; 
-	end = endmant[ch] ; 
-	lowcomp = 0 ; 
-	fgain = fastgain[fgaincod[ch]]; 
+	if(audblk->cplinu)
+	{
+		start = audblk->cplstrtmant; 
+		end = audblk->cplendmant; 
+		fgain = fastgain[audblk->cplfgaincod];
+		snroffset = (((audblk->csnroffst - 15) << 4) + audblk->cplfsnroffst) << 2 ;
 
-	snroffset[ch] = ((csnroffst - 15) << 4 + fsnroffst[ch]) << 2 ;
-	sdecay = slowdec[sdcycod]; 
-	fdecay = fastdec[fdcycod];
-	sgain = slowgain[sgaincod]; 
-	dbknee = dbpbtab[dbpbcod]; 
-	floor = floortab[floorcod]; 
+		bit_allocate_channel(fscod, audblk->cpl_exp,start,end,fgain,snroffset,audblk->cpl_bap);
+	}
+
+	if(bsi->lfeon)
+	{
+		start = 0;
+		end = 7;
+		fgain = fastgain[audblk->lfefgaincod];
+		snroffset = (((audblk->csnroffst - 15) << 4) + audblk->lfefsnroffst) << 2 ;
+		bit_allocate_channel(fscod, audblk->lfe_exp,start,end,fgain,snroffset,audblk->cpl_bap);
+	}
 }
 
 
 
-
 static void 
-bit_allocate_channel(sint_16 start,sint_16 end)
+bit_allocate_channel(uint_16 fscod, sint_16 exps[],sint_16 start,sint_16 end,
+		sint_16 fgain, sint_16 snroffset,uint_16 bap[])
 {
 	sint_16 psd[256];
+	sint_16 bndpsd[256];
+	sint_16 excite[256];
+	sint_16 mask[256];
+	sint_16 lowcomp = 0;
+	sint_16 begin = 0;
+	sint_16 lastbin = 0;
+	sint_16 bndstrt = 0;
+	sint_16 bndend = 0;
+	sint_16 fastleak = 0;
+	sint_16 slowleak = 0;
+	sint_16 floor = 0;
+	sint_16 address = 0;
+	int bin,i,j,k;
 
+	/* Map the exponents into dBs */
 	for (bin=start; bin<end; bin++) 
 	{ 
 		psd[bin] = (3072 - (exps[bin] << 7)); 
 	}
-
 
 	/* Integrate the psd function over each bit allocation band */
 	j = start; 
@@ -251,6 +297,7 @@ bit_allocate_channel(sint_16 start,sint_16 end)
 		mask[bin] = max(excite[bin], hth[fscod][bin]);
 	}
 	
+#if 0
 	/* Perform delta bit modulation if necessary */
 	if ((deltbae == 0) || (deltbae == 1)) 
 	{ 
@@ -275,6 +322,7 @@ bit_allocate_channel(sint_16 start,sint_16 end)
 			} 
 		} 
 	}
+#endif
 
 
 	/* Compute the bit allocation pointer for each bin */
@@ -348,8 +396,8 @@ logadd(sint_16 a,sint_16  b)
 	address = min((abs(c) >> 1), 255); 
 	
 	if (c >= 0) 
-		return(a + latab(address)); 
+		return(a + latab[address]); 
 	else 
-		return(b + latab(address)); 
+		return(b + latab[address]); 
 }
 
