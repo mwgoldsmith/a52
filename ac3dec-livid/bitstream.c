@@ -42,6 +42,8 @@ bitstream_get(bitstream_t *bs,uint_32 num_bits)
 {
 	uint_32 result;
 
+	bs->total_bits_read += num_bits;
+
 	if(num_bits == 0)
 		return 0;
 
@@ -65,7 +67,6 @@ bitstream_get(bitstream_t *bs,uint_32 num_bits)
 		bs->bits_left -= num_bits;
 	}
 
-	bs->total_bits_read += num_bits;
 	return result;
 }
 

@@ -1,3 +1,9 @@
+/* 
+ *    decode.c
+ *
+ *	Aaron Holtzman - May 1999
+ *
+ */
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -24,14 +30,16 @@ static	uint_16 nfchans[] = {2,1,2,3,3,4,4,5};
 
 int main(int argc,char *argv[])
 {
-	int i;
+	int i,j=0;
 	bitstream_t *bs;
 
 	bs = bitstream_open("foo.ac3");
+	imdct_init();
+
 	/* FIXME check for end of stream and exit */
 
-	decode_find_sync(bs);
-	while(1)
+
+	while(j++ < 3)
 	{
 		decode_fill_syncinfo(bs);
 		decode_fill_bsi(bs);
@@ -49,7 +57,7 @@ int main(int argc,char *argv[])
 			bit_allocate(&bsi,&audblk);
 
 			/* Extract the mantissas from the data stream */
-			decode_fill_mantissas(bs);
+			mantissa_unpack(&bsi,&audblk,bs);
 
 			/* Uncouple coupled channels */
 			uncouple(&bsi,&audblk,&stream_coeffs); 
@@ -62,13 +70,15 @@ int main(int argc,char *argv[])
 
 #endif
 			/* Convert the frequency data into time samples */
-			imdct(&stream_coeffs,&stream_samples);
+			imdct(&bsi,&stream_coeffs,&stream_samples);
 
 			/* Send the samples to the output device */
 			/*output_samples(&stream_samples);*/
 		}
+		printf("%ld bits (%ld words) read\n",bs->total_bits_read,bs->total_bits_read/16);
 	}
 
+	return 0;
 }
 
 void
@@ -131,7 +141,7 @@ decode_fill_bsi(bitstream_t *bs)
 		bsi.dsurmod= bitstream_get(bs,2);
 
 	/* Is the low frequency effects channel on? */
-  bsi.lfeon = bitstream_get(bs,1);
+	bsi.lfeon = bitstream_get(bs,1);
 
 	/* Get the dialogue normalization level */
 	bsi.dialnorm = bitstream_get(bs,5);
@@ -196,6 +206,7 @@ decode_fill_bsi(bitstream_t *bs)
 			bsi.roomtyp2 = bitstream_get(bs,2);
 		}
 	}
+
 	/* Get the copyright bit */
 	bsi.copyrightb = bitstream_get(bs,1);
 
@@ -205,11 +216,11 @@ decode_fill_bsi(bitstream_t *bs)
 	/* Does timecode one exist? */
 	bsi.timecod1e = bitstream_get(bs,1);
 
-	/* Does timecode two exist? */
-	bsi.timecod2e = bitstream_get(bs,1);
-
 	if(bsi.timecod1e)
 		bsi.timecod1 = bitstream_get(bs,14);
+
+	/* Does timecode two exist? */
+	bsi.timecod2e = bitstream_get(bs,1);
 
 	if(bsi.timecod2e)
 		bsi.timecod2 = bitstream_get(bs,14);
@@ -386,7 +397,7 @@ decode_fill_audblk(bitstream_t *bs)
 				audblk.endmant[i] = audblk.cplstrtmant;
 
 			/* Calculate the number of exponent groups to fetch */
-			grp_size =  (3 << (uint_16)(audblk.chexpstr - 1));
+			grp_size =  (3 << (audblk.chexpstr[i] - 1));
 			audblk.nchgrps[i] = (audblk.endmant[i] - 1 + (grp_size - 3)) / grp_size;
 		}
 	}
@@ -405,7 +416,7 @@ decode_fill_audblk(bitstream_t *bs)
 		if(audblk.chexpstr[i] != EXP_REUSE)
 		{
 			audblk.exps[i][0] = bitstream_get(bs,4);			
-			for(j=1;j<audblk.nchgrps[i];j++)
+			for(j=1;j<=audblk.nchgrps[i];j++)
 				audblk.exps[i][j] = bitstream_get(bs,7);
 			audblk.gainrng[i] = bitstream_get(bs,2);
 		}
@@ -532,19 +543,8 @@ void decode_find_sync(bitstream_t *bs)
 		sync_word = sync_word * 2;
 		sync_word |= bitstream_get(bs,1);
 	}
+	//FIXME remove debugging stuff
+		bs->total_bits_read = 0;
 }
 
-static void
-decode_fill_mantissas(bitstream_t *bs)
-{
-	uint_16 got_coupling = 0;
-	int i,j;
-
-	for (i=0;i < bsi.nfchans; i++)
-	{
-	}
-
-
-	
-}
 

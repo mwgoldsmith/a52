@@ -77,15 +77,15 @@ void imdct_init(void)
 }
 
 void 
-imdct(stream_coeffs_t *coeffs, stream_samples_t *samples)
+imdct(bsi_t *bsi, stream_coeffs_t *coeffs, stream_samples_t *samples)
 {
 	int i;
-	/* FIXME only do the transform for channels that are enabled */
 
-	for(i=0; i<5;i++)
+	for(i=0; i<bsi->nfchans;i++)
 		imdct_do(coeffs->fbw[i],samples->channel[i]);
 
-	imdct_do(coeffs->lfe,samples->channel[6]);
+	if (bsi->lfeon)
+		imdct_do(coeffs->lfe,samples->channel[5]);
 }
 
 void

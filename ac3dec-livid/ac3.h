@@ -140,10 +140,6 @@ typedef struct audblk_s
 			uint_16 cplbegf;
 			/* coupling end frequency code */
 			uint_16 cplendf;
-			/* Number of coupling sub-bands
-			 * This data isn't actually in the AC3 stream, but derived from
-			 * cplbegf and cplendf */
-			uint_16 ncplsubnd;
 			/* coupling band structure bits */
 			uint_16 cplbndstrc[18];
 			/* Do coupling co-ords exist for this channel? */
@@ -169,7 +165,7 @@ typedef struct audblk_s
 	uint_16 chbwcod[5];
 		/* The absolute coupling exponent */
 		uint_16 cplabsexp;
-		/* Coupling channel parameters (D15 mode gives 18 * 12 /3  encoded exponents */
+		/* Coupling channel exponents (D15 mode gives 18 * 12 /3  encoded exponents */
 		uint_16 cplexps[18 * 12 / 3];
 	/* fbw channel exponents */
 	uint_16 exps[5][252 / 3];
@@ -259,6 +255,8 @@ typedef struct audblk_s
 
 	/*  -- Information not in the bitstream, but derived thereof  -- */
 
+	/* Number of coupling sub-bands */
+	uint_16 ncplsubnd;
 
 	/* Number of combined coupling sub-bands
 	 * Derived from ncplsubnd and cplbndstrc */

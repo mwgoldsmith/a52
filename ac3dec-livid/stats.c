@@ -90,7 +90,7 @@ void stats_printf_syncinfo(syncinfo_t *syncinfo)
 			break;
 	}
 
-	fprintf(stderr,"%4d kbps %4d bytes per frame\n",
+	fprintf(stderr,"%4d kbps %4d words per frame\n",
 			frmsizecod_tbl[syncinfo->frmsizecod].bit_rate,
 			frmsizecod_tbl[syncinfo->frmsizecod].frm_size[syncinfo->fscod]);
 

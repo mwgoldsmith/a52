@@ -9,9 +9,9 @@
 #include <stdlib.h>
 #include "ac3.h"
 #include "decode.h"
-#include "unpack.h"
+#include "exponent.h"
 
-static void unpack_exp(uint_16 type,uint_16 expstr,uint_16 ngrps,uint_16 initial_exp, 
+static void exp_unpack_ch(uint_16 type,uint_16 expstr,uint_16 ngrps,uint_16 initial_exp, 
 		uint_16 exps[], sint_32 *dest);
 
 void
@@ -20,21 +20,21 @@ exponent_unpack( bsi_t *bsi, audblk_t *audblk, stream_coeffs_t *coeffs)
 	uint_16 i;
 
 	for(i=0; i< bsi->nfchans; i++)
-		unpack_exp(UNPACK_FBW, audblk->chexpstr[i], audblk->nchgrps[i], audblk->exps[i][0], 
+		exp_unpack_ch(UNPACK_FBW, audblk->chexpstr[i], audblk->nchgrps[i], audblk->exps[i][0], 
 				&audblk->exps[i][1], (uint_32*)coeffs->fbw[i]);
 
 	if(audblk->cplinu)
-		unpack_exp(UNPACK_CPL, audblk->cplexpstr,audblk->ncplgrps, audblk->cplabsexp,	
+		exp_unpack_ch(UNPACK_CPL, audblk->cplexpstr,audblk->ncplgrps, audblk->cplabsexp,	
 				audblk->cplexps, (uint_32*)coeffs->cpl);
 
 	if(bsi->lfeon)
-		unpack_exp(UNPACK_LFE, audblk->lfeexpstr, 2, audblk->lfeexps[0], 
+		exp_unpack_ch(UNPACK_LFE, audblk->lfeexpstr, 2, audblk->lfeexps[0], 
 				&audblk->lfeexps[1], (uint_32*)coeffs->lfe);
 }
 
 
 static void
-unpack_exp(uint_16 type,uint_16 expstr,uint_16 ngrps,uint_16 initial_exp, 
+exp_unpack_ch(uint_16 type,uint_16 expstr,uint_16 ngrps,uint_16 initial_exp, 
 		uint_16 exps[], sint_32 *dest)
 {
 	uint_16 i,j;
