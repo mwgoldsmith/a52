@@ -22,8 +22,6 @@
 #pragma TenDRA begin
 #pragma TenDRA longlong type warning
 #pragma TenDRA conversion analysis (pointer-int explicit) off
-/* #pragma TenDRA conversion analysis (int-int) off
-/* #pragma TenDRA integer operator analysis off */
 
 /* avoid the "No declarations in translation unit" problem */
 int TenDRA;
