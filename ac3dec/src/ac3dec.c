@@ -198,7 +198,7 @@ int ac3_decode_data (uint8_t * start, uint8_t * end)
     static audblk_t audblk;
     static ac3_state_t state;
 
-    static uint8_t buf[1920 * 2];
+    static uint8_t buf[3840];
     static uint8_t * bufptr = buf;
     static int16_t s16_samples[2 * 6 * 256]; 
     static uint8_t * bufpos = buf + 7;
@@ -224,14 +224,14 @@ int ac3_decode_data (uint8_t * start, uint8_t * end)
 	    } else {
 		static int do_init = 1;
 		int i;
+		float level;
 
-		if (ac3_bsi (&state, buf))
+		flags = AC3_STEREO | AC3_ADJUST_LEVEL;
+		level = 1;
+		if (ac3_frame (&state, buf, &flags, &level, 384))
 		    goto error;
 		for (i = 0; i < 6; i++) {
-		    float level = 1;
-
-		    flags = AC3_STEREO | AC3_ADJUST_LEVEL;
-		    if (ac3_audblk (&state, &audblk, &flags, &level, 384))
+		    if (ac3_block (&state, &audblk))
 			goto error;
 		    float_to_int (*samples, s16_samples + i * 512);
 		}

@@ -45,8 +45,9 @@ void bit_allocate (int fscod, int halfrate, audblk_t * audblk, ac3_ba_t * ba,
 		   int bndstart, int start, int end, int fastleak,
 		   int slowleak, uint8_t * exp, int8_t * bap);
 
-int downmix (float * samples, int acmod, int output_flags,
-	     float * output_level, float bias, float clev, float slev);
+int downmix_init (int input, int flags, float * level, float clev, float slev);
+void downmix (float * samples, int acmod, int output, float level, float bias,
+	      float clev, float slev);
 
 void imdct_init (void);
 extern void (* imdct_256) (float data[], float delay[]);

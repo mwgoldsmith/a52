@@ -86,31 +86,41 @@ int ac3_syncinfo (uint8_t * buf, int * flags,
     }
 }
 
-int ac3_bsi (ac3_state_t * state, uint8_t * buf)
+int ac3_frame (ac3_state_t * state, uint8_t * buf, int * flags, float * level,
+	       float bias)
 {
-    int chaninfo;
     static float clev[4] = {LEVEL_3DB, LEVEL_45DB, LEVEL_6DB, LEVEL_45DB};
     static float slev[4] = {LEVEL_3DB, LEVEL_6DB, 0, LEVEL_6DB};
+    int chaninfo;
+    int acmod;
 
     state->fscod = buf[4] >> 6;
     state->halfrate = halfrate[buf[5] >> 3];
-    state->acmod = buf[6] >> 5;
+    state->acmod = acmod = buf[6] >> 5;
 
     bitstream_set_ptr (buf + 6);
     bitstream_get (3);	// skip acmod we already parsed
 
-    if ((state->acmod & 1) && (state->acmod != 1))
+    if ((acmod == 2) && (bitstream_get (2) == 2))	// dsurmod
+	acmod = AC3_DOLBY;
+
+    if ((acmod & 1) && (acmod != 1))
 	state->clev = clev[bitstream_get (2)];	// cmixlev
 
-    if (state->acmod & 4)
+    if (acmod & 4)
 	state->slev = slev[bitstream_get (2)];	// surmixlev
-
-    if (state->acmod == 2)
-	bitstream_get (2);	// dsurmod
 
     state->lfeon = bitstream_get (1);
 
-    chaninfo = !(state->acmod);
+    state->output = downmix_init (acmod, *flags, level,
+				  state->clev, state->slev);
+    if (state->output < 0)
+	return 1;
+    *flags = state->output;
+    state->level = *level;
+    state->bias = bias;
+
+    chaninfo = !acmod;
     do {
 	bitstream_get (5);	// dialnorm
 	if (bitstream_get (1))	// compre
@@ -350,8 +360,7 @@ static void coeff_get (float * coeff, uint8_t * exp, int8_t * bap,
     i++;								\
     continue;
 
-int ac3_audblk (ac3_state_t * state, audblk_t * audblk, int * flags, 
-		float * output_level, float output_bias)
+int ac3_block (ac3_state_t * state, audblk_t * audblk)
 {
     static const uint8_t nfchans_tbl[8] = {2, 1, 2, 3, 3, 4, 4, 5};
     static int rematrix_band[4] = {25, 37, 61, 253};
@@ -672,8 +681,8 @@ int ac3_audblk (ac3_state_t * state, audblk_t * audblk, int * flags,
 	imdct_512 (samples[5], delay[5]);
 #endif
 
-    *flags = downmix (*samples, state->acmod, *flags, output_level,
-		      output_bias, state->clev, state->slev);
+    downmix (*samples, state->acmod, state->output, state->level, state->bias,
+	     state->clev, state->slev);
 
     return 0;
 }
