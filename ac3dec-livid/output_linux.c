@@ -45,8 +45,20 @@
 typedef signed short sint_16;
 typedef unsigned int uint_32;
 
+#include "ao.h"
 #include "output.h"
 
+static uint_32 output_open(uint_32 bits, uint_32 rate, uint_32 channels);
+static void output_play(sint_16* output_samples, uint_32 num_bytes);
+static void output_close(void);
+
+//export our ao implementation
+ao_functions_t output_norm = 
+{
+	output_open,
+	output_play,
+	output_close
+};
 
 static char dev[] = "/dev/dsp";
 static int fd;

@@ -28,64 +28,10 @@
 #include "ac3_internal.h"
 #include "bitstream.h"
 
-#define BUFFER_SIZE 4096
 
-static uint_8 buffer[BUFFER_SIZE];
-
-static uint_8 *buffer_start, *buffer_end;
-static uint_8 *chunk_start, *chunk_end;
-
-uint_32 bits_left;
+uint_8 *buffer_start = 0;
+uint_32 bits_left = 0;
 uint_32 current_word;
-
-void (*bitstream_fill_buffer)(uint_8**,uint_8**);
-
-uint_8 bitstream_get_byte(void)
-{
-	if(chunk_start == chunk_end)
-		bitstream_fill_buffer(&chunk_start,&chunk_end);
-
-	return (*chunk_start++);
-}
-
-uint_8 *bitstream_get_buffer_start(void)
-{
-	return buffer_start;
-}
-
-void
-bitstream_buffer_frame(uint_32 frame_size)
-{
-  uint_32 bytes_read;
-  uint_32 num_bytes;
-
-  bytes_read = 0;
-
-  do
-  {
-    if(chunk_start > chunk_end)
-			printf("argh!\n");
-    if(chunk_start == chunk_end)
-      bitstream_fill_buffer(&chunk_start,&chunk_end);
-
-    num_bytes = chunk_end - chunk_start;
-
-    if(bytes_read + num_bytes > frame_size)
-      num_bytes = frame_size - bytes_read;
-
-    memcpy(&buffer[bytes_read], chunk_start, num_bytes);
-
-    bytes_read += num_bytes;
-    chunk_start += num_bytes;
-  }
-  while (bytes_read != frame_size);
-
-  buffer_start = buffer;
-  buffer_end   = buffer + frame_size;
-
-	bits_left = 0;
-}
-
 
 static inline void
 bitstream_fill_current()
@@ -122,8 +68,9 @@ bitstream_get_bh(uint_32 num_bits)
 }
 
 void
-bitstream_init(void(*fill_function)(uint_8**,uint_8**))
+bitstream_init(uint_8 *start)
 {
-	// Setup the buffer fill callback 
-	bitstream_fill_buffer = fill_function;
+	//initialize the start of the buffer
+	buffer_start = start;
+	bits_left = 0;
 }

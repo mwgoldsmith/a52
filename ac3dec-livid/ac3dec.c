@@ -34,30 +34,12 @@
 #include "output.h"
 #include "output_wav.h"
 
-#define CHUNK_SIZE 2048
-uint_8 buf[CHUNK_SIZE];
+#define BLOCK_SIZE 2048
+uint_8 buf[BLOCK_SIZE];
+
 FILE *in_file;
-uint_32 (*ac3dec_output_open)(uint_32,uint_32,uint_32);
-void (*ac3dec_output_play)(sint_16*,uint_32);
-void (*ac3dec_output_close)(void);
- 
-void fill_buffer(uint_8 **start,uint_8 **end)
-{
-	uint_32 bytes_read;
 
-	*start = buf;
-
-	bytes_read = fread(*start,1,CHUNK_SIZE,in_file);
-
-	//FIXME hack...
-	if(bytes_read < CHUNK_SIZE)
-	{
-		ac3dec_output_close();
-		exit(0);
-	}
-
-	*end= *start + bytes_read;
-}
+ao_functions_t ac3_output;
 
 void
 output_close_null(void)
@@ -77,29 +59,31 @@ output_play_null(sint_16 *foo,uint_32 bar)
 	//do nothing
 }
 
+ao_functions_t output_null =
+{
+	output_open_null,
+	output_play_null,
+	output_close_null
+};
+
+
 void 
 handle_args(int argc,char *argv[])
 {
 	char c;
 
-	ac3dec_output_open  = output_open;
-	ac3dec_output_play = output_play;
-	ac3dec_output_close  = output_close;
+	ac3_output = output_norm;
 
 	while((c = getopt(argc,argv,"nw")) != EOF)
 	{
 		switch(c)
 		{
 			case 'n':
-				ac3dec_output_open  = output_open_null;
-				ac3dec_output_play = output_play_null;
-				ac3dec_output_close = output_close_null;
+				ac3_output = output_null;
 			break;
 
 			case 'w':
-				ac3dec_output_open  = output_open_wav;
-				ac3dec_output_play = output_play_wav;
-				ac3dec_output_close = output_close_wav;
+				ac3_output= output_wav;
 			break;
 
 			default:
@@ -126,28 +110,19 @@ handle_args(int argc,char *argv[])
 
 int main(int argc,char *argv[])
 {
-	ac3_frame_t *ac3_frame;
 	ac3_config_t ac3_config;
+	uint_32 bytes_read;
 
 	handle_args(argc,argv);
 
-	ac3_config.fill_buffer_callback = fill_buffer;
 	ac3_config.num_output_ch = 2;
 	ac3_config.flags = 0;
 
-	ac3_init(&ac3_config);
-	
-	ac3_frame = ac3_decode_frame();
-	ac3dec_output_open(16,ac3_frame->sampling_rate,2);
+	ac3_init(&ac3_config, &ac3_output);
 
-	do
-	{
-		//Send the samples to the output device 
-		ac3dec_output_play(ac3_frame->audio_data, 256 * 6 * 2);
-	}
-	while((ac3_frame = ac3_decode_frame()));
+	while((bytes_read = fread(buf,1,BLOCK_SIZE,in_file)) == BLOCK_SIZE)
+		ac3_decode_data(buf,buf + BLOCK_SIZE);
 
-	ac3dec_output_close();
 	fclose(in_file);
 	return 0;
 }

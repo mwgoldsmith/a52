@@ -87,34 +87,15 @@ static const struct frmsize_s frmsizecod_tbl[64] =
 
 /* Parse a syncinfo structure, minus the sync word */
 void
-parse_syncinfo(syncinfo_t *syncinfo)
+parse_syncinfo(syncinfo_t *syncinfo,uint_8 *data)
 {
-	uint_32 tmp = 0;
-	uint_16 sync_word = 0;
-	uint_32 time_out = 1<<16;
-
-	// 
-	// Find a ac3 sync frame. Time out if we read 64k without finding
-	// one.
-	// 
-	while(time_out--)
-	{
-		sync_word = (sync_word << 8) + bitstream_get_byte();
-
-		if(sync_word == 0x0b77)
-			break;
-	}
-
 	//
 	// We need to read in the entire syncinfo struct (0x0b77 + 24 bits)
 	// in order to determine how big the frame is
 	//
-	tmp = (tmp << 8) + bitstream_get_byte();
-	tmp = (tmp << 8) + bitstream_get_byte();
-	tmp = (tmp << 8) + bitstream_get_byte();
 
 	// Get the sampling rate 
-	syncinfo->fscod  = (tmp >> 6) & 0x3;
+	syncinfo->fscod  = (data[2] >> 6) & 0x3;
 
 	if(syncinfo->fscod == 3)
 	{
@@ -130,33 +111,13 @@ parse_syncinfo(syncinfo_t *syncinfo)
 		syncinfo->sampling_rate = 48000;
 
 	// Get the frame size code 
-	syncinfo->frmsizecod = tmp & 0x3f;
+	syncinfo->frmsizecod = data[2] & 0x3f;
 
 	// Calculate the frame size and bitrate
 	syncinfo->frame_size = 
 		frmsizecod_tbl[syncinfo->frmsizecod].frm_size[syncinfo->fscod];
 	syncinfo->bit_rate = frmsizecod_tbl[syncinfo->frmsizecod].bit_rate;
 
-
-	// Buffer the entire syncframe 
-	bitstream_buffer_frame(syncinfo->frame_size * 2 - 5);
-
-	// Check the crc over the entire frame 
-	crc_init();
-
-	crc_process_byte(tmp>>16);
-	crc_process_byte((tmp>>8) & 0xff);
-	crc_process_byte(tmp & 0xff);
-	crc_process_frame(bitstream_get_buffer_start(),syncinfo->frame_size * 2 - 5);
-
-	if(!crc_validate())
-	{
-		error_flag = 1;
-		fprintf(stderr,"** CRC failed - skipping frame **\n");
-		return;
-	}
-
-	stats_print_syncinfo(syncinfo);
 }
 
 /*

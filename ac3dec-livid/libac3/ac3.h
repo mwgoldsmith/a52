@@ -52,11 +52,14 @@ typedef struct ac3_config_s
 	uint_16 dual_mono_ch_sel;
 } ac3_config_t;
 
-typedef struct ac3_frame_s
+//FIXME bring this in from ao.h properly
+typedef struct ao_functions_s
 {
-	uint_32 sampling_rate;
-	sint_16 *audio_data;
-} ac3_frame_t;
+	uint_32 (*open)(uint_32 bits, uint_32 rate, uint_32 channels);
+	void (*play)(sint_16* output_samples, uint_32 num_bytes);
+	void (*close)(void);
+} ao_functions_t;
 
-void ac3_init(ac3_config_t *config);
-ac3_frame_t* ac3_decode_frame(void);
+
+void ac3_init(ac3_config_t *,ao_functions_t*);
+uint_32 ac3_decode_data(uint_8 *data_start,uint_8 *data_end);

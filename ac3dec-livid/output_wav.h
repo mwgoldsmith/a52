@@ -23,6 +23,5 @@
  *
  */
  
-uint_32 output_open_wav(uint_32 bits, uint_32 rate, uint_32 channels);
-void output_play_wav(sint_16* output_samples, uint_32 num_bytes);
-void output_close_wav(void);
+//export our libao interface
+extern ao_functions_t output_wav;

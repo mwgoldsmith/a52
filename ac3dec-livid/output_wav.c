@@ -41,6 +41,7 @@
 typedef signed short sint_16;
 typedef unsigned int uint_32;
 
+#include "ao.h"
 #include "output_wav.h"
 
 #define WAVE_FORMAT_PCM  0x0001
@@ -84,6 +85,17 @@ struct wave_header
   struct chunk_struct  dataformat;
 };
 
+static uint_32 output_open_wav(uint_32 bits, uint_32 rate, uint_32 channels);
+static void output_play_wav(sint_16* output_samples, uint_32 num_bytes);
+static void output_close_wav(void);
+
+//export our ao implementation
+ao_functions_t output_wav = 
+{
+	output_open_wav,
+	output_play_wav,
+	output_close_wav
+};
 
 static char output_file[] = "output.wav";
 static int fd;

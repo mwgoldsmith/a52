@@ -24,6 +24,5 @@
  *
  */
 
-uint_32 output_open(uint_32 bits, uint_32 rate, uint_32 channels);
-void output_play(sint_16* output_samples, uint_32 num_bytes);
-void output_close(void);
+//export our libao interface
+extern ao_functions_t output_norm;

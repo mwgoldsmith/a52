@@ -50,7 +50,7 @@
 extern uint_32 bits_left;
 extern uint_32 current_word;
 
-void bitstream_init(void(*fill_function)(uint_8**,uint_8**));
+void bitstream_init(uint_8 *start);
 
 uint_8 bitstream_get_byte(void);
 
