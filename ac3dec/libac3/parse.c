@@ -287,76 +287,80 @@ static void coeff_get (sample_t * coeff, uint8_t * exp, int8_t * bap,
     int i;
 
     i = 0;
-    while (i < end)
-    switch (bap[i]) {
-    case 0:
-	if (dither) {
-	    coeff[i++] = dither_gen() * LEVEL_3DB * scale_factor[exp[i]];
+    while (i < end) {
+	int bapi;
+
+	bapi = bap[i];
+	switch (bapi) {
+	case 0:
+	    if (dither) {
+		coeff[i++] = dither_gen() * LEVEL_3DB * scale_factor[exp[i]];
+		continue;
+	    } else {
+		coeff[i++] = 0;
+		continue;
+	    }
+
+	case -1:
+	    if (q_1_pointer >= 0) {
+		coeff[i++] = q_1[q_1_pointer--] * scale_factor[exp[i]];
+		continue;
+	    } else {
+		int code;
+
+		code = bitstream_get (5);
+
+		q_1_pointer = 1;
+		q_1[0] = q_1_2[code];
+		q_1[1] = q_1_1[code];
+		coeff[i++] = q_1_0[code] * scale_factor[exp[i]];
+		continue;
+	    }
+
+	case -2:
+	    if (q_2_pointer >= 0) {
+		coeff[i++] = q_2[q_2_pointer--] * scale_factor[exp[i]];
+		continue;
+	    } else {
+		int code;
+
+		code = bitstream_get (7);
+
+		q_2_pointer = 1;
+		q_2[0] = q_2_2[code];
+		q_2[1] = q_2_1[code];
+		coeff[i++] = q_2_0[code] * scale_factor[exp[i]];
+		continue;
+	    }
+
+	case 3:
+	    coeff[i++] = q_3[bitstream_get (3)] * scale_factor[exp[i]];
 	    continue;
-	} else {
-	    coeff[i++] = 0;
+
+	case -3:
+	    if (q_4_pointer == 0) {
+		q_4_pointer = -1;
+		coeff[i++] = q_4 * scale_factor[exp[i]];
+		continue;
+	    } else {
+		int code;
+
+		code = bitstream_get (7);
+
+		q_4_pointer = 0;
+		q_4 = q_4_1[code];
+		coeff[i++] = q_4_0[code] * scale_factor[exp[i]];
+		continue;
+	    }
+
+	case 4:
+	    coeff[i++] = q_5[bitstream_get (4)] * scale_factor[exp[i]];
 	    continue;
+
+	default:
+	    coeff[i++] = (((int16_t) (bitstream_get (bapi) << (16 - bapi))) *
+			  scale_factor[exp[i]]);
 	}
-
-    case -1:
-	if (q_1_pointer >= 0) {
-	    coeff[i++] = q_1[q_1_pointer--] * scale_factor[exp[i]];
-	    continue;
-	} else {
-	    int code;
-
-	    code = bitstream_get (5);
-
-	    q_1_pointer = 1;
-	    q_1[0] = q_1_2[code];
-	    q_1[1] = q_1_1[code];
-	    coeff[i++] = q_1_0[code] * scale_factor[exp[i]];
-	    continue;
-	}
-
-    case -2:
-	if (q_2_pointer >= 0) {
-	    coeff[i++] = q_2[q_2_pointer--] * scale_factor[exp[i]];
-	    continue;
-	} else {
-	    int code;
-
-	    code = bitstream_get (7);
-
-	    q_2_pointer = 1;
-	    q_2[0] = q_2_2[code];
-	    q_2[1] = q_2_1[code];
-	    coeff[i++] = q_2_0[code] * scale_factor[exp[i]];
-	    continue;
-	}
-
-    case 3:
-	coeff[i++] = q_3[bitstream_get (3)] * scale_factor[exp[i]];
-	continue;
-
-    case -3:
-	if (q_4_pointer == 0) {
-	    q_4_pointer = -1;
-	    coeff[i++] = q_4 * scale_factor[exp[i]];
-	    continue;
-	} else {
-	    int code;
-
-	    code = bitstream_get (7);
-
-	    q_4_pointer = 0;
-	    q_4 = q_4_1[code];
-	    coeff[i++] = q_4_0[code] * scale_factor[exp[i]];
-	    continue;
-	}
-
-    case 4:
-	coeff[i++] = q_5[bitstream_get (4)] * scale_factor[exp[i]];
-	continue;
-
-    default:
-	coeff[i++] = (((int16_t)(bitstream_get (bap[i]) << (16 - bap[i]))) *
-		      scale_factor[exp[i]]);
     }
 }
 
@@ -364,9 +368,9 @@ static void coeff_get_coupling (ac3_state_t * state, int nfchans,
 				sample_t (* samples)[256], uint8_t dithflag[5])
 {
     int sub_bnd, bnd, i, i_end, ch;
-    sample_t cplcoeff;
     int8_t * bap;
     uint8_t * exp;
+    sample_t cplco[5];
 
     bap = state->cpl_bap;
     exp = state->cpl_exp;
@@ -376,16 +380,23 @@ static void coeff_get_coupling (ac3_state_t * state, int nfchans,
 	i_end = i + 12;
 	while (state->cplbndstrc[sub_bnd++])
 	    i_end += 12;
+	for (ch = 0; ch < nfchans; ch++)
+	    cplco[ch] = state->cplco[ch][bnd];
+	bnd++;
 
 	while (i < i_end) {
-	    switch (bap[i]) {
+	    sample_t cplcoeff;
+	    int bapi;
+
+	    bapi = bap[i];
+	    switch (bapi) {
 	    case 0:
 		cplcoeff = LEVEL_3DB * scale_factor[exp[i]];
 		for (ch = 0; ch < nfchans; ch++)
 		    if (state->chincpl[ch]) {
 			if (dithflag[ch])
-			    samples[ch][i] = (state->cplco[ch][bnd] *
-					      dither_gen () * cplcoeff);
+			    samples[ch][i] = (cplcoeff * cplco[ch] *
+					      dither_gen ());
 			else
 			    samples[ch][i] = 0;
 		    }
@@ -394,7 +405,7 @@ static void coeff_get_coupling (ac3_state_t * state, int nfchans,
 
 	    case -1:
 		if (q_1_pointer >= 0) {
-		    cplcoeff = q_1[q_1_pointer--] * scale_factor[exp[i]];
+		    cplcoeff = q_1[q_1_pointer--];
 		    break;
 		} else {
 		    int code;
@@ -404,13 +415,13 @@ static void coeff_get_coupling (ac3_state_t * state, int nfchans,
 		    q_1_pointer = 1;
 		    q_1[0] = q_1_2[code];
 		    q_1[1] = q_1_1[code];
-		    cplcoeff = q_1_0[code] * scale_factor[exp[i]];
+		    cplcoeff = q_1_0[code];
 		    break;
 		}
 
 	    case -2:
 		if (q_2_pointer >= 0) {
-		    cplcoeff = q_2[q_2_pointer--] * scale_factor[exp[i]];
+		    cplcoeff = q_2[q_2_pointer--];
 		    break;
 		} else {
 		    int code;
@@ -420,18 +431,18 @@ static void coeff_get_coupling (ac3_state_t * state, int nfchans,
 		    q_2_pointer = 1;
 		    q_2[0] = q_2_2[code];
 		    q_2[1] = q_2_1[code];
-		    cplcoeff = q_2_0[code] * scale_factor[exp[i]];
+		    cplcoeff = q_2_0[code];
 		    break;
 		}
 
 	    case 3:
-		cplcoeff = q_3[bitstream_get (3)] * scale_factor[exp[i]];
+		cplcoeff = q_3[bitstream_get (3)];
 		break;
 
 	    case -3:
 		if (q_4_pointer == 0) {
 		    q_4_pointer = -1;
-		    cplcoeff = q_4 * scale_factor[exp[i]];
+		    cplcoeff = q_4;
 		    break;
 		} else {
 		    int code;
@@ -440,27 +451,24 @@ static void coeff_get_coupling (ac3_state_t * state, int nfchans,
 
 		    q_4_pointer = 0;
 		    q_4 = q_4_1[code];
-		    cplcoeff = q_4_0[code] * scale_factor[exp[i]];
+		    cplcoeff = q_4_0[code];
 		    break;
 		}
 
 	    case 4:
-		cplcoeff = q_5[bitstream_get (4)] * scale_factor[exp[i]];
+		cplcoeff = q_5[bitstream_get (4)];
 		break;
 
 	    default:
-		cplcoeff = (((int16_t)
-			     (bitstream_get(bap[i]) << (16 - bap[i]))) *
-			    scale_factor[exp[i]]);
+		cplcoeff = (int16_t)(bitstream_get(bapi) << (16 - bapi));
 	    }
 
+	    cplcoeff *= scale_factor[exp[i]];
 	    for (ch = 0; ch < nfchans; ch++)
 		if (state->chincpl[ch])
-		    samples[ch][i] =
-			state->cplco[ch][bnd] * cplcoeff;
+		    samples[ch][i] = cplcoeff * cplco[ch];
 	    i++;
 	}
-	bnd++;
     }
 }
 
