@@ -62,14 +62,13 @@ uint32_t bitstream_get_bh(uint32_t num_bits);
 static inline uint32_t 
 bitstream_get(uint32_t num_bits)
 {
-	uint32_t result;
+    uint32_t result;
 	
-	if(num_bits < bits_left)
-	{
-		result = (current_word << (32 - bits_left)) >> (32 - num_bits);
-		bits_left -= num_bits;
-		return result;
-	}
+    if(num_bits < bits_left) {
+	result = (current_word << (32 - bits_left)) >> (32 - num_bits);
+	bits_left -= num_bits;
+	return result;
+    }
 
-	return bitstream_get_bh(num_bits);
+    return bitstream_get_bh(num_bits);
 }

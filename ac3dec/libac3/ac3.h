@@ -28,20 +28,20 @@
 
 typedef struct ac3_config_s
 {
-	//Bit flags that enable various things
-	uint32_t flags;
-	//Callback that points the decoder to new stream data
-  void   (*fill_buffer_callback)(uint8_t **, uint8_t **);
-	//Number of discrete channels in final output (for downmixing)
-	uint16_t num_output_ch;
-	//Which channel of a dual mono stream to select
-	uint16_t dual_mono_ch_sel;
+    //Bit flags that enable various things
+    uint32_t flags;
+    //Callback that points the decoder to new stream data
+    void (* fill_buffer_callback) (uint8_t **, uint8_t **);
+    //Number of discrete channels in final output (for downmixing)
+    uint16_t num_output_ch;
+    //Which channel of a dual mono stream to select
+    uint16_t dual_mono_ch_sel;
 } ac3_config_t;
 
 typedef struct ac3_frame_s
 {
-	uint32_t sampling_rate;
-	int16_t *audio_data;
+    uint32_t sampling_rate;
+    int16_t * audio_data;
 } ac3_frame_t;
 
 void ac3_init(ac3_config_t *config);

@@ -63,83 +63,80 @@ static int16_t s16_samples[2 * 6 * 256];
 void
 ac3_init(ac3_config_t *config)
 {
-	memcpy(&ac3_config,config,sizeof(ac3_config_t));
+    memcpy(&ac3_config,config,sizeof(ac3_config_t));
 
-	bitstream_init(config->fill_buffer_callback);
-	imdct_init();
-	sanity_check_init(&syncinfo,&bsi,&audblk);
+    bitstream_init(config->fill_buffer_callback);
+    imdct_init();
+    sanity_check_init(&syncinfo,&bsi,&audblk);
 
-	frame.audio_data = s16_samples;
+    frame.audio_data = s16_samples;
 }
 
 ac3_frame_t*
 ac3_decode_frame(void)
 {
-	uint32_t i;
+    uint32_t i;
 
-	//find a syncframe and parse
-	parse_syncinfo(&syncinfo);
+    //find a syncframe and parse
+    parse_syncinfo(&syncinfo);
+    if(error_flag)
+	goto error;
+
+    dprintf("(decode) begin frame %d\n",frame_count++);
+    frame.sampling_rate = syncinfo.sampling_rate;
+
+    parse_bsi(&bsi);
+
+    if(!done_banner) {
+	stats_print_banner(&syncinfo,&bsi);
+	done_banner = 1;
+    }
+
+    for(i=0; i < 6; i++) {
+	//Initialize freq/time sample storage
+	memset(samples,0,sizeof(float) * 256 * (bsi.nfchans + bsi.lfeon));
+
+	// Extract most of the audblk info from the bitstream
+	// (minus the mantissas 
+	parse_audblk(&bsi,&audblk);
+
+	// Take the differential exponent data and turn it into
+	// absolute exponents 
+	exponent_unpack(&bsi,&audblk); 
 	if(error_flag)
-		goto error;
+	    goto error;
 
-	dprintf("(decode) begin frame %d\n",frame_count++);
-	frame.sampling_rate = syncinfo.sampling_rate;
+	// Figure out how many bits per mantissa 
+	bit_allocate(syncinfo.fscod,&bsi,&audblk);
 
-	parse_bsi(&bsi);
+	// Extract the mantissas from the stream and
+	// generate floating point frequency coefficients
+	coeff_unpack(&bsi,&audblk,samples);
+	if(error_flag)
+	    goto error;
 
-	if(!done_banner)
-	{
-		stats_print_banner(&syncinfo,&bsi);
-		done_banner = 1;
-	}
+	if(bsi.acmod == 0x2)
+	    rematrix(&audblk,samples);
 
-	for(i=0; i < 6; i++)
-	{
-		//Initialize freq/time sample storage
-		memset(samples,0,sizeof(float) * 256 * (bsi.nfchans + bsi.lfeon));
+	// Convert the frequency samples into time samples 
+	imdct(&bsi,&audblk,samples);
 
-		// Extract most of the audblk info from the bitstream
-		// (minus the mantissas 
-		parse_audblk(&bsi,&audblk);
+	// Downmix into the requested number of channels
+	// and convert floating point to int16_t
+	downmix(&bsi,samples,&s16_samples[i * 2 * 256]);
 
-		// Take the differential exponent data and turn it into
-		// absolute exponents 
-		exponent_unpack(&bsi,&audblk); 
-		if(error_flag)
-			goto error;
+	sanity_check(&syncinfo,&bsi,&audblk);
+	if(error_flag)
+	    goto error;
+    }
+    parse_auxdata(&syncinfo);
 
-		// Figure out how many bits per mantissa 
-		bit_allocate(syncinfo.fscod,&bsi,&audblk);
-
-		// Extract the mantissas from the stream and
-		// generate floating point frequency coefficients
-		coeff_unpack(&bsi,&audblk,samples);
-		if(error_flag)
-			goto error;
-
-		if(bsi.acmod == 0x2)
-			rematrix(&audblk,samples);
-
-		// Convert the frequency samples into time samples 
-		imdct(&bsi,&audblk,samples);
-
-		// Downmix into the requested number of channels
-		// and convert floating point to int16_t
-		downmix(&bsi,samples,&s16_samples[i * 2 * 256]);
-
-		sanity_check(&syncinfo,&bsi,&audblk);
-		if(error_flag)
-			goto error;
-	}
-	parse_auxdata(&syncinfo);
-
-	return &frame;	
+    return &frame;	
 
 error:
-	//mute the frame
-	memset(s16_samples,0,sizeof(int16_t) * 256 * 2 * 6);
+    //mute the frame
+    memset(s16_samples,0,sizeof(int16_t) * 256 * 2 * 6);
 
-	error_flag = 0;
-	return &frame;	
-
+    error_flag = 0;
+    return &frame;
 }

@@ -41,7 +41,7 @@ static const uint16_t q_1[3] =
 	( -2 << 15)/3, 0,(  2 << 15)/3 
 };
 
-static const uint16_t q_2[5] = 
+static const uint16_t q_2[5] =
 {
 	( -4 << 15)/5,( -2 << 15)/5, 0,
 	(  2 << 15)/5,(  4 << 15)/5
@@ -126,62 +126,54 @@ static void    coeff_uncouple_ch(float samples[],bsi_t *bsi,audblk_t *audblk,uin
 static inline float
 convert_to_float(uint16_t exp, int16_t mantissa)
 {
-	float x;
+    float x;
 
-	//the scale by 2^-15 is built into the scale factor table
-	x = mantissa * scale_factor[exp];
+    //the scale by 2^-15 is built into the scale factor table
+    x = mantissa * scale_factor[exp];
 
-	return x;
+    return x;
 }
 
 void
 coeff_unpack(bsi_t *bsi, audblk_t *audblk, stream_samples_t samples)
 {
-	uint16_t i,j;
-	uint32_t done_cpl = 0;
-	int16_t mantissa;
+    uint16_t i,j;
+    uint32_t done_cpl = 0;
+    int16_t mantissa;
 
-	coeff_reset();
+    coeff_reset();
 
-	for(i=0; i< bsi->nfchans; i++)
-	{
-		for(j=0; j < audblk->endmant[i]; j++)
-		{
-			mantissa = coeff_get_mantissa(audblk->fbw_bap[i][j],audblk->dithflag[i]);
-			samples[i][j] = convert_to_float(audblk->fbw_exp[i][j],mantissa);
-		}
-
-		if(audblk->cplinu && audblk->chincpl[i] && !(done_cpl))
-		{
-			// ncplmant is equal to 12 * ncplsubnd
-			// Don't dither coupling channel until channel separation so that
-			// interchannel noise is uncorrelated 
-			for(j=audblk->cplstrtmant; j < audblk->cplendmant; j++)
-				audblk->cplmant[j] = coeff_get_mantissa(audblk->cpl_bap[j],0);
-			done_cpl = 1;
-		}
+    for(i=0; i< bsi->nfchans; i++) {
+	for(j=0; j < audblk->endmant[i]; j++) {
+	    mantissa = coeff_get_mantissa(audblk->fbw_bap[i][j],audblk->dithflag[i]);
+	    samples[i][j] = convert_to_float(audblk->fbw_exp[i][j],mantissa);
 	}
 
-	//uncouple the channel if necessary
-	if(audblk->cplinu)
-	{
-		for(i=0; i< bsi->nfchans; i++)
-		{
-			if(audblk->chincpl[i])
-				coeff_uncouple_ch(samples[i],bsi,audblk,i);
-		}
-
+	if(audblk->cplinu && audblk->chincpl[i] && !(done_cpl)) {
+	    // ncplmant is equal to 12 * ncplsubnd
+	    // Don't dither coupling channel until channel separation so that
+	    // interchannel noise is uncorrelated 
+	    for(j=audblk->cplstrtmant; j < audblk->cplendmant; j++)
+		audblk->cplmant[j] = coeff_get_mantissa(audblk->cpl_bap[j],0);
+	    done_cpl = 1;
 	}
+    }
 
-	if(bsi->lfeon)
-	{
-		// There are always 7 mantissas for lfe, no dither for lfe 
-		for(j=0; j < 7 ; j++)
-		{
-			mantissa = coeff_get_mantissa(audblk->lfe_bap[j],0);
-			samples[5][j] = convert_to_float(audblk->lfe_exp[j],mantissa);
-		}
+    //uncouple the channel if necessary
+    if(audblk->cplinu) {
+	for(i=0; i< bsi->nfchans; i++) {
+	    if(audblk->chincpl[i])
+		coeff_uncouple_ch(samples[i],bsi,audblk,i);
 	}
+    }
+
+    if(bsi->lfeon) {
+	// There are always 7 mantissas for lfe, no dither for lfe 
+	for(j=0; j < 7 ; j++) {
+	    mantissa = coeff_get_mantissa(audblk->lfe_bap[j],0);
+	    samples[5][j] = convert_to_float(audblk->lfe_exp[j],mantissa);
+	}
+    }
 }
 
 //
@@ -192,102 +184,98 @@ coeff_unpack(bsi_t *bsi, audblk_t *audblk, stream_samples_t samples)
 static int16_t
 coeff_get_mantissa(uint16_t bap, uint16_t dithflag)
 {
-	uint16_t mantissa;
-	uint16_t group_code;
+    uint16_t mantissa;
+    uint16_t group_code;
 
-	//If the bap is 0-5 then we have special cases to take care of
-	switch(bap)
-	{
-		case 0:
-			if(dithflag)
-				mantissa = dither_gen();
-			else
-				mantissa = 0;
-			break;
+    //If the bap is 0-5 then we have special cases to take care of
+    switch(bap) {
+    case 0:
+	if(dithflag)
+	    mantissa = dither_gen();
+	else
+	    mantissa = 0;
+	break;
 
-		case 1:
-			if(m_1_pointer > 2)
-			{
-				group_code = bitstream_get(5);
+    case 1:
+	if(m_1_pointer > 2) {
+	    group_code = bitstream_get(5);
 
-				if(group_code > 26)
-					goto error;
+	    if(group_code > 26)
+		goto error;
 
-				m_1[0] = group_code / 9; 
-				m_1[1] = (group_code % 9) / 3; 
-				m_1[2] = (group_code % 9) % 3; 
-				m_1_pointer = 0;
-			}
-			mantissa = m_1[m_1_pointer++];
-			mantissa = q_1[mantissa];
-			break;
-		case 2:
-
-			if(m_2_pointer > 2)
-			{
-				group_code = bitstream_get(7);
-
-				if(group_code > 124)
-					goto error;
-
-				m_2[0] = group_code / 25;
-				m_2[1] = (group_code % 25) / 5 ;
-				m_2[2] = (group_code % 25) % 5 ; 
-				m_2_pointer = 0;
-			}
-			mantissa = m_2[m_2_pointer++];
-			mantissa = q_2[mantissa];
-			break;
-
-		case 3:
-			mantissa = bitstream_get(3);
-
-			if(mantissa > 6)
-				goto error;
-
-			mantissa = q_3[mantissa];
-			break;
-
-		case 4:
-			if(m_4_pointer > 1)
-			{
-				group_code = bitstream_get(7);
-
-				if(group_code > 120)
-					goto error;
-
-				m_4[0] = group_code / 11;
-				m_4[1] = group_code % 11;
-				m_4_pointer = 0;
-			}
-			mantissa = m_4[m_4_pointer++];
-			mantissa = q_4[mantissa];
-			break;
-
-		case 5:
-			mantissa = bitstream_get(4);
-
-			if(mantissa > 14)
-				goto error;
-
-			mantissa = q_5[mantissa];
-			break;
-
-		default:
-			mantissa = bitstream_get(qnttztab[bap]);
-			mantissa <<= 16 - qnttztab[bap];
+	    m_1[0] = group_code / 9; 
+	    m_1[1] = (group_code % 9) / 3; 
+	    m_1[2] = (group_code % 9) % 3; 
+	    m_1_pointer = 0;
 	}
+	mantissa = m_1[m_1_pointer++];
+	mantissa = q_1[mantissa];
+	break;
+    case 2:
 
-	return mantissa;
+	if(m_2_pointer > 2) {
+	    group_code = bitstream_get(7);
+
+	    if(group_code > 124)
+		goto error;
+	    
+	    m_2[0] = group_code / 25;
+	    m_2[1] = (group_code % 25) / 5 ;
+	    m_2[2] = (group_code % 25) % 5 ; 
+	    m_2_pointer = 0;
+	}
+	mantissa = m_2[m_2_pointer++];
+	mantissa = q_2[mantissa];
+	break;
+
+    case 3:
+	mantissa = bitstream_get(3);
+
+	if(mantissa > 6)
+	    goto error;
+
+	mantissa = q_3[mantissa];
+	break;
+
+    case 4:
+	if(m_4_pointer > 1) {
+	    group_code = bitstream_get(7);
+
+	    if(group_code > 120)
+		goto error;
+
+	    m_4[0] = group_code / 11;
+	    m_4[1] = group_code % 11;
+	    m_4_pointer = 0;
+	}
+	mantissa = m_4[m_4_pointer++];
+	mantissa = q_4[mantissa];
+	break;
+
+    case 5:
+	mantissa = bitstream_get(4);
+
+	if(mantissa > 14)
+	    goto error;
+
+	mantissa = q_5[mantissa];
+	break;
+
+    default:
+	mantissa = bitstream_get(qnttztab[bap]);
+	mantissa <<= 16 - qnttztab[bap];
+    }
+
+    return mantissa;
 
 
 
 error:
-	if(!error_flag)
-		fprintf(stderr,"** Invalid mantissa - skipping frame **\n");
-	error_flag = 1;
+    if(!error_flag)
+	fprintf(stderr,"** Invalid mantissa - skipping frame **\n");
+    error_flag = 1;
 
-	return 0;
+    return 0;
 }
 
 //
@@ -296,10 +284,10 @@ error:
 static void 
 coeff_reset(void)
 {
-	m_1[2] = m_1[1] = m_1[0] = 0;
-	m_2[2] = m_2[1] = m_2[0] = 0;
-	m_4[1] = m_4[0] = 0;
-	m_1_pointer = m_2_pointer = m_4_pointer = 3;
+    m_1[2] = m_1[1] = m_1[0] = 0;
+    m_2[2] = m_2[1] = m_2[0] = 0;
+    m_4[1] = m_4[0] = 0;
+    m_1_pointer = m_2_pointer = m_4_pointer = 3;
 }
 
 //
@@ -308,46 +296,42 @@ coeff_reset(void)
 static void
 coeff_uncouple_ch(float samples[],bsi_t *bsi,audblk_t *audblk,uint32_t ch)
 {
-	uint32_t bnd = 0;
-	uint32_t sub_bnd = 0;
-	uint32_t i,j;
-	float cpl_coord = 1.0;
-	uint32_t cpl_exp_tmp;
-	uint32_t cpl_mant_tmp;
-	int16_t mantissa;
+    uint32_t bnd = 0;
+    uint32_t sub_bnd = 0;
+    uint32_t i,j;
+    float cpl_coord = 1.0;
+    uint32_t cpl_exp_tmp;
+    uint32_t cpl_mant_tmp;
+    int16_t mantissa;
 
+    for(i=audblk->cplstrtmant;i<audblk->cplendmant;) {
+	if(!audblk->cplbndstrc[sub_bnd++]) {
+	    cpl_exp_tmp = audblk->cplcoexp[ch][bnd] + 3 * audblk->mstrcplco[ch];
+	    if(audblk->cplcoexp[ch][bnd] == 15)
+		cpl_mant_tmp = (audblk->cplcomant[ch][bnd]) << 11;
+	    else
+		cpl_mant_tmp = ((0x10) | audblk->cplcomant[ch][bnd]) << 10;
 
-	for(i=audblk->cplstrtmant;i<audblk->cplendmant;)
-	{
-		if(!audblk->cplbndstrc[sub_bnd++])
-		{
-			cpl_exp_tmp = audblk->cplcoexp[ch][bnd] + 3 * audblk->mstrcplco[ch];
-			if(audblk->cplcoexp[ch][bnd] == 15)
-				cpl_mant_tmp = (audblk->cplcomant[ch][bnd]) << 11;
-			else
-				cpl_mant_tmp = ((0x10) | audblk->cplcomant[ch][bnd]) << 10;
-			
-			cpl_coord = convert_to_float(cpl_exp_tmp,cpl_mant_tmp) * 8.0f;
+	    cpl_coord = convert_to_float(cpl_exp_tmp,cpl_mant_tmp) * 8.0f;
 
-			//Invert the phase for the right channel if necessary
-			if(bsi->acmod == 0x2 && audblk->phsflginu && ch == 1 && audblk->phsflg[bnd])
-				cpl_coord *= -1;
+	    //Invert the phase for the right channel if necessary
+	    if(bsi->acmod == 0x2 && audblk->phsflginu && ch == 1 && audblk->phsflg[bnd])
+		cpl_coord *= -1;
 
-			bnd++;
-		}
-
-		for(j=0;j < 12; j++)
-		{
-			//Get new dither values for each channel if necessary, so
-			//the channels are uncorrelated
-			if(audblk->dithflag[ch] && audblk->cpl_bap[i] == 0)
-				mantissa = dither_gen();
-			else
-				mantissa = audblk->cplmant[i];
-
-			samples[i]  = cpl_coord * convert_to_float(audblk->cpl_exp[i],mantissa);
-
-			i++;
-		}
+	    bnd++;
 	}
+
+	for(j=0;j < 12; j++) {
+	    //Get new dither values for each channel if necessary, so
+	    //the channels are uncorrelated
+	    if(audblk->dithflag[ch] && audblk->cpl_bap[i] == 0)
+		mantissa = dither_gen();
+	    else
+		mantissa = audblk->cplmant[i];
+
+	    samples[i]  = cpl_coord * convert_to_float(audblk->cpl_exp[i],mantissa);
+
+	    i++;
+	}
+    }
 }

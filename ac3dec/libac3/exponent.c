@@ -32,104 +32,102 @@
 #include "exponent.h"
 
 
-static void exp_unpack_ch(uint16_t type,uint16_t expstr,uint16_t ngrps,uint16_t initial_exp, 
-		uint16_t exps[], uint16_t *dest);
+static void exp_unpack_ch(uint16_t type,uint16_t expstr,uint16_t ngrps,
+			  uint16_t initial_exp, uint16_t exps[],
+			  uint16_t *dest);
 
 void
 exponent_unpack( bsi_t *bsi, audblk_t *audblk)
 {
-	uint16_t i;
+    uint16_t i;
 
-	for(i=0; i< bsi->nfchans; i++)
-		exp_unpack_ch(UNPACK_FBW, audblk->chexpstr[i], audblk->nchgrps[i], audblk->exps[i][0], 
-				&audblk->exps[i][1], audblk->fbw_exp[i]);
+    for(i=0; i< bsi->nfchans; i++)
+	exp_unpack_ch(UNPACK_FBW, audblk->chexpstr[i], audblk->nchgrps[i],
+		      audblk->exps[i][0], &audblk->exps[i][1],
+		      audblk->fbw_exp[i]);
 
-	if(audblk->cplinu)
-		exp_unpack_ch(UNPACK_CPL, audblk->cplexpstr, audblk->ncplgrps, audblk->cplabsexp << 1,	
-				audblk->cplexps, &audblk->cpl_exp[audblk->cplstrtmant]);
+    if(audblk->cplinu)
+	exp_unpack_ch(UNPACK_CPL, audblk->cplexpstr, audblk->ncplgrps,
+		      audblk->cplabsexp << 1, audblk->cplexps,
+		      &audblk->cpl_exp[audblk->cplstrtmant]);
 
-	if(bsi->lfeon)
-		exp_unpack_ch(UNPACK_LFE, audblk->lfeexpstr, 2, audblk->lfeexps[0], 
-				&audblk->lfeexps[1], audblk->lfe_exp);
+    if(bsi->lfeon)
+	exp_unpack_ch(UNPACK_LFE, audblk->lfeexpstr, 2, audblk->lfeexps[0], 
+		      &audblk->lfeexps[1], audblk->lfe_exp);
 }
 
 
 static void
-exp_unpack_ch(uint16_t type,uint16_t expstr,uint16_t ngrps,uint16_t initial_exp, 
-		uint16_t exps[], uint16_t *dest)
+exp_unpack_ch(uint16_t type,uint16_t expstr,uint16_t ngrps,
+	      uint16_t initial_exp, uint16_t exps[], uint16_t *dest)
 {
-	uint16_t i,j;
-	int16_t exp_acc;
-	int16_t exp_1,exp_2,exp_3;
+    uint16_t i,j;
+    int16_t exp_acc;
+    int16_t exp_1,exp_2,exp_3;
 
-	if(expstr == EXP_REUSE)
-		return;
-
-	/* Handle the initial absolute exponent */
-	exp_acc = initial_exp;
-	j = 0;
-
-	/* In the case of a fbw channel then the initial absolute values is 
-	 * also an exponent */
-	if(type != UNPACK_CPL)
-		dest[j++] = exp_acc;
-
-	/* Loop through the groups and fill the dest array appropriately */
-	for(i=0; i< ngrps; i++)
-	{
-		if(exps[i] > 124)
-			goto error;
-
-		exp_1 = exps[i] / 25;
-		exp_2 = (exps[i] - (exp_1 * 25)) / 5;
-		exp_3 = exps[i] - (exp_1 * 25) - (exp_2 * 5) ;
-
-		exp_acc += (exp_1 - 2);
-
-		switch(expstr)
-		{
-			case EXP_D45:
-				dest[j++] = exp_acc;
-				dest[j++] = exp_acc;
-			case EXP_D25:
-				dest[j++] = exp_acc;
-			case EXP_D15:
-				dest[j++] = exp_acc;
-		}
-
-		exp_acc += (exp_2 - 2);
-
-		switch(expstr)
-		{
-			case EXP_D45:
-				dest[j++] = exp_acc;
-				dest[j++] = exp_acc;
-			case EXP_D25:
-				dest[j++] = exp_acc;
-			case EXP_D15:
-				dest[j++] = exp_acc;
-		}
-
-		exp_acc += (exp_3 - 2);
-
-		switch(expstr)
-		{
-			case EXP_D45:
-				dest[j++] = exp_acc;
-				dest[j++] = exp_acc;
-			case EXP_D25:
-				dest[j++] = exp_acc;
-			case EXP_D15:
-				dest[j++] = exp_acc;
-		}
-	}	
-
+    if(expstr == EXP_REUSE)
 	return;
 
-			goto error;
+    /* Handle the initial absolute exponent */
+    exp_acc = initial_exp;
+    j = 0;
+
+    /* In the case of a fbw channel then the initial absolute values is 
+     * also an exponent */
+    if(type != UNPACK_CPL)
+	dest[j++] = exp_acc;
+
+    /* Loop through the groups and fill the dest array appropriately */
+    for(i=0; i< ngrps; i++) {
+	if(exps[i] > 124)
+	    goto error;
+
+	exp_1 = exps[i] / 25;
+	exp_2 = (exps[i] - (exp_1 * 25)) / 5;
+	exp_3 = exps[i] - (exp_1 * 25) - (exp_2 * 5) ;
+
+	exp_acc += (exp_1 - 2);
+
+	switch(expstr) {
+	case EXP_D45:
+	    dest[j++] = exp_acc;
+	    dest[j++] = exp_acc;
+	case EXP_D25:
+	    dest[j++] = exp_acc;
+	case EXP_D15:
+	    dest[j++] = exp_acc;
+	}
+
+	exp_acc += (exp_2 - 2);
+
+	switch(expstr) {
+	case EXP_D45:
+	    dest[j++] = exp_acc;
+	    dest[j++] = exp_acc;
+	case EXP_D25:
+	    dest[j++] = exp_acc;
+	case EXP_D15:
+	    dest[j++] = exp_acc;
+	}
+
+	exp_acc += (exp_3 - 2);
+
+	switch(expstr) {
+	case EXP_D45:
+	    dest[j++] = exp_acc;
+	    dest[j++] = exp_acc;
+	case EXP_D25:
+	    dest[j++] = exp_acc;
+	case EXP_D15:
+	    dest[j++] = exp_acc;
+	}
+    }	
+
+    return;
+
 error:
-	if(!error_flag)
-		fprintf(stderr,"** Invalid exponent - skipping frame **\n");
-	error_flag = 1;
+    if(!error_flag)
+	fprintf(stderr,"** Invalid exponent - skipping frame **\n");
+    error_flag = 1;
 }
 
