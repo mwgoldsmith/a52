@@ -17,6 +17,30 @@ AC_DEFUN([AC_C_RESTRICT],
 	*)	AC_DEFINE_UNQUOTED([restrict],$ac_cv_c_restrict) ;;
     esac])
 
+dnl AC_C_BUILTIN_EXPECT
+dnl Check whether compiler understands __builtin_expect.
+AC_DEFUN([AC_C_BUILTIN_EXPECT],
+    [AC_CACHE_CHECK([for __builtin_expect],[ac_cv_builtin_expect],
+	[cat > conftest.c <<EOF
+#line __oline__ "configure"
+int foo (int a)
+{
+    a = __builtin_expect (a, 10);
+    return a == 10 ? 0 : 1;
+}
+EOF
+	if AC_TRY_COMMAND([${CC-cc} $CFLAGS -nostdlib -nostartfiles
+            -o conftest conftest.c -lgcc >&AC_FD_CC]); then
+	    ac_cv_builtin_expect=yes
+	else
+	    ac_cv_builtin_expect=no
+	fi
+	rm -f conftest*])
+    if test x"$ac_cv_builtin_expect" = x"yes"; then
+	AC_DEFINE(HAVE_BUILTIN_EXPECT,,
+	    [Define if you have the `__builtin_expect' function.])
+    fi])
+
 dnl AC_C_ALWAYS_INLINE
 dnl Define inline to something appropriate, including the new always_inline
 dnl attribute from gcc 3.1
@@ -66,6 +90,26 @@ AC_DEFUN([AC_TRY_CFLAGS],
 	ifelse([$3],[],[:],[$3])
     fi])
 
+dnl AC_LIBTOOL_NON_PIC ([ACTION-IF-WORKS], [ACTION-IF-FAILS])
+dnl check for nonbuggy libtool -prefer-non-pic
+AC_DEFUN([AC_LIBTOOL_NON_PIC],
+    [AC_MSG_CHECKING([if libtool supports -prefer-non-pic flag])
+    mkdir ac_test_libtool; cd ac_test_libtool; ac_cv_libtool_non_pic=no
+    echo "int g (int i); int f (int i) {return g(i);}" >f.c
+    echo "int g (int i) {return i;}" >g.c
+    ../libtool --mode=compile $CC $CFLAGS -prefer-non-pic \
+		-c f.c >/dev/null 2>&1 && \
+	../libtool --mode=compile $CC $CFLAGS -prefer-non-pic \
+		-c g.c >/dev/null 2>&1 && \
+	../libtool --mode=link $CC $CFLAGS -prefer-non-pic -o libfoo.la \
+		f.lo g.lo >/dev/null 2>&1 && \
+    ac_cv_libtool_non_pic=yes
+    cd ..; rm -fr ac_test_libtool; AC_MSG_RESULT([$ac_cv_libtool_non_pic])
+    if test x"$ac_cv_libtool_non_pic" = x"yes"; then
+	ifelse([$1],[],[:],[$1])
+    else
+	ifelse([$2],[],[:],[$2])
+    fi])
 
 dnl AC_CHECK_GENERATE_INTTYPES_H (INCLUDE-DIRECTORY)
 dnl generate a default inttypes.h if the header file does not exist already
