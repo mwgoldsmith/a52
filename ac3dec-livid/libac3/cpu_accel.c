@@ -91,7 +91,8 @@ static uint32_t x86_accel (void)
 
 uint32_t oms_cpu_accel (void)
 {
-#ifdef __i386__
+//#ifdef __i386__
+#if 0
     static int got_accel = 0;
     static uint32_t accel;
 
