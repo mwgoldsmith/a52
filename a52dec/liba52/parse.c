@@ -99,7 +99,7 @@ int a52_syncinfo (uint8_t * buf, int * flags,
     *bit_rate = (bitrate * 1000) >> half;
 
     switch (buf[4] & 0xc0) {
-    case 0:	/* 48 KHz */
+    case 0:
 	*sample_rate = 48000 >> half;
 	return 4 * bitrate;
     case 0x40:

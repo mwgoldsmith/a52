@@ -74,7 +74,7 @@ OBJEXT = o
 PACKAGE = a52dec
 RANLIB = ranlib
 STRIP = strip
-VERSION = 0.7.2-cvs
+VERSION = 0.7.2
 
 EXTRA_DIST = config.h inttypes.h liba52.dsp libao.dsp a52dec.dsp a52dec.dsw
 mkinstalldirs = $(SHELL) $(top_srcdir)/autotools/mkinstalldirs
