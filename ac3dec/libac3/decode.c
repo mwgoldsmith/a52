@@ -32,7 +32,6 @@
 #include "ac3_internal.h"
 #include "bitstream.h"
 #include "imdct.h"
-#include "coeff.h"
 #include "bit_allocate.h"
 #include "parse.h"
 #include "stats.h"
@@ -51,7 +50,7 @@ static uint32_t done_banner;
 static ac3_frame_t frame;
 
 //the floating point samples for one audblk
-static stream_samples_t samples;
+stream_samples_t samples;
 
 //the integer samples for the entire frame (with enough space for 2 ch out)
 //if this size change, be sure to change the size when muting
@@ -107,12 +106,6 @@ ac3_decode_frame(uint8_t * buf)
 	memset(samples,0,sizeof(float) * 256 * (state.nfchans + state.lfeon));
 
 	if (parse_audblk (&state, &audblk))
-	    goto error;
-
-	// Extract the mantissas from the stream and
-	// generate floating point frequency coefficients
-	coeff_unpack(&state,&audblk,samples);
-	if(error_flag)
 	    goto error;
 
 	if(state.acmod == 0x2)
