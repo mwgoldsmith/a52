@@ -125,12 +125,12 @@ static int16_t sgain;
 static int16_t dbknee;
 static int16_t floor;
 
-static inline uint16_t max (int16_t a, int16_t b)
+static inline int16_t max (int16_t a, int16_t b)
 {
     return (a > b ? a : b);
 }
 	
-static inline uint16_t min (int16_t a, int16_t b)
+static inline int16_t min (int16_t a, int16_t b)
 {
     return (a < b ? a : b);
 }
@@ -330,7 +330,7 @@ void bit_allocate(int fscod, audblk_t * audblk, ac3_ba_t * ba, uint16_t start,
 	mask -= floor;
 	j = startband;
 	do {
-	    bap[j++] = baptab[min (63, max (0, -mask - 4 * exp[j]))];
+	    bap[j++] = baptab[63 - max (0, min (63, 63 + mask + 4 * exp[j]))];
 	    // psd-mask max:5019=sgain-deltba+snroffset+31(and)
 	    // psd-mask min:-4705=0-maxpsd+fgain-deltba+snroffset
 	} while (j < endband);
