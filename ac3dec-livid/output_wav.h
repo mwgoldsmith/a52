@@ -1,10 +1,8 @@
 /*
  *
- *  output.h
- *
- *  Based on original code by Angus Mackay (amackay@gus.ml.org)
- *
- *	Copyright (C) Aaron Holtzman - May 1999
+ *  wav.h
+ *    
+ *	Copyright (C) Jorgen Lundman <lundman@argonaut.com> - May 1999 
  *
  *  This file is part of ac3dec, a free Dolby AC-3 stream decoder.
  *	
@@ -22,8 +20,9 @@
  *  along with GNU Make; see the file COPYING.  If not, write to
  *  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA. 
  *
+ *
  */
-
-uint_32 output_open(uint_32 bits, uint_32 rate, uint_32 channels);
-void output_play(sint_16* output_samples, uint_32 num_bytes);
-void output_close(void);
+ 
+uint_32 output_open_wav(uint_32 bits, uint_32 rate, uint_32 channels);
+void output_play_wav(sint_16* output_samples, uint_32 num_bytes);
+void output_close_wav(void);

@@ -57,7 +57,8 @@ static int fd;
 /*
  * open the audio device for writing to
  */
-int output_open(int bits, int rate, int channels)
+uint_32
+output_open(uint_32 bits, uint_32 rate, uint_32 channels)
 {
 
   /*

@@ -38,16 +38,52 @@
 #include <fcntl.h>
 
 
-#include "ac3.h"
-#include "decode.h"
-#include "debug.h"
-#include "output.h"
-#include "downmix.h"
-#include "ring_buffer.h"
+typedef signed short sint_16;
+typedef unsigned int uint_32;
 
-#include "wav.h"
+#include "output_wav.h"
 
-#define BUFFER_SIZE 1024 
+#define WAVE_FORMAT_PCM  0x0001
+#define FORMAT_MULAW     0x0101
+#define IBM_FORMAT_ALAW  0x0102
+#define IBM_FORMAT_ADPCM 0x0103
+
+
+struct riff_struct 
+{
+  unsigned char id[4];   /* RIFF */
+  unsigned long len;
+  unsigned char wave_id[4]; /* WAVE */
+};
+
+
+struct chunk_struct 
+{
+  unsigned char id[4];
+  unsigned long len;
+};
+
+struct common_struct 
+{
+  unsigned short wFormatTag;
+  unsigned short wChannels;
+  unsigned long dwSamplesPerSec;
+  unsigned long dwAvgBytesPerSec;
+  unsigned short wBlockAlign;
+  unsigned short wBitsPerSample;  /* Only for PCM */
+};
+
+struct wave_header 
+{
+  struct riff_struct   riff;
+  struct chunk_struct  format;
+  struct common_struct common;
+  struct chunk_struct  data;
+ 
+  struct riff_struct   riffdata;
+  struct chunk_struct  dataformat;
+};
+
 
 static char output_file[] = "output.wav";
 static int fd;
@@ -57,7 +93,7 @@ static struct wave_header wave;
 /*
  * open the file for writing to
  */
-int output_open(int bits, int rate, int channels)
+uint_32 output_open_wav(uint_32 bits, uint_32 rate, uint_32 channels)
 {
 
   /*  int tmp;*/
@@ -69,12 +105,10 @@ int output_open(int bits, int rate, int channels)
   fd=open(output_file,O_WRONLY | O_TRUNC | O_CREAT, 0644);
  
   if(fd < 0) 
-    {
-      dprintf("%s: Opening audio output %s\n",
-	      strerror(errno), output_file);
-      goto ERR;
-    }
-  dprintf("Opened audio output \"%s\"\n",output_file);
+	{
+		fprintf(stderr,"%s: Opening audio output %s\n", strerror(errno), output_file);
+		goto ERR;
+	}
 
   /* Write out a ZEROD wave header first */
   memset(&wave, 0, sizeof(wave));
@@ -85,7 +119,7 @@ int output_open(int bits, int rate, int channels)
   wave.common.dwSamplesPerSec = rate;
 
   if (write(fd, &wave, sizeof(wave)) != sizeof(wave)) {
-    dprintf("failed to write wav-header: %s\n", strerror(errno));
+    fprintf(stderr,"failed to write wav-header: %s\n", strerror(errno));
     goto ERR;
   }
 
@@ -100,60 +134,18 @@ int output_open(int bits, int rate, int channels)
 /*
  * play the sample to the already opened file descriptor
  */
-void output_play(bsi_t *bsi,stream_samples_t *samples)
+void output_play_wav(sint_16* output_samples, uint_32 num_bytes)
 {
-  int i;
-	float *left,*right;
-	float norm = 1.0;
-	float left_tmp = 0.0;
-	float right_tmp = 0.0;
-	sint_16 *out_buf;
-  
   if(fd < 0)
     return;
   
-	//Downmix if necessary 
-	downmix(bsi,samples);
-
-	//Determine a normalization constant if the signal exceeds 
-	//100% digital [-1.0,1.0]
-	//
-	//perhaps use the dynamic range info to do this instead
-	for(i=0; i< 256;i++)
-	{
-    left_tmp = samples->channel[0][i];
-    right_tmp = samples->channel[1][i];
-
-		if(left_tmp > norm)
-			norm = left_tmp;
-		if(left_tmp < -norm)
-			norm = -left_tmp;
-
-		if(right_tmp > norm)
-			norm = right_tmp;
-		if(right_tmp < -norm)
-			norm = -right_tmp; 
-	}
-	norm = 32000.0/norm;
-
-	/* Take the floating point audio data and convert it into
-	 * 16 bit signed PCM data */
-	left = samples->channel[0];
-	right = samples->channel[1];
-
-	for(i=0; i < 256; i++)
-	{
-		out_buf[i * 2 ]    = (sint_16) (*left++  * norm);
-		out_buf[i * 2 + 1] = (sint_16) (*right++ * norm);
-	}
-
-	write(fd, out_buf,BUFFER_SIZE);
+	write(fd,output_samples,1024 * 6);
 
 }
 
 
 void
-output_close(void)
+output_close_wav(void)
 {
   off_t offset;
 
@@ -162,14 +154,14 @@ output_close(void)
 
   if (offset < 0) 
 	{
-    dprintf("lseek failed - wav-header is corrupt\n");
+    fprintf(stderr,"lseek failed - wav-header is corrupt\n");
     goto ERR;
   }
 
   /* Rewind file */
   if (lseek(fd, 0, SEEK_SET) < 0) 
 	{
-    dprintf("rewind failed - wav-header is corrupt\n");
+    fprintf(stderr,"rewind failed - wav-header is corrupt\n");
     goto ERR;
   }
 
@@ -211,7 +203,7 @@ output_close(void)
 
   if (write(fd, &wave, sizeof(wave)) < sizeof(wave)) 
 	{
-    dprintf("wav-header write failed -- file is corrupt\n");
+    fprintf(stderr,"wav-header write failed -- file is corrupt\n");
     goto ERR;
   }
 

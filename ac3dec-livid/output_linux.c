@@ -42,7 +42,6 @@
 #endif
 #include <sys/ioctl.h>
 
-//this sux...types should go in config.h methinks
 typedef signed short sint_16;
 typedef unsigned int uint_32;
 
@@ -56,7 +55,8 @@ static int fd;
 /*
  * open the audio device for writing to
  */
-int output_open(int bits, int rate, int channels)
+uint_32
+output_open(uint_32 bits, uint_32 rate, uint_32 channels)
 {
   int tmp;
   

@@ -7,8 +7,8 @@ bin_PROGRAMS = ac3dec
 
 ac3dec_LDADD= -L./libac3 -lac3 -lm 
 
-noinst_HEADERS = output.h
-ac3dec_SOURCES = ac3dec.c output.c
+noinst_HEADERS = output.h output_wav.h
+ac3dec_SOURCES = ac3dec.c output.c output_wav.c
 ac3dec_DEPENDENCIES = libac3/libac3.a
 
 
