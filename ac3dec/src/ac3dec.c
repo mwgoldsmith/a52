@@ -185,7 +185,7 @@ void ac3_decode_data (uint8_t * start, uint8_t * end)
 
 		length = ac3_syncinfo (buf, &flags, &sample_rate, &bit_rate);
 		if (!length) {
-		    printf ("skip\n");
+		    fprintf (stderr, "skip\n");
 		    for (bufptr = buf; bufptr < buf + 6; bufptr++)
 			bufptr[0] = bufptr[1];
 		    continue;
@@ -211,7 +211,7 @@ void ac3_decode_data (uint8_t * start, uint8_t * end)
 		print_fps (0);
 		continue;
 	    error:
-		printf ("error\n");
+		fprintf (stderr, "error\n");
 		bufptr = buf;
 		bufpos = buf + 7;
 	    }
