@@ -208,7 +208,10 @@ int a52_downmix_coeff (sample_t * coeff, int acmod, int output, sample_t level,
 	return 0;
 
     case CONVERT (A52_3F, A52_DOLBY):
-	clev = LEVEL_3DB;
+	coeff[0] = coeff[2] = coeff[3] = coeff[4] = level;
+	coeff[1] = level * LEVEL_3DB;
+	return 7;
+
     case CONVERT (A52_3F, A52_STEREO):
     case CONVERT (A52_3F1R, A52_2F1R):
     case CONVERT (A52_3F2R, A52_2F2R):
@@ -217,15 +220,20 @@ int a52_downmix_coeff (sample_t * coeff, int acmod, int output, sample_t level,
 	return 7;
 
     case CONVERT (A52_2F1R, A52_DOLBY):
-	slev = 1;
+	coeff[0] = coeff[1] = level;
+	coeff[2] = level * LEVEL_3DB;
+	return 7;
+
     case CONVERT (A52_2F1R, A52_STEREO):
 	coeff[0] = coeff[1] = level;
 	coeff[2] = level * slev * LEVEL_3DB;
 	return 7;
 
     case CONVERT (A52_3F1R, A52_DOLBY):
-	clev = LEVEL_3DB;
-	slev = 1;
+	coeff[0] = coeff[2] = level;
+	coeff[1] = coeff[3] = level * LEVEL_3DB;
+	return 15;
+
     case CONVERT (A52_3F1R, A52_STEREO):
 	coeff[0] = coeff[2] = level;
 	coeff[1] = level * clev;
@@ -233,16 +241,26 @@ int a52_downmix_coeff (sample_t * coeff, int acmod, int output, sample_t level,
 	return 15;
 
     case CONVERT (A52_2F2R, A52_DOLBY):
-	slev = LEVEL_3DB;
+	coeff[0] = coeff[1] = level;
+	coeff[2] = coeff[3] = level * LEVEL_3DB;
+	return 15;
+
     case CONVERT (A52_2F2R, A52_STEREO):
 	coeff[0] = coeff[1] = level;
 	coeff[2] = coeff[3] = level * slev;
 	return 15;
 
     case CONVERT (A52_3F2R, A52_DOLBY):
-	clev = LEVEL_3DB;
+	coeff[0] = coeff[2] = level;
+	coeff[1] = coeff[3] = coeff[4] = level * LEVEL_3DB;
+	return 31;
+
     case CONVERT (A52_3F2R, A52_2F1R):
-	slev = LEVEL_3DB;
+	coeff[0] = coeff[2] = level;
+	coeff[1] = level * clev;
+	coeff[3] = coeff[4] = level * LEVEL_3DB;
+	return 31;
+
     case CONVERT (A52_3F2R, A52_STEREO):
 	coeff[0] = coeff[2] = level;
 	coeff[1] = level * clev;
