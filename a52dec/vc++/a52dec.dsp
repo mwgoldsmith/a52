@@ -93,6 +93,10 @@ SOURCE=..\src\a52dec.c
 
 SOURCE=..\src\getopt.c
 # End Source File
+# Begin Source File
+
+SOURCE=..\src\gettimeofday.c
+# End Source File
 # End Group
 # Begin Group "Header Files"
 

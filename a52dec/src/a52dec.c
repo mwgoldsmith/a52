@@ -29,19 +29,17 @@
 #include <errno.h>
 #include <getopt.h>
 #include <math.h>
+#include <signal.h>
 #ifdef HAVE_IO_H
 #include <fcntl.h>
 #include <io.h>
-#endif
-#if defined(HAVE_SYS_TIME_H) && defined(HAVE_GETTIMEOFDAY)
-#include <sys/time.h>
-#include <signal.h>
 #endif
 #include <inttypes.h>
 
 #include "a52.h"
 #include "audio_out.h"
 #include "mm_accel.h"
+#include "gettimeofday.h"
 
 #define BUFFER_SIZE 4096
 static uint8_t buffer[BUFFER_SIZE];
@@ -56,7 +54,7 @@ static ao_open_t * output_open = NULL;
 static ao_instance_t * output;
 static a52_state_t * state;
 
-#if defined(HAVE_SYS_TIME_H) && defined(HAVE_GETTIMEOFDAY) 
+#ifdef HAVE_GETTIMEOFDAY
 
 static void print_fps (int final);
 
@@ -119,7 +117,7 @@ static void print_fps (int final)
     last_count = frame_counter;
 }
 
-#else /* !HAVE_SYS_TIME_H || !HAVE_GETTIMEOFDAY */
+#else /* !HAVE_GETTIMEOFDAY */
 
 static void print_fps (int final)
 {
