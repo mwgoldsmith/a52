@@ -33,7 +33,7 @@ rb_init(void)
 
 sint_16* rb_begin_read(void)
 {
-	while(read_index == write_index)
+	if(read_index == write_index)
 		return 0;
 	return ring_buf[INC_INDEX(read_index)];
 }
@@ -45,7 +45,7 @@ void rb_end_read(void)
 
 sint_16* rb_begin_write(void)
 {
-	while(read_index == INC_INDEX(write_index))
+	if(read_index == INC_INDEX(write_index))
 		return 0;
 	return ring_buf[INC_INDEX(write_index)];
 }

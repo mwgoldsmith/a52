@@ -34,10 +34,9 @@
 static char dev[] = "/dev/audio";
 static audio_info_t info;
 static int fd;
-static int full = 0;
 //FIXME remove
-#include "matlab.h"
-static matlab_file_t *foo;
+//#include "matlab.h"
+//static matlab_file_t *foo;
 //
 
 
@@ -71,7 +70,7 @@ int output_open(int bits, int rate, int channels)
 	info.play.buffer_size = 2048;
 	info.play.encoding = AUDIO_ENCODING_LINEAR;
 	info.play.port = AUDIO_SPEAKER;
-	info.play.gain = 180;
+	info.play.gain = 110;
 
 	/* Write our configuration */
 	/* An implicit GETINFO is also performed so we can get

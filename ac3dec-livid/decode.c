@@ -65,7 +65,7 @@ int main(int argc,char *argv[])
 	/* FIXME check for end of stream and exit */
 
 
-	while(j++ < 5000)
+	while(j++ < 600)
 	{
 		decode_find_sync(bs);
 

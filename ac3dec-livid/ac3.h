@@ -5,6 +5,10 @@
  *
  */
 
+#ifndef __GNUC__
+#define inline 
+#endif
+
 typedef unsigned long  uint_32;
 typedef unsigned short uint_16;
 typedef unsigned char  uint_8;

@@ -208,9 +208,6 @@ imdct_do_512(float x[],float y[],float delay[])
 	float tmp_b_i;
 	float tmp_b_r;
 
-	//FIXME remove
-	complex_t dft_buf[128];
-	//
 
 	/* Pre IFFT complex multiply */
 	for( i=0; i < N/4; i++)

@@ -15,3 +15,7 @@ int debug_is_on(void)
 	//FIXME check env var
 	return 0;
 }
+void dprintf(char fmt[],...)
+{
+	int foo = 0;
+}

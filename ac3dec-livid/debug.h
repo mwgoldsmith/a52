@@ -9,6 +9,7 @@
 
 int debug_is_on(void);
 
+#ifdef __GNUC__
 #define dprintf(format,args...)\
 {\
 	if (debug_is_on())\
@@ -16,4 +17,6 @@ int debug_is_on(void);
 		fprintf(stderr,format,## args);\
 	}\
 }
+#endif
 
+void dprintf(char fmt[],...);

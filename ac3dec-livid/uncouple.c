@@ -11,7 +11,6 @@
 #include "decode.h"
 #include "uncouple.h"
 
-static
 void convert_to_float(uint_16 exp, uint_16 mant, uint_32 *dest);
 
 void
@@ -62,7 +61,6 @@ uncouple(bsi_t *bsi,audblk_t *audblk,stream_coeffs_t *coeffs)
 
 /* Converts an unsigned exponent in the range of 0-24 and a 16 bit mantissa
  * to an IEEE single precision floating point value */
-static
 void convert_to_float(uint_16 exp, uint_16 mant, uint_32 *dest)
 {
 	uint_16 sign;
@@ -83,7 +81,6 @@ void convert_to_float(uint_16 exp, uint_16 mant, uint_32 *dest)
 
 	/* Extract the sign bit */
 	sign = mant & 0x8000 ? 1 : 0;
-	
 
 	/* Invert the mantissa if it's negative */
 	if(sign)
@@ -95,17 +92,67 @@ void convert_to_float(uint_16 exp, uint_16 mant, uint_32 *dest)
 	mantissa <<= 1;
 
 	/* Find the index of the most significant one bit */
-	for(i = 0; i < 16; i++)
-	{
-		if((mantissa << i) & 0x8000)
-			break;
-	}
+	/*
+	 * This code is a little faster than the original code:
+	 *
+		for(i = 0; i < 16; i++)
+		{
+			if((mantissa << i) & 0x8000)
+				break;
+		}
+		i++;
+	 *
+	 * The advantage is we remove the serial shift and add
+	 * which helps a lot. We make up for it in increased code size
+	 */
+#if 0
+		for(i = 0; i < 16; i++)
+		{
+			if((mantissa << i) & 0x8000)
+				break;
+		}
+		i++;
+#endif
+		i = 0;
+	if (mantissa & 0x8000)
+		i = 1;
+	else if (mantissa & 0x4000)
+		i = 2;
+	else if (mantissa & 0x2000)
+		i = 3;
+	else if (mantissa & 0x1000)
+		i = 4;
+	else if (mantissa & 0x0800)
+		i = 5;
+	else if (mantissa & 0x0400)
+		i = 6;
+	else if (mantissa & 0x0200)
+		i = 7;
+	else if (mantissa & 0x0100)
+		i = 8;
+	else if (mantissa & 0x0080)
+		i = 9;
+	else if (mantissa & 0x0040)
+		i = 10;
+	else if (mantissa & 0x0020)
+		i = 11;
+	else if (mantissa & 0x0010)
+		i = 12;
+	else if (mantissa & 0x0008)
+		i = 13;
+	else if (mantissa & 0x0004)
+		i = 14;
+	else if (mantissa & 0x0002)
+		i = 15;
+	else if (mantissa & 0x0001)
+		i = 16;
 
 	/* Exponent is offset by 127 in IEEE format minus the shift to
 	 * align the mantissa to 1.f */
-	exponent = 0xff & (127 - exp - (i + 1));
+	exponent = 0xff & (127 - exp - i);
 	
 	*dest = (sign << 31) | (exponent << 23) | 
-		((0x007fffff) & (mantissa << (7 + i + 1)));
+		((0x007fffff) & (mantissa << (7 + i)));
 
 }
+

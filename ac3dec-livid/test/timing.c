@@ -45,3 +45,13 @@ timing_test_2(void (*func)(void*,void*),void *arg_1,void *arg_2,char name[])
 	printf("Avg %s time = %lld nsec\n", name,(end - start) / iters);
 }
 
+double timing_once_3(void (*func)(void*,void*,void*),void *arg_1,void *arg_2,void *arg_3)
+{
+	hrtime_t start, end;
+
+	start = get_time();
+		func(arg_1,arg_2,arg_3);
+	end = get_time();
+
+	return (end - start);
+}
