@@ -119,7 +119,7 @@ static void print_fps (int final)
 
 #endif
 
-static void print_usage (char * argv[])
+static void print_usage (char ** argv)
 {
     int i;
     ao_driver_t * drivers;
@@ -137,7 +137,7 @@ static void print_usage (char * argv[])
     exit (1);
 }
 
-static void handle_args (int argc, char * argv[])
+static void handle_args (int argc, char ** argv)
 {
     int c;
     ao_driver_t * drivers;
@@ -377,7 +377,7 @@ static void es_loop (void)
     } while (size == BUFFER_SIZE);
 }
 
-int main (int argc,char *argv[])
+int main (int argc, char ** argv)
 {
     uint32_t accel;
 

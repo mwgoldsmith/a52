@@ -33,7 +33,7 @@ static uint8_t buffer[BUFFER_SIZE];
 static FILE * in_file;
 static int demux_track = 0x80;
 
-static void print_usage (char * argv[])
+static void print_usage (char ** argv)
 {
     fprintf (stderr, "usage: %s [-s<track>] <file>\n"
 	     "\t-s\tset track number (0-7 or 0x80-0x87)\n", argv[0]);
@@ -41,7 +41,7 @@ static void print_usage (char * argv[])
     exit (1);
 }
 
-static void handle_args (int argc, char * argv[])
+static void handle_args (int argc, char ** argv)
 {
     int c;
     char * s;
@@ -180,7 +180,7 @@ static void ps_loop (void)
     } while (end == buffer + BUFFER_SIZE);
 }
 
-int main (int argc,char *argv[])
+int main (int argc, char ** argv)
 {
     handle_args (argc, argv);
 
