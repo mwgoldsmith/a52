@@ -290,16 +290,25 @@ int parse_audblk (ac3_state_t * state, audblk_t * audblk)
 	for (i = 0; i < state->nfchans; i++)
 	    if (audblk->chincpl[i])
 		if (bitstream_get (1)) {	// cplcoe
+		    extern float * scale_factor;	// FIXME
+		    int mstrcplco, cplcoexp, cplcomant;
+
 		    cplcoe = 1;
-		    audblk->mstrcplco[i] = bitstream_get (2);
+		    mstrcplco = 3 * bitstream_get (2);
 		    for (j = 0; j < audblk->ncplbnd; j++) {
-			audblk->cplcoexp[i][j] = bitstream_get (4);
-			audblk->cplcomant[i][j] = bitstream_get (4);
+			cplcoexp = bitstream_get (4);
+			cplcomant = bitstream_get (4);
+			if (cplcoexp == 15)
+			    cplcomant <<= 14;
+			else
+			    cplcomant = (cplcomant | 0x10) << 13;
+			audblk->cplco[i][j] = cplcomant * scale_factor[cplcoexp + mstrcplco];
 		    }
 		}
 	if ((state->acmod == 0x2) && audblk->phsflginu && cplcoe)
 	    for (j = 0; j < audblk->ncplbnd; j++)
-		audblk->phsflg[j] = bitstream_get (1);
+		if (bitstream_get (1))	// phsflg
+		    audblk->cplco[1][j] = -audblk->cplco[1][j];
     }
 
     if ((state->acmod == 0x2) && (bitstream_get (1))) {	// rematstr

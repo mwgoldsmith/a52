@@ -197,7 +197,7 @@ static const uint32_t u32_scale_factors[25] =
 	0x2c000000  //2 ^ -(24 + 15)
 };
 
-static float *scale_factor = (float*)u32_scale_factors;
+float * scale_factor = (float *) u32_scale_factors;	// FIXME static
 
 static float q_1[2];
 static float q_2[2];
@@ -298,21 +298,8 @@ static void coeff_get_cpl (ac3_state_t * state, audblk_t * audblk,
     for (i = audblk->cplstrtmant; i < audblk->cplendmant; i += 12) {
 	if (!audblk->cplbndstrc[sub_bnd++]) {
 	    for (ch = 0; ch < state->nfchans; ch++)
-		if (audblk->chincpl[ch]) {
-		    int cpl_exp_tmp, cpl_mant_tmp;
-
-		    cpl_exp_tmp = audblk->cplcoexp[ch][bnd] + 3 * audblk->mstrcplco[ch];
-		    if (audblk->cplcoexp[ch][bnd] == 15)
-			cpl_mant_tmp = (audblk->cplcomant[ch][bnd]) << 11;
-		    else
-			cpl_mant_tmp = ((0x10) | audblk->cplcomant[ch][bnd]) << 10;
-
-		    cpl_coord[ch] = cpl_mant_tmp * scale_factor[cpl_exp_tmp] * 8.0f;
-
-		    //Invert the phase for the right channel if necessary
-		    if (state->acmod == 0x2 && audblk->phsflginu && ch == 1 && audblk->phsflg[bnd])
-			cpl_coord[ch] *= -1;
-		}
+		if (audblk->chincpl[ch])
+		    cpl_coord[ch] = audblk->cplco[ch][bnd];
 	    bnd++;
 	}
 
