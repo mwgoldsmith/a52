@@ -1,0 +1,15 @@
+AC_SUBST([LIBAO_LIBS])
+
+AC_CHECK_LIB([ossaudio],[_oss_ioctl],[LIBAO_LIBS="$LIBAO_LIBS -lossaudio"])
+
+dnl Figure out which OS we're on and what to do about it
+case "$host" in
+*-linux*|*-openbsd*|*-freebsd*)
+    AC_DEFINE([LIBAO_OSS],,[libao OSS support]);;
+*-irix*)
+    AC_DEFINE([LIBAO_IRIX],,[libao IRIX support]);;
+*-solaris*)
+    AC_DEFINE([LIBAO_SOLARIS],,[libao solaris support]);;
+*)
+    echo "$host is not currently supported by ac3dec"; exit 1;;
+esac
