@@ -1,6 +1,6 @@
-* allow LFE channel output
 * get rid of globals in bitstream parsing
 * finish API documentation
+* avoid overflows, including reading the ac3 stream !!!
 
 * finish ac3_internal.h cleanup
 	* use sensible data types
@@ -9,13 +9,12 @@
 	* use flags to define function pointers, not just a #define
 	* maybe use a single w[] array with only positive values
 	* use split-radix algorithm
-* move samples/delay array to the right structures
 * clean up coeff_get_cpl
 * cplfleak/cplsleak: move 2304-x in bit_allocate.c ?
 
 * see if we can get rid of cplcoe in the phsflginu test
 
-* update bitstream/parse code
+* update bitstream code
 
 * implement dynamic range control
 
