@@ -58,14 +58,11 @@ static void handle_args (int argc, char ** argv)
 
     while ((c = getopt (argc, argv, "hs:t:")) != -1)
 	switch (c) {
-	case 'h':
-	    print_usage (argv);
-
 	case 's':
 	    demux_track = strtol (optarg, &s, 0);
 	    if (demux_track < 0x80)
 		demux_track += 0x80;
-	    if ((demux_track < 0x80) || (demux_track > 0x87) || (*s)) {
+	    if (demux_track < 0x80 || demux_track > 0x87 || *s) {
 		fprintf (stderr, "Invalid track number: %s\n", optarg);
 		print_usage (argv);
 	    }
@@ -73,7 +70,7 @@ static void handle_args (int argc, char ** argv)
 
 	case 't':
 	    demux_pid = strtol (optarg, &s, 0);
-	    if ((demux_pid < 0x10) || (demux_pid > 0x1ffe) || (*s)) {
+	    if (demux_pid < 0x10 || demux_pid > 0x1ffe || *s) {
 		fprintf (stderr, "Invalid pid: %s\n", optarg);
 		print_usage (argv);
 	    }

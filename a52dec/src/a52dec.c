@@ -159,9 +159,6 @@ static void handle_args (int argc, char ** argv)
     drivers = ao_drivers ();
     while ((c = getopt (argc, argv, "hs::t:crag:o:")) != -1)
 	switch (c) {
-	case 'h':
-	    print_usage (argv);
-
 	case 'o':
 	    for (i = 0; drivers[i].name != NULL; i++)
 		if (strcmp (drivers[i].name, optarg) == 0)
@@ -178,7 +175,7 @@ static void handle_args (int argc, char ** argv)
 		demux_track = strtol (optarg, &s, 0);
 		if (demux_track < 0x80)
 		    demux_track += 0x80;
-		if ((demux_track < 0x80) || (demux_track > 0x87) || (*s)) {
+		if (demux_track < 0x80 || demux_track > 0x87 || *s) {
 		    fprintf (stderr, "Invalid track number: %s\n", optarg);
 		    print_usage (argv);
 		}
@@ -187,7 +184,7 @@ static void handle_args (int argc, char ** argv)
 
 	case 't':
 	    demux_pid = strtol (optarg, &s, 0);
-	    if ((demux_pid < 0x10) || (demux_pid > 0x1ffe) || (*s)) {
+	    if (demux_pid < 0x10 || demux_pid > 0x1ffe || *s) {
 		fprintf (stderr, "Invalid pid: %s\n", optarg);
 		print_usage (argv);
 	    }
@@ -207,7 +204,7 @@ static void handle_args (int argc, char ** argv)
 
 	case 'g':
 	    gain = strtod (optarg, &s);
-	    if ((gain < -96) || (gain > 96) || (*s)) {
+	    if (gain < -96 || gain > 96 || *s) {
 		fprintf (stderr, "Invalid gain: %s\n", optarg);
 		print_usage (argv);
 	    }
