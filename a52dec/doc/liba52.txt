@@ -17,7 +17,7 @@ A52_3F1R     : 3 front channels, 1 surround channel (L, C, R, S)
 A52_2F2R     : 2 front channels, 2 surround channels (L, R, LS, RS)
 A52_3F2R     : 3 front channels, 2 surround channels (L, C, R, LS, RS)
 
-AC3_LFE      : low-frequency channel.
+A52_LFE      : low-frequency channel.
                can be used in combination with any of the above.
 
 
@@ -85,7 +85,7 @@ You should pass in the flags the speaker configuration that you
 support, and liba52 will return the speaker configuration it will use
 for its output, based on what is coded in the stream and what you
 asked for. For example, if the stream contains 2+2 channels
-(ac3_syncinfo() returned A52_2F2R in the flags), and you have 3+1
+(a52_syncinfo() returned A52_2F2R in the flags), and you have 3+1
 speakers (you passed A52_3F1R), then liba52 will choose do downmix to
 2+1 speakers, since there is no center channel to send to your center
 speaker. So in that case the left and right channels will be
