@@ -2,27 +2,18 @@
 ## Process this file with automake to produce Makefile.in
 ##
 
-INCLUDES += -I$(top_srcdir)/include
+CFLAGS = -Wall -Werror -O2 -g -I../libao -idirafter ../compatibility
 
-libdir = $(PLUGIN_DIR)
+lib_LTLIBRARIES = libac3.la
 
-## Libs
-if ARCH_X86
-	LIBAC3DEC_OBJS="downmix_i386.lo"
-else
-	LIBAC3DEC_OBJS="downmix.lo"
-endif
+include_HEADERS = ac3.h
 
-lib_LTLIBRARIES = codec_ac3dec.la
+libac3_la_LDFLAGS = -version-info 1:6:1 -export-symbols libac3.sym -lm
 
-#codec_ac3dec_la_LIBADD = $(LIBAC3DEC_OBJS)
-#codec_ac3dec_la_DEPENDENCIES = $(LIBAC3DEC_OBJS)
-codec_ac3dec_la_LIBADD = downmix.lo
-codec_ac3dec_la_DEPENDENCIES = downmix.lo
-codec_ac3dec_la_CFLAGS = @MM_CFLAGS@
-codec_ac3dec_la_LDFLAGS = -avoid-version -module Wl,-soname,codec_ac3dec.so -lm @MM_LIBS@ -L$(top_builddir)/src/oms/.libs -loms
-codec_ac3dec_la_SOURCES = bitstream.c codec.c imdct.c coeff.c exponent.c stats.c bit_allocate.c  parse.c crc.c debug.c rematrix.c dither.c sanity_check.c srfft.c
+libac3_la_SOURCES = bitstream.c decode.c imdct.c coeff.c exponent.c stats.c\
+	bit_allocate.c  parse.c crc.c debug.c rematrix.c downmix.c dither.c\
+	sanity_check.c srfft.c
 
-EXTRA_codec_ac3dec_la_SOURCES = downmix.c downmix_i386.S
-
-noinst_HEADERS = ac3_internal.h bitstream.h imdct.h stats.h coeff.h exponent.h bit_allocate.h parse.h crc.h debug.h rematrix.h downmix.h dither.h sanity_check.h ac3.h srfft.h srfftp.h
+noinst_HEADERS = ac3_internal.h bitstream.h decode.h imdct.h stats.h coeff.h\
+	exponent.h bit_allocate.h parse.h crc.h debug.h rematrix.h downmix.h\
+	dither.h sanity_check.h srfft.h srfftp.h

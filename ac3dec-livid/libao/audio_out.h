@@ -27,15 +27,14 @@
  *
  */
 
-#ifndef AARONS_TYPES
-#define AARONS_TYPES
-//typedef to appropriate type for your architecture
-typedef unsigned char uint_8;
-typedef unsigned short uint_16;
-typedef unsigned int uint_32;
-typedef signed int sint_32;
-typedef signed short sint_16;
-typedef signed char sint_8;
+#ifndef __AUDIO_OUT_H__
+#define __AUDIO_OUT_H__
+
+#include <inttypes.h>
+#include <unistd.h>
+
+#ifdef __cplusplus
+extern "C" {
 #endif
 
 typedef struct ao_info_s
@@ -52,10 +51,16 @@ typedef struct ao_info_s
 
 typedef struct ao_functions_s
 {
-	uint_32 (*open)(uint_32 bits, uint_32 rate, uint_32 channels);
-	void (*play)(sint_16* output_samples, uint_32 num_bytes);
+	int (*open)(uint32_t bits, uint32_t rate, uint32_t channels);
+	void (*play)(int16_t* output_samples, size_t num_bytes);
 	void (*close)(void);
 	const ao_info_t* (*get_info)(void);
 } ao_functions_t;
 
 extern ao_functions_t* audio_out_drivers[];
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif

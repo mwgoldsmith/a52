@@ -22,21 +22,48 @@
  *
  */
 
+#ifndef __AC3_H__
+#define __AC3_H__
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#ifdef __OMS__
+#include <oms/plugin/output_audio.h>
+#ifndef ao_functions_t
+#define ao_functions_t plugin_output_audio_t
+#endif
+#else
+//FIXME normally I wouldn't nest includes, but we'll leave this here until I get
+//another chance to move things around
+#include "audio_out.h"
+#endif
+
 #include <inttypes.h>
 
-#define AC3_DOLBY_SURR_ENABLE 0x1
-#define AC3_3DNOW_ENABLE      0x2
-#define AC3_MMX_ENABLE        0x4
-#define AC3_ALTIVEC_ENABLE    0x8
+#define AC3_DOLBY_SURR_ENABLE (1<<0)
+#define AC3_3DNOW_ENABLE      (1<<1)
+#define AC3_MMX_ENABLE        (1<<2)
+#define AC3_ALTIVEC_ENABLE    (1<<3)
 
-typedef struct ac3_config_s
-{
-//Bit flags that enable various things
+typedef struct ac3_config_s {
+	// Bit flags that enable various things
 	uint32_t flags;
-//Callback that points the decoder to new stream data
-	void   (*fill_buffer_callback)(uint8_t **, uint8_t **);
-//Number of discrete channels in final output (for downmixing)
+	// Number of discrete channels in final output (for downmixing)
 	uint16_t num_output_ch;
-//Which channel of a dual mono stream to select
+	// Which channel of a dual mono stream to select
 	uint16_t dual_mono_ch_sel;
 } ac3_config_t;
+
+void ac3_init (void);
+size_t ac3_decode_data (ac3_config_t *, ao_functions_t *, uint8_t * data_start, uint8_t * data_end);
+//void ac3_close (ao_functions_t *);
+//void ac3_drop (int flag);
+//void ac3_output_init (int flag);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif

@@ -31,10 +31,10 @@
 #include <errno.h>
 
 #include "libac3/ac3.h"
-//#include "libao/audio_out.h"
+#include "libao/audio_out.h"
 
 #define BLOCK_SIZE 2048
-uint_8 buf[BLOCK_SIZE];
+uint8_t buf[BLOCK_SIZE];
 
 FILE *in_file;
 
@@ -43,7 +43,7 @@ ao_functions_t *audio_out;
 void
 print_usage(char *argv[])
 {
-	uint_32 i = 0;
+	uint32_t i = 0;
 
 	fprintf(stderr,"usage:  %s [-o mode] foo.ac3\n"
 				 "\t-o\taudio output mode\n",argv[0]);
@@ -66,7 +66,7 @@ void
 handle_args(int argc,char *argv[])
 {
 	int c;
-	uint_32 i;
+	int i;
 
 
 	while((c = getopt(argc,argv,"o:")) != -1)
@@ -119,17 +119,17 @@ handle_args(int argc,char *argv[])
 int main(int argc,char *argv[])
 {
 	ac3_config_t ac3_config;
-	uint_32 bytes_read;
+	size_t bytes_read;
 
 	handle_args(argc,argv);
 
 	ac3_config.num_output_ch = 2;
 	ac3_config.flags = 0;
 
-	ac3_init(&ac3_config, audio_out);
+	ac3_init();
 
 	while((bytes_read = fread(buf,1,BLOCK_SIZE,in_file)) == BLOCK_SIZE)
-		ac3_decode_data(buf,buf + BLOCK_SIZE);
+		ac3_decode_data(&ac3_config, audio_out, buf,buf + BLOCK_SIZE);
 
 	fclose(in_file);
 	return 0;

@@ -47,6 +47,7 @@
 #include "rematrix.h"
 #include "sanity_check.h"
 #include "debug.h"
+#include "audio_out.h"
 
 //our global config structure
 ac3_config_t ac3_config;
@@ -71,8 +72,6 @@ static float cmixlev_lut[4] = { 0.707, 0.595, 0.500, 0.707 };
 static float smixlev_lut[4] = { 0.707, 0.500, 0.0   , 0.500 };
 static dm_par_t dm_par;
  
-static ao_functions_t ac3_output;
-
 //Storage for the syncframe
 #define BUFFER_MAX_SIZE 4096
 static uint8_t buffer[BUFFER_MAX_SIZE];
@@ -88,16 +87,14 @@ decode_buffer_syncframe(syncinfo_t *syncinfo, uint8_t **start,uint8_t *end)
 	// 
 	// Find an ac3 sync frame.
 	// 
-	while(syncword != 0x0b77)
-	{
+	while (syncword != 0x0b77) {
 		if(cur >= end)
 			goto done;
 		syncword = (syncword << 8) + *cur++;
 	}
 
 	//need the next 3 bytes to decide how big the frame is
-	while(buffer_size < 3)
-	{
+	while (buffer_size < 3) {
 		if(cur >= end)
 			goto done;
 
@@ -107,8 +104,7 @@ decode_buffer_syncframe(syncinfo_t *syncinfo, uint8_t **start,uint8_t *end)
 	parse_syncinfo(syncinfo,buffer);
 	stats_print_syncinfo(syncinfo);
 
-	while(buffer_size < syncinfo->frame_size * 2 - 2)
-	{
+	while (buffer_size < syncinfo->frame_size * 2 - 2) {
 		if(cur >= end)
 			goto done;
 
@@ -119,8 +115,7 @@ decode_buffer_syncframe(syncinfo_t *syncinfo, uint8_t **start,uint8_t *end)
 	crc_init();
 	crc_process_frame(buffer,syncinfo->frame_size * 2 - 2);
 
-	if(!crc_validate())
-	{
+	if (!crc_validate()) {
 		error_flag = 1;
 		fprintf(stderr,"** CRC failed - skipping frame **\n");
 		goto done;
@@ -130,9 +125,9 @@ decode_buffer_syncframe(syncinfo_t *syncinfo, uint8_t **start,uint8_t *end)
 	//if we got to this point, we found a valid ac3 frame to decode
 	//
 
-	bitstream_init(buffer);
+	bitstream_init (buffer);
 	//get rid of the syncinfo struct as we already parsed it
-	bitstream_get(24);
+	bitstream_get (24);
 
 	//reset the syncword for next time
 	syncword = 0xffff;
@@ -149,29 +144,24 @@ void
 decode_mute(void)
 {
 	//mute the frame
-	memset(s16_samples,0,sizeof(int16_t) * 256 * 2 * 6);
+	memset (s16_samples, 0, sizeof(int16_t) * 256 * 2 * 6);
 	error_flag = 0;
 }
 
 
 void
-ac3_init(ac3_config_t *config,ao_functions_t *foo)
+ac3_init(void)
 {
-	memcpy(&ac3_config,config,sizeof(ac3_config_t));
-
 	imdct_init();
 	sanity_check_init(&syncinfo,&bsi,&audblk);
-
-	ac3_output = *foo;
 }
 
-uint32_t
-ac3_decode_data(uint8_t *data_start,uint8_t *data_end)
+size_t
+ac3_decode_data(ac3_config_t *config, ao_functions_t *ao_functions, uint8_t *data_start, uint8_t *data_end)
 {
 	uint32_t i;
 
-	while(decode_buffer_syncframe(&syncinfo,&data_start,data_end))
-	{
+	while (decode_buffer_syncframe(&syncinfo,&data_start,data_end)) {
 		dprintf("(decode) begin frame %d\n",frame_count++);
 
 		if(error_flag)
@@ -202,7 +192,7 @@ ac3_decode_data(uint8_t *data_start,uint8_t *data_end)
 
 		for(i=0; i < 6; i++) {
 			//Initialize freq/time sample storage
-			memset(samples,0,sizeof(float) * 256 * (bsi.nfchans + bsi.lfeon));
+			memset (samples, 0, sizeof(float) * 256 * (bsi.nfchans + bsi.lfeon));
 
 			// Extract most of the audblk info from the bitstream
 			// (minus the mantissas 
@@ -219,15 +209,15 @@ ac3_decode_data(uint8_t *data_start,uint8_t *data_end)
 
 			// Extract the mantissas from the stream and
 			// generate floating point frequency coefficients
-			coeff_unpack(&bsi,&audblk,samples);
+			coeff_unpack (&bsi,&audblk,samples);
 			if(error_flag)
 				goto error;
 
 			if(bsi.acmod == 0x2)
-				rematrix(&audblk,samples);
+				rematrix (&audblk,samples);
 
 			// Convert the frequency samples into time samples 
-			imdct(&bsi,&audblk,samples, &s16_samples[i * 2 * 256], &dm_par);
+			imdct (&bsi,&audblk,samples, &s16_samples[i * 2 * 256], &dm_par);
 
 			// Downmix into the requested number of channels
 			// and convert floating point to int16_t
@@ -240,13 +230,12 @@ ac3_decode_data(uint8_t *data_start,uint8_t *data_end)
 			continue;
 		}
 
-		if(!is_output_initialized)
-		{
-			ac3_output.open(16,syncinfo.sampling_rate,2);
+		if(!is_output_initialized) {
+			ao_functions->open(16,syncinfo.sampling_rate,2);
 			is_output_initialized = 1;
 		}
 
-		ac3_output.play(s16_samples, 256 * 6 * 2);
+		ao_functions->play(s16_samples, 256 * 6 * 2);
 
 error:
 		//find a new frame

@@ -13,6 +13,7 @@ AC_PROG_CC
 AC_PROG_GCC_TRADITIONAL
 AC_PROG_RANLIB
 AM_PROG_LIBTOOL
+AC_C_BIGENDIAN
 
 dnl Set the appropriate architecture define
 case "$host" in

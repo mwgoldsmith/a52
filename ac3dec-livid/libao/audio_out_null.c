@@ -34,8 +34,8 @@ static ao_info_t ao_info =
 	""
 };
 
-static uint_32
-ao_open(uint_32 bits,uint_32 rate,uint_32 channels)
+static int
+ao_open(uint32_t bits, uint32_t rate, uint32_t channels)
 {
 	//do nothing
 	return 0;
@@ -47,7 +47,7 @@ ao_close(void)
 }
 
 static void
-ao_play(sint_16 *foo,uint_32 bar)
+ao_play(int16_t *foo, size_t bar)
 {
 	//do nothing
 }

@@ -60,8 +60,8 @@ static int fd;
 /*
  * open the audio device for writing to
  */
-static uint_32
-ao_open(uint_32 bits, uint_32 rate, uint_32 channels)
+static int
+ao_open(uint32_t bits, uint32_t rate, uint32_t channels)
 {
   int tmp;
   
@@ -103,7 +103,7 @@ ERR:
  * play the sample to the already opened file descriptor
  */
 static void 
-ao_play(sint_16* output_samples, uint_32 num_bytes)
+ao_play(int16_t* output_samples, size_t num_bytes)
 {
 //	if(fd < 0)
 //		return;
