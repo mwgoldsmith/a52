@@ -27,10 +27,6 @@
 #include "ac3_internal.h"
 #include "bit_allocate.h"
 
-static void ba_compute_bap(int16_t start, int16_t end, int16_t snroffset,
-			   int8_t exp[], int16_t bap[]);
-
-
 static int16_t bndtab[] = {  0,  1,  2,   3,   4,   5,   6,   7,   8,   9, 
 			     10, 11, 12,  13,  14,  15,  16,  17,  18,  19,
 			     20, 21, 22,  23,  24,  25,  26,  27,  28,  31,
@@ -128,8 +124,6 @@ static int16_t fdecay;
 static int16_t sgain;
 static int16_t dbknee;
 static int16_t floor;
-static int16_t bndpsd[256];
-static int16_t mask_[256];
 
 static inline uint16_t max (int16_t a, int16_t b)
 {
@@ -140,6 +134,8 @@ static inline uint16_t min (int16_t a, int16_t b)
 {
     return (a < b ? a : b);
 }
+
+#include <stdio.h>
 
 void bit_allocate(int fscod, audblk_t * audblk, ac3_ba_t * ba, uint16_t start,
 		  uint16_t end, int16_t fastleak, int16_t slowleak,
@@ -153,9 +149,7 @@ void bit_allocate(int fscod, audblk_t * audblk, ac3_ba_t * ba, uint16_t start,
     int16_t fgain;
     int16_t snroffset;
     int i, j;
-    int bndstrt;
     int lowcomp;
-    int excite;
     int8_t * deltba;
     int psd, mask;
 
@@ -174,6 +168,7 @@ void bit_allocate(int fscod, audblk_t * audblk, ac3_ba_t * ba, uint16_t start,
 	deltba = ba->deltba;
 
     i = masktab[start];
+    j = start;
     if (start == 0) {	// not the coupling channel
 	lowcomp = 0;
 	j = end - 1;
@@ -277,26 +272,25 @@ void bit_allocate(int fscod, audblk_t * audblk, ac3_ba_t * ba, uint16_t start,
 		mask = hth[fscod][i];
 	    if (deltba != NULL)
 		mask += deltba[i] << 7;
-	    mask_[i] = mask;
 	    mask -= snroffset + floor;
 	    mask = (mask < 0) ? 0 : (mask & 0x1fe0);
 	    mask += floor;
 	    mask = min (63, max (0, (psd - mask) >> 5));
 	    bap[i++] = baptab[mask];
 	}
+	j = i;
     }
 
-    bndstrt = i;
-    j = i = 20;
     do {
-	int lastbin;
+	int firstbin, lastbin;
 
-	lastbin = min (bndtab[j] + bndsz[j], end);
-	psd = 128 * exp[i++];
-	while (i < lastbin) {
+	firstbin = j;
+	lastbin = min (bndtab[i] + bndsz[i], end);
+	psd = 128 * exp[j++];
+	while (j < lastbin) {
 	    int next, delta;
 
-	    next = 128 * exp[i++];
+	    next = 128 * exp[j++];
 	    delta = next - psd;
 	    switch (delta >> 9) {
 	    case -6: case -5: case -4: case -3: case -2:
@@ -310,60 +304,27 @@ void bit_allocate(int fscod, audblk_t * audblk, ac3_ba_t * ba, uint16_t start,
 		break;
 	    }
 	}
-	bndpsd[j] = 3072 - psd;
-	j++;
-    } while (i < end);
-
-    i = bndstrt;
-
-    do {
+	psd = 3072 - psd;
 	fastleak -= fdecay;
-	if (fastleak < bndpsd[i] - fgain)
-	    fastleak = bndpsd[i] - fgain;
+	if (fastleak < psd - fgain)
+	    fastleak = psd - fgain;
 	slowleak -= sdecay;
-	if (slowleak < bndpsd[i] - sgain)
-	    slowleak = bndpsd[i] - sgain;
-	excite = (fastleak > slowleak) ? fastleak : slowleak;
-	if (bndpsd[i] < dbknee)
-	    excite += (dbknee - bndpsd[i]) >> 2;
-	mask_[i] = max (excite, hth[fscod][i]);
+	if (slowleak < psd - sgain)
+	    slowleak = psd - sgain;
+	mask = (fastleak > slowleak) ? fastleak : slowleak;
+	if (psd < dbknee)
+	    mask += (dbknee - psd) >> 2;
+	if (mask < hth[fscod][i])
+	    mask = hth[fscod][i];
 	if (deltba != NULL)
-	    mask_[i] += deltba[i] << 7;
+	    mask += deltba[i] << 7;
+	mask -= snroffset + floor;
+	mask = (mask < 0) ? 0 : (mask & 0x1fe0);
+	mask += floor;
+	j = firstbin;
+	do {
+	    bap[j++] = baptab[min (63, max (0, (3072 - 128 * exp[j] - mask) >> 5))];
+	} while (j < lastbin);
 	i++;
-    } while (i < j);
-
-    ba_compute_bap(start, end, snroffset, exp, bap);
-}
-
-
-static void ba_compute_bap(int16_t start, int16_t end, int16_t snroffset,
-			   int8_t exps[], int16_t bap[])
-{
-    int i,j,k;
-    int16_t lastbin = 0;
-    int16_t address = 0;
-
-    /* Compute the bit allocation pointer for each bin */
-    i = start; 
-    j = masktab[start]; 
-
-    do { 
-	lastbin = min(bndtab[j] + bndsz[j], end); 
-	mask_[j] -= snroffset; 
-	mask_[j] -= floor; 
-		
-	if (mask_[j] < 0) 
-	    mask_[j] = 0; 
-
-	mask_[j] &= 0x1fe0;
-	mask_[j] += floor; 
-	for (k = i; k < lastbin; k++) { 
-	    address = (3072 - 128 * exps[i] - mask_[j]) >> 5; 
-	    address = min(63, max(0, address));
-	    if (i >= 20)
-		bap[i] = baptab[address]; 
-	    i++; 
-	} 
-	j++; 
-    } while (end > lastbin);
+    } while (j < end);
 }
