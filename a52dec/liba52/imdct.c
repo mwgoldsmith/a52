@@ -280,7 +280,7 @@ static void ifft128_c (complex_t * buf)
 void a52_imdct_512 (sample_t * data, sample_t * delay, sample_t bias)
 {
     int i, k;
-    sample_t t_r, t_i, a_r, a_i, b_r, b_i;
+    sample_t t_r, t_i, a_r, a_i, b_r, b_i, w_1, w_2;
     sample_t * window;
 	
     for (i = 0; i < 128; i++) {
@@ -308,15 +308,17 @@ void a52_imdct_512 (sample_t * data, sample_t * delay, sample_t bias)
 	b_r = t_i * buf[127-i].real + t_r * buf[127-i].imag;
 	b_i = t_r * buf[127-i].real - t_i * buf[127-i].imag;
 
-	data[2*i]     = -a_r * window[2*i]     + delay[2*i]     + bias;
-	data[255-2*i] =  a_r * window[255-2*i] + delay[255-2*i] + bias;
-	delay[2*i]     = a_i * window[255-2*i];
-	delay[255-2*i] = a_i * window[2*i];
+	w_1 = window[2*i];
+	w_2 = window[255-2*i];
+	data[2*i]     = -a_r * w_1 + delay[2*i] * w_2 + bias;
+	data[255-2*i] =  a_r * w_2 + delay[2*i] * w_1 + bias;
+	delay[2*i]    =  a_i;
 
-	data[2*i+1]   =  b_r * window[2*i+1]   + delay[2*i+1]   + bias;
-	data[254-2*i] = -b_r * window[254-2*i] + delay[254-2*i] + bias;
-	delay[2*i+1]   = b_i * window[254-2*i];
-	delay[254-2*i] = b_i * window[2*i+1];
+	w_1 = window[2*i+1];
+	w_2 = window[254-2*i];
+	data[2*i+1]   =  b_r * w_1 + delay[2*i+1] * w_2 + bias;
+	data[254-2*i] = -b_r * w_2 + delay[2*i+1] * w_1 + bias;
+	delay[2*i+1]  =  b_i;
     }
 }
 
@@ -324,7 +326,7 @@ void a52_imdct_256(sample_t data[],sample_t delay[],sample_t bias)
 {
     int i, k;
 
-    sample_t t_r, t_i, a_r, a_i, b_r, b_i, c_r, c_i, d_r, d_i;
+    sample_t t_r, t_i, a_r, a_i, b_r, b_i, c_r, c_i, d_r, d_i, w_1, w_2;
     sample_t * window;
     complex_t * buf1, *buf2;
 
@@ -360,30 +362,35 @@ void a52_imdct_256(sample_t data[],sample_t delay[],sample_t bias)
 	a_i = t_i * buf1[i].real    - t_r * buf1[i].imag;
 	b_r = t_i * buf1[63-i].real + t_r * buf1[63-i].imag;
 	b_i = t_r * buf1[63-i].real - t_i * buf1[63-i].imag;
+
 	c_r = t_r * buf2[i].real    + t_i * buf2[i].imag;
 	c_i = t_i * buf2[i].real    - t_r * buf2[i].imag;
 	d_r = t_i * buf2[63-i].real + t_r * buf2[63-i].imag;
 	d_i = t_r * buf2[63-i].real - t_i * buf2[63-i].imag;
 
-	data[2*i]     = -a_r * window[2*i]     + delay[2*i]     + bias;
-	data[255-2*i] =  a_r * window[255-2*i] + delay[255-2*i] + bias;
-	delay[2*i]     = c_i * window[255-2*i];
-	delay[255-2*i] = c_i * window[2*i];
+	w_1 = window[2*i];
+	w_2 = window[255-2*i];
+	data[2*i]     = -a_r * w_1 + delay[2*i] * w_2 + bias;
+	data[255-2*i] =  a_r * w_2 + delay[2*i] * w_1 + bias;
+	delay[2*i]     = c_i;
 
-	data[127-2*i] = -a_i * window[127-2*i] + delay[127-2*i] + bias;
-	data[128+2*i] =  a_i * window[128+2*i] + delay[128+2*i] + bias;
-	delay[127-2*i] = c_r * window[128+2*i];
-	delay[128+2*i] = c_r * window[127-2*i];
+	w_1 = window[128+2*i];
+	w_2 = window[127-2*i];
+	data[128+2*i] =  a_i * w_1 + delay[127-2*i] * w_2 + bias;
+	data[127-2*i] = -a_i * w_2 + delay[127-2*i] * w_1 + bias;
+	delay[127-2*i] = c_r;
 
-	data[2*i+1]   = -b_i * window[2*i+1]   + delay[2*i+1]   + bias;
-	data[254-2*i] =  b_i * window[254-2*i] + delay[254-2*i] + bias;
-	delay[2*i+1]   = d_r * window[254-2*i];
-	delay[254-2*i] = d_r * window[2*i+1];
+	w_1 = window[2*i+1];
+	w_2 = window[254-2*i];
+	data[2*i+1]   = -b_i * w_1 + delay[2*i+1] * w_2  + bias;
+	data[254-2*i] =  b_i * w_2 + delay[2*i+1] * w_1 + bias;
+	delay[2*i+1]   = d_r;
 
-	data[126-2*i] = -b_r * window[126-2*i] + delay[126-2*i] + bias;
-	data[129+2*i] =  b_r * window[129+2*i] + delay[129+2*i] + bias;
-	delay[126-2*i] = d_i * window[129+2*i];
-	delay[129+2*i] = d_i * window[126-2*i];
+	w_1 = window[129+2*i];
+	w_2 = window[126-2*i];
+	data[129+2*i] =  b_r * w_1 + delay[126-2*i] * w_2 + bias;
+	data[126-2*i] = -b_r * w_2 + delay[126-2*i] * w_1 + bias;
+	delay[126-2*i] = d_i;
     }
 }
 
