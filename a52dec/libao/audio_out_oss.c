@@ -32,7 +32,7 @@
 #include <fcntl.h>
 #include <inttypes.h>
 
-#if defined(__OpenBSD__)
+#if defined(__OpenBSD__) || defined(__NetBSD__)
 #include <soundcard.h>
 #elif defined(__FreeBSD__)
 #include <machine/soundcard.h>
@@ -46,6 +46,12 @@
 #endif
 #else
 #include <sys/soundcard.h>
+#endif
+
+#if defined(__NetBSD__)
+#define OSS_DEVICE "/dev/audio"
+#else
+#define OSS_DEVICE "/dev/dsp"
 #endif
 
 #include "a52.h"
@@ -153,9 +159,9 @@ static ao_instance_t * oss_open (int flags)
     instance->set_params = 1;
     instance->flags = flags;
 
-    instance->fd = open ("/dev/dsp", O_WRONLY);
+    instance->fd = open (OSS_DEVICE, O_WRONLY);
     if (instance->fd < 0) {
-	fprintf (stderr, "Can not open /dev/dsp\n");
+	fprintf (stderr, "Can not open " OSS_DEVICE "\n");
 	free (instance);
 	return NULL;
     }
