@@ -36,27 +36,10 @@
 #include "bit_allocate.h"
 #include "parse.h"
 
-static audblk_t audblk;
-static ac3_state_t state;
-
-//the floating point samples for one audblk
-stream_samples_t samples;
-
-//the integer samples for the entire frame (with enough space for 2 ch out)
-//if this size change, be sure to change the size when muting
-static int16_t s16_samples[2 * 6 * 256];
-
 void
 ac3_init(void)
 {
     imdct_init();
-}
-
-int ac3_frame_length(uint8_t * buf)
-{
-    int dummy;
-
-    return parse_syncinfo (buf, &dummy, &dummy);
 }
 
 static int16_t blah (int32_t i)
@@ -69,7 +52,7 @@ static int16_t blah (int32_t i)
 	return i - 0x43c00000;
 }
 
-static void float_to_int (float * _f, int16_t * s16) 
+void float_to_int (float * _f, int16_t * s16) 
 {
     int i;
     int32_t * f = (int32_t *) _f;	// XXX assumes IEEE float format
@@ -92,35 +75,4 @@ static void float_to_int (float * _f, int16_t * s16)
 	s16[2*i] = blah (f[i]);
 	s16[2*i+1] = blah (f[i+256]);
     }
-}
-
-ac3_frame_t *
-ac3_decode_frame(uint8_t * buf)
-{
-    static ac3_frame_t frame;
-    uint32_t i;
-    int dummy;
-
-    if (!parse_syncinfo (buf, &frame.sampling_rate, &dummy))
-	goto error;
-
-    frame.audio_data = s16_samples;
-
-    if (parse_bsi (&state, buf))
-	goto error;
-
-    for (i = 0; i < 6; i++) {
-	if (parse_audblk (&state, &audblk))
-	    goto error;
-
-	float_to_int (*samples, s16_samples + i * 512);
-    }
-
-    return &frame;	
-
-error:
-    printf ("error\n");
-    memset (s16_samples, 0, sizeof(int16_t) * 256 * 2 * 6);	//mute frame
-
-    return &frame;
 }

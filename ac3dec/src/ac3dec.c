@@ -35,6 +35,8 @@
 #endif
 
 #include "ac3.h"
+#include "ac3_internal.h"
+#include "parse.h"
 #include "libao.h"
 
 #define BUFFER_SIZE 262144
@@ -47,6 +49,10 @@ static uint32_t elapsed;
 static uint32_t total_elapsed;
 static uint32_t last_count = 0;
 static uint32_t demux_ps = 0;
+
+void float_to_int (float * _f, int16_t * s16);
+
+stream_samples_t samples;
 
 static void print_fps (int final) 
 {
@@ -171,10 +177,16 @@ static void handle_args (int argc, char * argv[])
 
 int ac3_decode_data (uint8_t * start, uint8_t * end)
 {
+    static audblk_t audblk;
+    static ac3_state_t state;
+
     static uint8_t buf[1920 * 2];
     static uint8_t * bufptr = buf;
+    static int16_t s16_samples[2 * 6 * 256]; 
     static uint8_t * bufpos = buf + 5;
     int num_frames = 0;
+    int sample_rate;
+    int bit_rate;
 
     while (start < end) {
 	*bufptr++ = *start++;
@@ -182,8 +194,9 @@ int ac3_decode_data (uint8_t * start, uint8_t * end)
 	    if (bufpos == buf + 5) {
 		int length;
 
-		length = ac3_frame_length (buf);
+		length = parse_syncinfo (buf, &sample_rate, &bit_rate);
 		if (!length) {
+		    printf ("skip\n");
 		    for (bufptr = buf; bufptr < buf + 4; bufptr++)
 			bufptr[0] = bufptr[1];
 		    continue;
@@ -191,14 +204,25 @@ int ac3_decode_data (uint8_t * start, uint8_t * end)
 		bufpos = buf + length;
 	    } else {
 		static int do_init = 1;
-		ac3_frame_t * frame;
+		int i;
 
-		frame = ac3_decode_frame (buf);
+		if (parse_bsi (&state, buf))
+		    goto error;
+		for (i = 0; i < 6; i++) {
+		    if (parse_audblk (&state, &audblk)) 
+			goto error;
+		    float_to_int (*samples, s16_samples + i * 512);
+		}
 		if (do_init) {
 		    do_init = 0;
-		    output_open(16,frame->sampling_rate,2);
+		    output_open (16, sample_rate, 2);
 		}
-		output_play(frame->audio_data, 256 * 6 * 2);
+		output_play (s16_samples, 256 * 6 * 2);
+		bufptr = buf;
+		bufpos = buf + 5;
+		continue;
+	    error:
+		printf ("error\n");
 		bufptr = buf;
 		bufpos = buf + 5;
 	    }
@@ -266,7 +290,7 @@ static void ps_loop (void)
 		    goto copy;
 		buf = tmp1;
 		break;
-	    case 0xe0:	/* video */
+	    case 0xbd:	/* private stream 1 */
 		tmp2 = buf + 6 + (buf[4] << 8) + buf[5];
 		if (tmp2 > end)
 		    goto copy;
@@ -283,12 +307,15 @@ static void ps_loop (void)
 			tmp1 += 2;
 		    tmp1 += mpeg1_skip_table [*tmp1 >> 4];
 		}
-		if (tmp1 < tmp2) {
-		    int num_frames;
+		if (*tmp1 == 0x80) {	/* ac3 */
+		    tmp1 += 4;
+		    if (tmp1 < tmp2) {
+			int num_frames;
 
-		    num_frames = ac3_decode_data (tmp1, tmp2);
-		    while (num_frames--)
-			print_fps (0);
+			num_frames = ac3_decode_data (tmp1, tmp2);
+			while (num_frames--)
+			    print_fps (0);
+		    }
 		}
 		buf = tmp2;
 		break;
