@@ -16,3 +16,5 @@ missing
 mkinstalldirs
 stamp-h
 stamp-h.in
+.deps
+aclocal.m4

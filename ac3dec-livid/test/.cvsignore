@@ -5,3 +5,4 @@ Makefile
 bitstream_test
 imdct_test
 
+.deps
