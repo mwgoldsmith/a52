@@ -1,3 +1,10 @@
+* investigate problems with 2.0 streams
+	* small pop in thx_2_0 before it starts (apparently 6/11 - 6/14)
+	* bigger weirdness in thx_2_0 with recent builds
+* check that dither level is correct
+
+* see if we can get rid of cplcoe in the phsflginu test
+
 * update imdct code
 * update stats.c/debug.c
 * update bitstream/parse code
