@@ -19,6 +19,9 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#ifndef A52_H
+#define A52_H
+
 #ifndef LIBA52_DOUBLE
 typedef float sample_t;
 #else
@@ -113,3 +116,5 @@ int a52_frame (a52_state_t * state, uint8_t * buf, int * flags,
 void a52_dynrng (a52_state_t * state,
 		 sample_t (* call) (sample_t, void *), void * data);
 int a52_block (a52_state_t * state, sample_t * samples);
+
+#endif /* A52_H */
