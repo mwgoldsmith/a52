@@ -650,8 +650,12 @@ int parse_audblk (ac3_state_t * state, audblk_t * audblk)
 	    if (audblk->cplinu && audblk->chincpl[i])
 		audblk->endmant[i] = audblk->cplstrtmant;
 	    else {
-		audblk->chbwcod[i] = bitstream_get (6);
-		audblk->endmant[i] = audblk->chbwcod[i] * 3 + 73;
+		int chbwcod;
+
+		chbwcod = bitstream_get (6);
+		if (chbwcod > 60)
+		    return 1;
+		audblk->endmant[i] = chbwcod * 3 + 73;
 	    }
 	}
 

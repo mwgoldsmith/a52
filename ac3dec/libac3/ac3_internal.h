@@ -110,8 +110,6 @@ typedef struct audblk_s {
 
     uint16_t rematflg[4];	// stereo rematrixing
 
-    uint16_t chbwcod[5];	// channel bandwidth for independant channels
-
     uint32_t	magic2;
 
     uint16_t sdcycod;		// slow decay
