@@ -598,6 +598,7 @@ int parse_audblk (ac3_state_t * state, audblk_t * audblk)
 		audblk->cplbndstrc[i] = bitstream_get (1);
 		audblk->ncplbnd -= audblk->cplbndstrc[i];
 	    }
+	    audblk->cplbndstrc[i] = 0;	// last value is a sentinel
 	}
     }
 
