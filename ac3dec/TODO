@@ -4,6 +4,7 @@
 * finish API documentation
 * avoid overflows, including reading the ac3 stream !!!
 * make dither code faster (generate dither table in advance ?)
+* redo all bit allocation if previous frame had zero_snr_offsets
 
 * finish ac3_internal.h cleanup
 	* use sensible data types

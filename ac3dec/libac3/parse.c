@@ -595,7 +595,7 @@ int ac3_block (ac3_state_t * state, sample_t * samples)
     if (cplexpstr != EXP_REUSE) {
 	int cplabsexp, ncplgrps;
 
-	do_bit_alloc = 1;
+	do_bit_alloc = 64;
 	ncplgrps = ((state->cplendmant - state->cplstrtmant) /
 		    (3 << (cplexpstr - 1)));
 	cplabsexp = bitstream_get (4) << 1;
@@ -607,7 +607,7 @@ int ac3_block (ac3_state_t * state, sample_t * samples)
 	if (chexpstr[i] != EXP_REUSE) {
 	    int grp_size, nchgrps;
 
-	    do_bit_alloc = 1;
+	    do_bit_alloc |= 1 << i;
 	    grp_size = 3 << (chexpstr[i] - 1);
 	    nchgrps = (state->endmant[i] + grp_size - 4) / grp_size;
 	    state->fbw_exp[i][0] = bitstream_get (4);
@@ -617,7 +617,7 @@ int ac3_block (ac3_state_t * state, sample_t * samples)
 	    bitstream_get (2);	/* gainrng */
 	}
     if (lfeexpstr != EXP_REUSE) {
-	do_bit_alloc = 1;
+	do_bit_alloc |= 32;
 	state->lfe_exp[0] = bitstream_get (4);
 	if (parse_exponents (lfeexpstr, 2, state->lfe_exp[0],
 			     state->lfe_exp + 1))
@@ -625,7 +625,7 @@ int ac3_block (ac3_state_t * state, sample_t * samples)
     }
 
     if (bitstream_get (1)) {	/* baie */
-	do_bit_alloc = 1;
+	do_bit_alloc = -1;
 	state->sdcycod = bitstream_get (2);
 	state->fdcycod = bitstream_get (2);
 	state->sgaincod = bitstream_get (2);
@@ -633,7 +633,7 @@ int ac3_block (ac3_state_t * state, sample_t * samples)
 	state->floorcod = bitstream_get (3);
     }
     if (bitstream_get (1)) {	/* snroffste */
-	do_bit_alloc = 1;
+	do_bit_alloc = -1;
 	state->csnroffst = bitstream_get (6);
 	if (state->cplinu) {
 	    state->cplba.fsnroffst = bitstream_get (4);
@@ -649,13 +649,13 @@ int ac3_block (ac3_state_t * state, sample_t * samples)
 	}
     }
     if ((state->cplinu) && (bitstream_get (1))) {	/* cplleake */
-	do_bit_alloc = 1;
+	do_bit_alloc |= 64;
 	state->cplfleak = 2304 - (bitstream_get (3) << 8);
 	state->cplsleak = 2304 - (bitstream_get (3) << 8);
     }
 
     if (bitstream_get (1)) {	/* deltbaie */
-	do_bit_alloc = 1;
+	do_bit_alloc = -1;
 	if (state->cplinu)
 	    state->cplba.deltbae = bitstream_get (2);
 	for (i = 0; i < nfchans; i++)
@@ -670,20 +670,24 @@ int ac3_block (ac3_state_t * state, sample_t * samples)
     }
 
     if (do_bit_alloc) {
+	//printf ("%x\n", do_bit_alloc & 127);
 	if (zero_snr_offsets (nfchans, state)) {
+	    //printf ("XXXXXXXXXXX zero_bit_alloc\n");
 	    memset (state->cpl_bap, 0, sizeof (state->cpl_bap));
 	    memset (state->fbw_bap, 0, sizeof (state->fbw_bap));
 	    memset (state->lfe_bap, 0, sizeof (state->lfe_bap));
 	} else {
-	    if (state->cplinu)
+	    if (state->cplinu && (do_bit_alloc & 64))
 		bit_allocate (state, &state->cplba, state->cplstrtbnd,
 			      state->cplstrtmant, state->cplendmant,
 			      state->cplfleak, state->cplsleak,
 			      state->cpl_exp, state->cpl_bap);
 	    for (i = 0; i < nfchans; i++)
-		bit_allocate (state, state->ba + i, 0, 0, state->endmant[i],
-			      0, 0, state->fbw_exp[i], state->fbw_bap[i]);
-	    if (state->lfeon) {
+		if (do_bit_alloc & (1 << i))
+		    bit_allocate (state, state->ba + i, 0, 0,
+				  state->endmant[i], 0, 0, state->fbw_exp[i],
+				  state->fbw_bap[i]);
+	    if (state->lfeon && (do_bit_alloc & 32)) {
 		state->lfeba.deltbae = DELTA_BIT_NONE;
 		bit_allocate (state, &state->lfeba, 0, 0, 7, 0, 0,
 			      state->lfe_exp, state->lfe_bap);
