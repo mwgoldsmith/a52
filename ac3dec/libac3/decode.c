@@ -84,11 +84,11 @@ ac3_decode_frame(uint8_t * buf)
 
     dprintf("(decode) begin frame %d\n",frame_count++);
 
-    if (parse_bsi(&state, buf))
+    if (parse_bsi (&state, buf))
 	goto error;
 
-    if(!done_banner) {
-	stats_print_banner(&state);
+    if (!done_banner) {
+	stats_print_banner (&state);
 	done_banner = 1;
     }
 
@@ -98,7 +98,7 @@ ac3_decode_frame(uint8_t * buf)
 
 	// Extract most of the audblk info from the bitstream
 	// (minus the mantissas 
-	if (parse_audblk(&state,&audblk))
+	if (parse_audblk (&state, &audblk))
 	    goto error;
 
 	// Figure out how many bits per mantissa 
