@@ -1,10 +1,13 @@
 #!/bin/sh
 
-testfile=tests
+if test x"$srcdir" = x""; then srcdir="."; fi
+
+testfile=$srcdir/tests
 if [ $# -ge 1 ]; then testfile=$1; fi
 
 basedir=`head -n 1 $testfile | awk '{print $2}'`
-basedir=`cd $basedir;pwd`
+home=`pwd`; cd $srcdir; if [ ! -d $basedir ]; then exit 77; else cd $home; fi
+
 dirs=`awk -F '#' '{print $1}' $testfile`
 
 for dir in $dirs; do
