@@ -1,7 +1,8 @@
 #include <inttypes.h>
 #include "oms_accel.h"
 
-#ifdef __i386__
+//#ifdef __i386__
+#if 0
 
 #ifdef __PIC__
 #define cpuid(op, eax, ebx, ecx, edx)		\
