@@ -55,6 +55,8 @@ mantissa_unpack(bsi_t *bsi, audblk_t *audblk,bitstream_t *bs)
 {
 	uint_16 i,j;
 
+	mantissa_reset();
+
 	for(i=0; i< bsi->nfchans; i++)
 	{
 		for(j=0; j < audblk->endmant[i]; j++)
@@ -91,7 +93,6 @@ mantissa_get(bitstream_t *bs, uint_16 bap)
 	uint_16 result;
 	uint_16 group_code;
 
-	
 	//If the bap is 0-5 then we have special cases to take care of
 	switch(bap)
 	{
@@ -101,9 +102,14 @@ mantissa_get(bitstream_t *bs, uint_16 bap)
 			break;
 
 		case 1:
-			group_code = bitstream_get(bs,5);
 			if(m_1_pointer > 2)
 			{
+				group_code = bitstream_get(bs,5);
+
+				if(group_code > 26)
+					//FIXME do proper block error handling
+					printf("\n!! Invalid mantissa !!\n");
+
 				m_1[0] = group_code / 9; 
 				m_1[1] = (group_code % 9) / 3; 
 				m_1[2] = (group_code % 9) % 3; 
@@ -114,9 +120,14 @@ mantissa_get(bitstream_t *bs, uint_16 bap)
 			break;
 		case 2:
 
-			group_code = bitstream_get(bs,7);
 			if(m_2_pointer > 2)
 			{
+				group_code = bitstream_get(bs,7);
+
+				if(group_code > 124)
+					//FIXME do proper block error handling
+					printf("\n!! Invalid mantissa !!\n");
+
 				m_2[0] = group_code / 25;
 				m_2[1] = (group_code % 25) / 5 ;
 				m_2[2] = (group_code % 25) % 5 ; 
@@ -132,9 +143,14 @@ mantissa_get(bitstream_t *bs, uint_16 bap)
 			break;
 
 		case 4:
-			group_code = bitstream_get(bs,7);
 			if(m_4_pointer > 1)
 			{
+				group_code = bitstream_get(bs,7);
+
+				if(group_code > 120)
+					//FIXME do proper block error handling
+					printf("\n!! Invalid mantissa !!\n");
+
 				m_4[0] = group_code / 11;
 				m_4[1] = group_code % 11;
 				m_4_pointer = 0;
@@ -149,9 +165,13 @@ mantissa_get(bitstream_t *bs, uint_16 bap)
 			break;
 
 		default:
-			result = bitstream_get(bs,qnttztab[bap] << qnttztab[bap]);
+			result = bitstream_get(bs,qnttztab[bap]);
 			result <<= 16 - qnttztab[bap];
 	}
+
+
+	//if(!(result & 0x8000))
+	//	printf("\n!! Invalid mantissa !!\n");
 
 	return result;
 }

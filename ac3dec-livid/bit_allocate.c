@@ -22,7 +22,7 @@ static sint_16 fastdec[]  = { 0x3f,  0x53,  0x67,  0x7b  };
 static sint_16 slowgain[] = { 0x540, 0x4d8, 0x478, 0x410 };
 static sint_16 dbpbtab[]  = { 0x000, 0x700, 0x900, 0xb00 };
 
-static sint_16 floortab[] = { 0x2f0, 0x2b0, 0x270, 0x230, 0x1f0, 0x170, 0x0f0, 0xf800 };
+static uint_16 floortab[] = { 0x2f0, 0x2b0, 0x270, 0x230, 0x1f0, 0x170, 0x0f0, 0xf800 };
 static sint_16 fastgain[] = { 0x080, 0x100, 0x180, 0x200, 0x280, 0x300, 0x380, 0x400  };
 
 
@@ -201,7 +201,6 @@ bit_allocate_channel(uint_16 fscod, sint_16 exps[],sint_16 start,sint_16 end,
 	sint_16 bndend = 0;
 	sint_16 fastleak = 0;
 	sint_16 slowleak = 0;
-	sint_16 floor = 0;
 	sint_16 address = 0;
 	int bin,i,j,k;
 
@@ -232,7 +231,7 @@ bit_allocate_channel(uint_16 fscod, sint_16 exps[],sint_16 start,sint_16 end,
 		} 
 		
 		k++; 
-	} while (lastbin <= end );
+	} while (end > lastbin);
 
 	/* Compute excitation function */
 	bndstrt = masktab[start]; 
@@ -331,13 +330,13 @@ bit_allocate_channel(uint_16 fscod, sint_16 exps[],sint_16 start,sint_16 end,
 
 	do 
 	{ 
-		lastbin = min(bndtab[j] + bndsz[j], end);
+		lastbin = min(bndtab[j] + bndsz[j], end); 
 		mask[j] -= snroffset; 
 		mask[j] -= floor; 
+		
 		if (mask[j] < 0) 
-		{ 
 			mask[j] = 0; 
-		}
+
 		mask[j] &= 0x1fe0;
 		mask[j] += floor; 
 		for (k = i; k < lastbin; k++) 
@@ -347,8 +346,8 @@ bit_allocate_channel(uint_16 fscod, sint_16 exps[],sint_16 start,sint_16 end,
 			bap[i] = baptab[address]; 
 			i++; 
 		} 
-		j++;
-	} while (lastbin <= end);
+		j++; 
+	} while (end > lastbin);
 }
 
 static inline uint_16

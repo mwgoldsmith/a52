@@ -107,3 +107,18 @@ void stats_printf_bsi(bsi_t *bsi)
 	fprintf(stderr,"\n");
 
 }
+
+char *exp_strat_tbl[4] = {"Reuse ","D15 ","D25 ","D45 "};
+
+void stats_printf_audblk(audblk_t *audblk)
+{
+	fprintf(stderr,"(audblk) ");
+	fprintf(stderr," %s ",audblk->cplinu ? "coupling on" : "coupling off");
+	fprintf(stderr," %s ",audblk->baie? "bai present" : "bai absent");
+	fprintf(stderr," %s ",audblk->snroffste? "snroffst present" : "snroffst absent");
+	fprintf(stderr," %s ",audblk->deltbaie? "deltbai present" : "deltbai absent");
+	fprintf(stderr,"( %s %s %s %s %s) ",exp_strat_tbl[audblk->chexpstr[0]],
+		exp_strat_tbl[audblk->chexpstr[1]],exp_strat_tbl[audblk->chexpstr[2]],
+		exp_strat_tbl[audblk->chexpstr[3]],exp_strat_tbl[audblk->chexpstr[4]]);
+	fprintf(stderr,"\n");
+}

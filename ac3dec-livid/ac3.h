@@ -33,18 +33,20 @@ typedef signed char    sint_8;
 
 typedef struct syncinfo_s
 {
+	uint_32	magic;
 	/* Sync word == 0x0B77 */
 	/* uint_16   syncword; */
 	/* crc for the first 5/8 of the sync block */
 	/* uint_16   crc1; */
 	/* Stream Sampling Rate (kHz) 0 = 48, 1 = 44.1, 2 = 32, 3 = reserved */
-	uint_32		fscod;	
+	uint_16		fscod;	
 	/* Frame size code */
-	uint_32		frmsizecod;
+	uint_16		frmsizecod;
 } syncinfo_t;
 
 typedef struct bsi_s
 {
+	uint_32	magic;
 	/* Bit stream identification == 0x8 */
 	uint_16 bsid;	
 	/* Bit stream mode */
@@ -114,6 +116,7 @@ typedef struct bsi_s
 /* more pain */
 typedef struct audblk_s
 {
+	uint_32	magic1;
 	/* block switch bit indexed by channel num */
 	uint_16 blksw[5];
 	/* dither enable bit indexed by channel num */
@@ -167,6 +170,8 @@ typedef struct audblk_s
 		uint_16 cplabsexp;
 		/* Coupling channel exponents (D15 mode gives 18 * 12 /3  encoded exponents */
 		uint_16 cplexps[18 * 12 / 3];
+	/* Sanity checking constant */
+	uint_32	magic2;
 	/* fbw channel exponents */
 	uint_16 exps[5][252 / 3];
 	/* channel gain range */
@@ -288,6 +293,7 @@ typedef struct audblk_s
 	uint_16 cpl_bap[256];
 	uint_16 lfe_bap[7];
 	
+	uint_32	magic3;
 } audblk_t;
 
 

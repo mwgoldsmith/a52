@@ -7,6 +7,7 @@
 
 
 #include <stdlib.h>
+#include <stdio.h>
 #include "ac3.h"
 #include "decode.h"
 #include "exponent.h"
@@ -67,6 +68,13 @@ exp_unpack_ch(uint_16 type,uint_16 expstr,uint_16 ngrps,uint_16 initial_exp,
 	/* Loop through the groups and fill the dest array appropriately */
 	for(i=0; i< ngrps; i++)
 	{
+		if(exps[i] > 124)
+		{
+			//FIXME set an error flag and mute the frame
+			printf("\n!! Invalid exponent !!\n");
+			exit(1);
+		}
+
 		exp_1 = exps[i] / 25;
 		exp_2 = (exps[i] - (exp_1 * 25)) / 5;
 		exp_3 = exps[i] - (exp_1 * 25) - (exp_2 * 5) ;

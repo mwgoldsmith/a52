@@ -36,16 +36,20 @@ int main(int argc,char *argv[])
 
 	bs = bitstream_open("foo.ac3");
 	imdct_init();
+	decode_sanity_check_init();
 
 	/* FIXME check for end of stream and exit */
 
 
-	while(j++ < 3)
+	while(j++ < 16)
 	{
 		decode_fill_syncinfo(bs);
 		decode_fill_bsi(bs);
 		for(i=0; i < 6; i++)
 		{
+			//FIXME remove debugging stuff
+				bs->total_bits_read = 0;
+
 			/* Extract most of the audblk info from the bitstream
 			 * (minus the mantissas */
 			decode_fill_audblk(bs);
@@ -75,8 +79,9 @@ int main(int argc,char *argv[])
 
 			/* Send the samples to the output device */
 			/*output_samples(&stream_samples);*/
+		printf("      %ld bits (%ld words) read\n",bs->total_bits_read,bs->total_bits_read/16);
 		}
-		printf("%ld bits (%ld words) read\n",bs->total_bits_read,bs->total_bits_read/16);
+		decode_sanity_check();
 	}
 
 	return 0;
@@ -522,18 +527,26 @@ decode_fill_audblk(bitstream_t *bs)
 	if(/* skiple = */ bitstream_get(bs,1))
 	{
 		uint_16 skipl;
+		uint_16 skip_data;
 
 		skipl = bitstream_get(bs,9);
-		for(i = 0; i < skipl; i++)
-			bitstream_get(bs,8);
+		for(i = 0; i < skipl + 20; i++)
+		{
+			skip_data = bitstream_get(bs,8);
+			//FIXME remove
+			//printf("skipdata = %2x\n",skip_data);
+		}
 
 	}
+
+	stats_printf_audblk(&audblk);
 }
 
 static 
 void decode_find_sync(bitstream_t *bs)
 {
 	uint_16 sync_word;
+	uint_32 i = 0;
 
 	sync_word = bitstream_get(bs,16);
 
@@ -543,9 +556,78 @@ void decode_find_sync(bitstream_t *bs)
 			break;
 		sync_word = sync_word * 2;
 		sync_word |= bitstream_get(bs,1);
+		i++;
 	}
-	//FIXME remove debugging stuff
-		bs->total_bits_read = 0;
+	fprintf(stderr,"(sync) %ld bits skipped to synchronize\n",i);
 }
 
+void decode_sanity_check_init(void)
+{
+	syncinfo.magic = DECODE_MAGIC_NUMBER;
+	bsi.magic = DECODE_MAGIC_NUMBER;
+	audblk.magic1 = DECODE_MAGIC_NUMBER;
+	audblk.magic2 = DECODE_MAGIC_NUMBER;
+	audblk.magic3 = DECODE_MAGIC_NUMBER;
+}
+
+void decode_sanity_check(void)
+{
+	int i;
+
+	if(syncinfo.magic != DECODE_MAGIC_NUMBER)
+		goto err;
+	
+	if(bsi.magic != DECODE_MAGIC_NUMBER)
+		goto err;
+
+	if(audblk.magic1 != DECODE_MAGIC_NUMBER)
+		goto err;
+
+	if(audblk.magic2 != DECODE_MAGIC_NUMBER)
+		goto err;
+
+	if(audblk.magic3 != DECODE_MAGIC_NUMBER)
+		goto err;
+
+	for(i = 0;i < 5 ; i++)
+	{
+		if (audblk.fbw_exp[i][255] !=0 || audblk.fbw_exp[i][254] !=0 || 
+				audblk.fbw_exp[i][253] !=0)
+			goto err;
+
+		if (audblk.fbw_bap[i][255] !=0 || audblk.fbw_bap[i][254] !=0 || 
+				audblk.fbw_bap[i][253] !=0)
+			goto err;
+
+		if (audblk.chmant[i][255] !=0 || audblk.chmant[i][254] !=0 || 
+				audblk.chmant[i][253] !=0)
+			goto err;
+	}
+
+	if (audblk.cpl_exp[255] !=0 || audblk.cpl_exp[254] !=0 || 
+			audblk.cpl_exp[253] !=0)
+		goto err;
+
+	if (audblk.cpl_bap[255] !=0 || audblk.cpl_bap[254] !=0 || 
+			audblk.cpl_bap[253] !=0)
+		goto err;
+
+	if (audblk.cplmant[255] !=0 || audblk.cplmant[254] !=0 || 
+			audblk.cplmant[253] !=0)
+		goto err;
+
+	if ((audblk.cplinu == 1) && (audblk.cplbegf > (audblk.cplendf+2)))
+			goto err;
+
+	for(i=0; i < bsi.nfchans; i++)
+	{
+		if((audblk.chincpl[i] == 0) && (audblk.chbwcod[i] > 60))
+			goto err;
+	}
+
+	return;
+err:
+	printf("\n!! Sanity check failed !!");
+	//exit(1);
+}	
 
