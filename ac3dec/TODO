@@ -1,13 +1,6 @@
-* update coeff.c
-* update downmix code
 * update imdct code
-
-* investigate the rewritten decode.c
-
 * update stats.c/debug.c
 * update bitstream/parse code
-* fix coding style
-* test suite ???
 
 
 
