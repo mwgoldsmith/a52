@@ -382,6 +382,7 @@ void a52_imdct_init (uint32_t mm_accel)
 	sum += besselI0 (5 * M_PI * sqrt (1.0 - pow (i / 128.0 - 1, 2)));
 	a52_imdct_window[i] = sum;
     }
+    sum++;
     for (i = 0; i < 256; i++)
 	a52_imdct_window[i] = sqrt (a52_imdct_window[i] / sum);
 
