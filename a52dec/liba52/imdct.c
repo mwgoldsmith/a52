@@ -118,96 +118,6 @@ sample_t a52_imdct_window[] = {
     1.00000, 1.00000, 1.00000, 1.00000, 1.00000, 1.00000, 1.00000, 1.00000
 };
 
-/* buf[0...4n-1]; weight[n...2n-2]; n >= 2 */
-static void ifft_pass (complex_t * buf, sample_t * weight, int n)
-{
-    complex_t * ptr;
-    double tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7, tmp8;
-    int i;
-
-    ptr = buf + 2 * n;
-
-    tmp1 = ptr[n].real + ptr[0].real;
-    tmp2 = ptr[0].imag + ptr[n].imag;
-    tmp3 = ptr[0].imag - ptr[n].imag;
-    tmp4 = ptr[n].real - ptr[0].real;
-
-    ptr[0].real = buf[0].real - tmp1;
-    ptr[0].imag = buf[0].imag - tmp2;
-    ptr[n].real = buf[n].real - tmp3;
-    ptr[n].imag = buf[n].imag - tmp4;
-
-    buf[0].real += tmp1;
-    buf[0].imag += tmp2;
-    buf[n].real += tmp3;
-    buf[n].imag += tmp4;
-
-    buf++;
-    ptr++;
-    i = n - 1;
-
-    do {
-	tmp1 = ptr[0].real * weight[n] + ptr[0].imag * weight[2*i];
-	tmp2 = ptr[0].imag * weight[n] - ptr[0].real * weight[2*i];
-	tmp3 = ptr[n].real * weight[n] - ptr[n].imag * weight[2*i];
-	tmp4 = ptr[n].imag * weight[n] + ptr[n].real * weight[2*i];
-
-	tmp5 = tmp1 + tmp3;
-	tmp6 = tmp2 + tmp4;
-	tmp7 = tmp2 - tmp4;
-	tmp8 = tmp3 - tmp1;
-
-	ptr[0].real = buf[0].real - tmp5;
-	ptr[0].imag = buf[0].imag - tmp6;
-	ptr[n].real = buf[n].real - tmp7;
-	ptr[n].imag = buf[n].imag - tmp8;
-
-	buf[0].real += tmp5;
-	buf[0].imag += tmp6;
-	buf[n].real += tmp7;
-	buf[n].imag += tmp8;
-
-	buf++;
-	ptr++;
-	weight++;
-    } while (--i);
-}
-
-static void inline ifft2 (complex_t * buf)
-{
-    double r, i;
-
-    r = buf[0].real;
-    i = buf[0].imag;
-    buf[0].real += buf[1].real;
-    buf[0].imag += buf[1].imag;
-    buf[1].real = r - buf[1].real;
-    buf[1].imag = i - buf[1].imag;
-}
-
-static void ifft4 (complex_t * buf)
-{
-    double tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7, tmp8;
-
-    tmp1 = buf[0].real + buf[1].real;
-    tmp2 = buf[3].real + buf[2].real;
-    tmp3 = buf[0].imag + buf[1].imag;
-    tmp4 = buf[2].imag + buf[3].imag;
-    tmp5 = buf[0].real - buf[1].real;
-    tmp6 = buf[0].imag - buf[1].imag;
-    tmp7 = buf[2].imag - buf[3].imag;
-    tmp8 = buf[3].real - buf[2].real;
-
-    buf[0].real = tmp1 + tmp2;
-    buf[0].imag = tmp3 + tmp4;
-    buf[2].real = tmp1 - tmp2;
-    buf[2].imag = tmp3 - tmp4;
-    buf[1].real = tmp5 + tmp7;
-    buf[1].imag = tmp6 + tmp8;
-    buf[3].real = tmp5 - tmp7;
-    buf[3].imag = tmp6 - tmp8;
-}
-
 static sample_t roots16[] = { 0.9238795325112867561281831893967882868224,
 			      0.7071067811865475244008443621048490392848,
 			      0.3826834323650897717284599840303988667613 };
@@ -265,12 +175,137 @@ static sample_t roots128[] = {0.9987954562051723927147716047591006944432,
 			      0.0980171403295606019941955638886418458611,
 			      0.0490676743274180142549549769426826583147 };
 
-static void ifft8 (complex_t * buf)
+static inline void ifft2 (complex_t * buf)
 {
+    double r, i;
+
+    r = buf[0].real;
+    i = buf[0].imag;
+    buf[0].real += buf[1].real;
+    buf[0].imag += buf[1].imag;
+    buf[1].real = r - buf[1].real;
+    buf[1].imag = i - buf[1].imag;
+}
+
+static inline void ifft4 (complex_t * buf)
+{
+    double tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7, tmp8;
+
+    tmp1 = buf[0].real + buf[1].real;
+    tmp2 = buf[3].real + buf[2].real;
+    tmp3 = buf[0].imag + buf[1].imag;
+    tmp4 = buf[2].imag + buf[3].imag;
+    tmp5 = buf[0].real - buf[1].real;
+    tmp6 = buf[0].imag - buf[1].imag;
+    tmp7 = buf[2].imag - buf[3].imag;
+    tmp8 = buf[3].real - buf[2].real;
+
+    buf[0].real = tmp1 + tmp2;
+    buf[0].imag = tmp3 + tmp4;
+    buf[2].real = tmp1 - tmp2;
+    buf[2].imag = tmp3 - tmp4;
+    buf[1].real = tmp5 + tmp7;
+    buf[1].imag = tmp6 + tmp8;
+    buf[3].real = tmp5 - tmp7;
+    buf[3].imag = tmp6 - tmp8;
+}
+
+/* the basic split-radix ifft butterfly */
+
+#define BUTTERFLY(a0,a1,a2,a3,wr,wi) do {	\
+    tmp5 = a2.real * wr + a2.imag * wi;		\
+    tmp6 = a2.imag * wr - a2.real * wi;		\
+    tmp7 = a3.real * wr - a3.imag * wi;		\
+    tmp8 = a3.imag * wr + a3.real * wi;		\
+    tmp1 = tmp5 + tmp7;				\
+    tmp2 = tmp6 + tmp8;				\
+    tmp3 = tmp6 - tmp8;				\
+    tmp4 = tmp7 - tmp5;				\
+    a2.real = a0.real - tmp1;			\
+    a2.imag = a0.imag - tmp2;			\
+    a3.real = a1.real - tmp3;			\
+    a3.imag = a1.imag - tmp4;			\
+    a0.real += tmp1;				\
+    a0.imag += tmp2;				\
+    a1.real += tmp3;				\
+    a1.imag += tmp4;				\
+} while (0)
+
+/* split-radix ifft butterfly, specialized for wr=1 wi=0 */
+
+#define BUTTERFLY_ZERO(a0,a1,a2,a3) do {	\
+    tmp1 = a2.real + a3.real;			\
+    tmp2 = a2.imag + a3.imag;			\
+    tmp3 = a2.imag - a3.imag;			\
+    tmp4 = a3.real - a2.real;			\
+    a2.real = a0.real - tmp1;			\
+    a2.imag = a0.imag - tmp2;			\
+    a3.real = a1.real - tmp3;			\
+    a3.imag = a1.imag - tmp4;			\
+    a0.real += tmp1;				\
+    a0.imag += tmp2;				\
+    a1.real += tmp3;				\
+    a1.imag += tmp4;				\
+} while (0)
+
+/* split-radix ifft butterfly, specialized for wr=wi */
+
+#define BUTTERFLY_HALF(a0,a1,a2,a3,w) do {	\
+    tmp5 = (a2.real + a2.imag) * w;		\
+    tmp6 = (a2.imag - a2.real) * w;		\
+    tmp7 = (a3.real - a3.imag) * w;		\
+    tmp8 = (a3.imag + a3.real) * w;		\
+    tmp1 = tmp5 + tmp7;				\
+    tmp2 = tmp6 + tmp8;				\
+    tmp3 = tmp6 - tmp8;				\
+    tmp4 = tmp7 - tmp5;				\
+    a2.real = a0.real - tmp1;			\
+    a2.imag = a0.imag - tmp2;			\
+    a3.real = a1.real - tmp3;			\
+    a3.imag = a1.imag - tmp4;			\
+    a0.real += tmp1;				\
+    a0.imag += tmp2;				\
+    a1.real += tmp3;				\
+    a1.imag += tmp4;				\
+} while (0)
+
+static inline void ifft8 (complex_t * buf)
+{
+    double tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7, tmp8;
+
     ifft4 (buf);
     ifft2 (buf + 4);
     ifft2 (buf + 6);
-    ifft_pass (buf, roots16 - 1, 2);
+    BUTTERFLY_ZERO (buf[0], buf[2], buf[4], buf[6]);
+    BUTTERFLY_HALF (buf[1], buf[3], buf[5], buf[7], roots16[1]);
+}
+
+/* buf[0...4n-1]; weight[n...2n-2]; n >= 2 */
+static void ifft_pass (complex_t * buf, sample_t * weight, int n)
+{
+    complex_t * buf1;
+    complex_t * buf2;
+    complex_t * buf3;
+    double tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7, tmp8;
+    int i;
+
+    buf++;
+    buf1 = buf + n;
+    buf2 = buf + 2 * n;
+    buf3 = buf + 3 * n;
+
+    BUTTERFLY_ZERO (buf[-1], buf1[-1], buf2[-1], buf3[-1]);
+
+    i = n - 1;
+
+    do {
+	BUTTERFLY (buf[0], buf1[0], buf2[0], buf3[0], weight[n], weight[2*i]);
+	buf++;
+	buf1++;
+	buf2++;
+	buf3++;
+	weight++;
+    } while (--i);
 }
 
 static void ifft16 (complex_t * buf)
@@ -299,7 +334,11 @@ static void ifft64 (complex_t * buf)
 
 static void ifft128 (complex_t * buf)
 {
-    ifft64 (buf);
+    ifft32 (buf);
+    ifft16 (buf + 32);
+    ifft16 (buf + 48);
+    ifft_pass (buf, roots64 - 16, 16);
+
     ifft32 (buf + 64);
     ifft32 (buf + 96);
     ifft_pass (buf, roots128 - 32, 32);
