@@ -370,34 +370,37 @@ imdct_do_256(sample_t data[],sample_t delay[])
     }
 }
 
-void imdct_init (void)
+void imdct_init (uint32_t mm_accel)
 {
 #ifdef LIBAC3_MLIB
-    imdct_512 = imdct_do_512_mlib;
-    imdct_256 = imdct_do_256_mlib;
-#else
-    int i, j, k;
-
-    /* Twiddle factors to turn IFFT into IMDCT */
-    for (i = 0; i < 128; i++) {
-	xcos1[i] = -cos ((M_PI / 2048) * (8 * i + 1));
-	xsin1[i] = -sin ((M_PI / 2048) * (8 * i + 1));
-    }
-
-    /* More twiddle factors to turn IFFT into IMDCT */
-    for (i = 0; i < 64; i++) {
-	xcos2[i] = -cos ((M_PI / 1024) * (8 * i + 1));
-	xsin2[i] = -sin ((M_PI / 1024) * (8 * i + 1));
-    }
-
-    for (i = 0; i < 7; i++) {
-	j = 1 << i;
-	for (k = 0; k < j; k++) {
-	    w[i][k].real = cos (-M_PI * k / j);
-	    w[i][k].imag = sin (-M_PI * k / j);
-	}
-    }
-    imdct_512 = imdct_do_512;
-    imdct_256 = imdct_do_256;
+    if (mm_accel & MM_ACCEL_MLIB) {
+	imdct_512 = imdct_do_512_mlib;
+	imdct_256 = imdct_do_256_mlib;
+    } else
 #endif
+    {
+	int i, j, k;
+
+	/* Twiddle factors to turn IFFT into IMDCT */
+	for (i = 0; i < 128; i++) {
+	    xcos1[i] = -cos ((M_PI / 2048) * (8 * i + 1));
+	    xsin1[i] = -sin ((M_PI / 2048) * (8 * i + 1));
+	}
+
+	/* More twiddle factors to turn IFFT into IMDCT */
+	for (i = 0; i < 64; i++) {
+	    xcos2[i] = -cos ((M_PI / 1024) * (8 * i + 1));
+	    xsin2[i] = -sin ((M_PI / 1024) * (8 * i + 1));
+	}
+
+	for (i = 0; i < 7; i++) {
+	    j = 1 << i;
+	    for (k = 0; k < j; k++) {
+		w[i][k].real = cos (-M_PI * k / j);
+		w[i][k].imag = sin (-M_PI * k / j);
+	    }
+	}
+	imdct_512 = imdct_do_512;
+	imdct_256 = imdct_do_256;
+    }
 }

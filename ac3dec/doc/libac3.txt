@@ -41,4 +41,11 @@ not double-check, consecutive frames might have different lengths, and
 it helps you re-sync with the stream if you get de-synchronized.
 
 
-III - 
+III - start to decode an ac3 frame
+
+int ac3_frame (ac3_state_t * state, uint8_t * buf, int * flags,
+               sample_t * level, sample_t bias, sample_t * delay);
+
+Now that you've found an ac3 frame, you want to start decoding it. buf
+points to the ac3 frame, and you've read at least the number of bytes
+returned by ac3_syncinfo().

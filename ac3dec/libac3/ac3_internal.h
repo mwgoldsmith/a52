@@ -45,7 +45,7 @@ int downmix_init (int input, int flags, sample_t * level,
 void downmix (sample_t * samples, int acmod, int output,
 	      sample_t level, sample_t bias, sample_t clev, sample_t slev);
 
-void imdct_init (void);
+void imdct_init (uint32_t mm_accel);
 extern void (* imdct_256) (sample_t * data, sample_t * delay);
 extern void (* imdct_512) (sample_t * data, sample_t * delay);
 void imdct_do_256_mlib (sample_t * data, sample_t * delay);

@@ -105,7 +105,7 @@ typedef struct ac3_state_s {
 #define AC3_LFE 16
 #define AC3_ADJUST_LEVEL 32
 
-void ac3_init (void);
+void ac3_init (uint32_t mm_accel);
 int ac3_syncinfo (uint8_t * buf, int * flags,
 		  int * sample_rate, int * bit_rate);
 int ac3_frame (ac3_state_t * state, uint8_t * buf, int * flags,

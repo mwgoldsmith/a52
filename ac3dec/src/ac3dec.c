@@ -28,14 +28,11 @@
 #include <string.h>
 #include <errno.h>
 #include <inttypes.h>
-#ifdef HAVE_GETOPT_H
 #include <getopt.h>
-#else
-#include <unistd.h>
-#endif
 
 #include "ac3.h"
 #include "audio_out.h"
+#include "mm_accel.h"
 
 #define BUFFER_SIZE 262144
 static uint8_t buffer[BUFFER_SIZE];
@@ -358,7 +355,7 @@ int main (int argc,char *argv[])
 	return 1;
     }
 
-    ac3_init ();
+    ac3_init (MM_ACCEL_MLIB);
 
     signal (SIGINT, signal_handler);
 

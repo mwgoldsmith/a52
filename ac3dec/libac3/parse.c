@@ -32,9 +32,9 @@
 #include "bitstream.h"
 #include "tables.h"
 
-void ac3_init (void)
+void ac3_init (uint32_t mm_accel)
 {
-    imdct_init ();
+    imdct_init (mm_accel);
 }
 
 static uint8_t halfrate[12] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3};
