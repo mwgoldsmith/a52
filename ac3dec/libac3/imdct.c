@@ -217,13 +217,13 @@ imdct_do_512(sample_t data[],sample_t delay[], sample_t bias)
 
     /* Window and convert to real valued signal */
     for(i=0; i< 64; i++) { 
-	*data_ptr++   = 2.0f * (-buf[64+i].imag   * *window_ptr++ + *delay_ptr++) + bias; 
-	*data_ptr++   = 2.0f * ( buf[64-i-1].real * *window_ptr++ + *delay_ptr++) + bias; 
+	*data_ptr++   = -buf[64+i].imag   * *window_ptr++ + *delay_ptr++ + bias; 
+	*data_ptr++   =  buf[64-i-1].real * *window_ptr++ + *delay_ptr++ + bias; 
     }
 
     for(i=0; i< 64; i++) { 
-	*data_ptr++  = 2.0f * (-buf[i].real       * *window_ptr++ + *delay_ptr++) + bias; 
-	*data_ptr++  = 2.0f * ( buf[128-i-1].imag * *window_ptr++ + *delay_ptr++) + bias; 
+	*data_ptr++  = -buf[i].real       * *window_ptr++ + *delay_ptr++ + bias; 
+	*data_ptr++  =  buf[128-i-1].imag * *window_ptr++ + *delay_ptr++ + bias; 
     }
 
     /* The trailing edge of the window goes into the delay line */
@@ -346,13 +346,13 @@ imdct_do_256(sample_t data[],sample_t delay[],sample_t bias)
 
     /* Window and convert to real valued signal */
     for(i=0; i< 64; i++) { 
-	*data_ptr++  = 2.0f * (-buf_1[i].imag      * *window_ptr++ + *delay_ptr++) + bias;
-	*data_ptr++  = 2.0f * ( buf_1[64-i-1].real * *window_ptr++ + *delay_ptr++) + bias;
+	*data_ptr++  = -buf_1[i].imag      * *window_ptr++ + *delay_ptr++ + bias;
+	*data_ptr++  =  buf_1[64-i-1].real * *window_ptr++ + *delay_ptr++ + bias;
     }
 
     for(i=0; i< 64; i++) {
-	*data_ptr++  = 2.0f * (-buf_1[i].real      * *window_ptr++ + *delay_ptr++) + bias;
-	*data_ptr++  = 2.0f * ( buf_1[64-i-1].imag * *window_ptr++ + *delay_ptr++) + bias;
+	*data_ptr++  = -buf_1[i].real      * *window_ptr++ + *delay_ptr++ + bias;
+	*data_ptr++  =  buf_1[64-i-1].imag * *window_ptr++ + *delay_ptr++ + bias;
     }
 	
     delay_ptr = delay;

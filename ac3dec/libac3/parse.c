@@ -137,7 +137,7 @@ int ac3_frame (ac3_state_t * state, uint8_t * buf, int * flags,
     if (state->lfeon && (*flags & AC3_LFE))
 	state->output |= AC3_LFE;
     *flags = state->output;
-    state->level = *level;
+    state->level = 2 * *level;	// the 2* compensates for differences in imdct
     state->bias = bias;
 
     chaninfo = !acmod;
