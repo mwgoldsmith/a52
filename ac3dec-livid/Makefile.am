@@ -15,5 +15,5 @@ noinst_HEADERS = bitstream.h decode.h imdct.h ac3.h stats.h mantissa.h\
 	ring_buffer.h matlab.h
 
 
-SUBDIRS = . test
+SUBDIRS = . test tools
 

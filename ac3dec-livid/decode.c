@@ -65,7 +65,7 @@ int main(int argc,char *argv[])
 	/* FIXME check for end of stream and exit */
 
 
-	while(j++ < 600)
+	while(j++ < 5000)
 	{
 		decode_find_sync(bs);
 
@@ -125,7 +125,7 @@ int main(int argc,char *argv[])
 			//FIXME remove
 			//fprintf(stderr,"%ld bits for this audblk\n",
 			//		bs->total_bits_read - bits_per_audblk );
-	fprintf(stderr,"%lld ns\n",gethrtime() - start);
+	//fprintf(stderr,"%lld ns\n",gethrtime() - start);
 
 		}
 		parse_auxdata(bs);
@@ -143,8 +143,12 @@ int main(int argc,char *argv[])
 		//fprintf(stderr,"      %ld bits (%ld words) read\n",
 		//		bs->total_bits_read,bs->total_bits_read/16);
 		decode_sanity_check();
+		if(bitstream_done(bs))
+			break;
 	}
-
+	
+	bitstream_close(bs);
+	output_close();
 	return 0;
 }
 
@@ -168,7 +172,7 @@ void decode_find_sync(bitstream_t *bs)
 		i++;
 	}
 	dprintf("(sync) %ld bits skipped to synchronize\n",i);
-	fprintf(stderr,"(sync) begin frame %ld\n",frame_count);
+	dprintf("(sync) begin frame %ld\n",frame_count);
 	frame_count++;
 
 	bs->total_bits_read = 16;

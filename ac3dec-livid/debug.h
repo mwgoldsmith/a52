@@ -17,6 +17,6 @@ int debug_is_on(void);
 		fprintf(stderr,format,## args);\
 	}\
 }
-#endif
-
+#else
 void dprintf(char fmt[],...);
+#endif

@@ -24,6 +24,7 @@
 
 #include "ac3.h"
 #include "decode.h"
+#include "debug.h"
 #include "output.h"
 #include "ring_buffer.h"
 
@@ -53,11 +54,11 @@ int output_open(int bits, int rate, int channels)
 	fd=open(dev,O_WRONLY | O_NDELAY);
   if(fd < 0) 
   {
-    fprintf(stderr,"%s: Opening audio device %s\n",
+    dprintf("%s: Opening audio device %s\n",
         strerror(errno), dev);
     goto ERR;
   }
-	fprintf(stderr,"Opened audio device \"%s\"\n",dev);
+	dprintf("Opened audio device \"%s\"\n",dev);
 
 	fcntl(fd,F_SETFL,O_NONBLOCK);
 
@@ -146,8 +147,8 @@ void output_play(stream_samples_t *samples)
 	 * write slot available */
 	while(!out_buf)
 	{
+		usleep(5000);
 		output_flush();
-		usleep(1000);
 		out_buf = rb_begin_write();
 	} 
 
@@ -172,7 +173,6 @@ void output_play(stream_samples_t *samples)
 	}
 	rb_end_write();
 
-	output_flush();
 }
 
 

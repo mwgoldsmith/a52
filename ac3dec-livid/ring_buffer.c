@@ -15,7 +15,7 @@ typedef signed short sint_16;
 #include "ring_buffer.h"
 
 #define BUFFER_SIZE 1024
-#define NUM_BUFFERS 128 
+#define NUM_BUFFERS 256
 #define INC_INDEX(x) (((x) + 1) % NUM_BUFFERS)
 
 // The buffer that was just written into

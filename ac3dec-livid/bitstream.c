@@ -60,9 +60,17 @@ bitstream_get(bitstream_t *bs,uint_32 num_bits)
 static void
 bitstream_load(bitstream_t *bs)
 {
-		fread(&bs->current_word,1,4,bs->file);
-		bs->current_word = SWAP_ENDIAN32(bs->current_word);
-		bs->bits_left = 32;
+	int bytes_read;
+
+	bytes_read = fread(&bs->current_word,1,4,bs->file);
+	bs->current_word = SWAP_ENDIAN32(bs->current_word);
+	bs->bits_left = bytes_read * 8;
+
+	if (bytes_read < 4)
+	{
+		printf("done!");
+		bs->done = 1;
+	}
 }
 
 /* Opens a bitstream for use in bitstream_get */
@@ -78,6 +86,8 @@ bitstream_open(FILE *file)
 	if(!bs)
 		return 0;
 
+	bs->done = 0;
+
 	/* Read in the first 32 bit word and initialize the structure */
 	bs->file = file;
 	bitstream_load(bs);
@@ -85,13 +95,14 @@ bitstream_open(FILE *file)
 	return bs;
 }
 
+int bitstream_done(bitstream_t *bs)
+{
+	return (bs->done);
+}
 
 void 
 bitstream_close(bitstream_t *bs)
 {
-	if(!bs)
-		return;
-
 	if(bs->file)
 		fclose(bs->file);
 

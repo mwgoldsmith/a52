@@ -7,6 +7,9 @@
  * Extracts an AC-3 audio stream from an MPEG-2 system stream
  * and writes it to stdout
  *
+ * Ideas and bitstream syntax info borrowed from code written 
+ * by Nathan Laredo (laredo@gnu.org)
+ *
  */
 
 #include <stdio.h>
@@ -98,8 +101,8 @@ void strip_ac3(void)
 		header_bytes = cur_pos[8] + 13;
 		cur_pos += header_bytes;
 
-		fprintf(stderr,"Wrote 1 AC-3 frame of length %d\n",
-				pes_bytes - header_bytes);
+		//fprintf(stderr,"Wrote 1 AC-3 frame of length %d\n",
+		//		pes_bytes - header_bytes);
 		fwrite(cur_pos,1,pes_bytes - header_bytes,stdout);
 		
 		cur_pos += pes_bytes - header_bytes;

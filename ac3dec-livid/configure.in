@@ -13,4 +13,4 @@ AC_PROG_CC
 AC_PROG_GCC_TRADITIONAL
 AC_PROG_RANLIB
 
-AC_OUTPUT(test/Makefile Makefile ) 
+AC_OUTPUT(tools/Makefile test/Makefile Makefile ) 
