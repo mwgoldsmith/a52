@@ -93,16 +93,41 @@ mantissa_reset(void)
 	m_1_pointer = m_2_pointer = m_4_pointer = 3;
 }
 
-//FIXME
 uint_16 mantissa_get_dither(void)
 {
-
+	return 0
 }
 
-//FIXME
-inline uint_16 
-mantissa_left_justify(uint_16 src,uint_16 size)
+
+void mantissa_convert_to_float(uint_16 exp, uint_16 mant, uint_32 *dest)
 {
-	return
-}
+	uint_16 sign;
+	uint_16 exponent;
+	uint_16 mantissa;
+	int i;
 
+	if(mant == 0)
+		*dest = 0;
+
+	sign = mant & 0x8000 ? 1 : 0;
+
+	if(sign)
+		mantissa = (~mant) + 1;
+	else 
+		mantissa = mant;
+
+	mantissa <<= 1;
+
+	for(i = 0; i < 16; i++)
+	{
+		if((mantissa << i) & 0x8000)
+			break;
+	}
+
+	printf(" i = %d\n",i);
+	exponent = 0xff & (127 - exp - (i + 1));
+	
+	*dest = (sign << 31) | (exponent << 23) | 
+		((0x007fffff) & (mantissa << (7 + i + 1)));
+
+}
