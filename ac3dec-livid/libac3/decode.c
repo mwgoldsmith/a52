@@ -84,6 +84,8 @@ decode_buffer_syncframe(syncinfo_t *syncinfo, uint_8 **start,uint_8 *end)
 	// 
 	// Find an ac3 sync frame.
 	// 
+resync:
+
 	while(syncword != 0x0b77)
 	{
 		if(cur >= end)
@@ -117,9 +119,10 @@ decode_buffer_syncframe(syncinfo_t *syncinfo, uint_8 **start,uint_8 *end)
 
 	if(!crc_validate())
 	{
-		error_flag = 1;
 		fprintf(stderr,"** CRC failed - skipping frame **\n");
-		goto done;
+		syncword = 0xffff;
+		buffer_size = 0;
+		goto resync;
 	}
 
 	//
@@ -144,6 +147,7 @@ done:
 void
 decode_mute(void)
 {
+	fprintf(stderr,"muting frame\n");
 	//mute the frame
 	memset(s16_samples,0,sizeof(sint_16) * 256 * 2 * 6);
 	error_flag = 0;

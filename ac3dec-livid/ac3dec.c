@@ -68,8 +68,6 @@ handle_args(int argc,char *argv[])
 	char c;
 	uint_32 i;
 
-	//default to the first driver in the list
-	audio_out = audio_out_drivers[0];
 
 	while((c = getopt(argc,argv,"o:")) != EOF)
 	{
@@ -85,7 +83,7 @@ handle_args(int argc,char *argv[])
 						audio_out = audio_out_drivers[i];
 				}
 
-				if (audio_out_drivers[i] == NULL)
+				if (audio_out == NULL)
 				{
 					fprintf(stderr,"Invalid audio driver: %s\n", optarg);
 					print_usage(argv);
@@ -96,6 +94,12 @@ handle_args(int argc,char *argv[])
 			default:
 				print_usage(argv);
 		}
+	}
+
+	if(audio_out == NULL)
+	{
+		//default to the first driver in the list
+		audio_out = audio_out_drivers[0];
 	}
 
 	// If we get an argument then use it as a filename... otherwise use stdin 

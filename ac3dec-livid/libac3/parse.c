@@ -31,7 +31,6 @@
 #include "bitstream.h"
 #include "stats.h"
 #include "debug.h"
-#include "crc.h"
 #include "parse.h"
 
 /* Misc LUT */
