@@ -568,6 +568,7 @@ int main (int argc, char ** argv)
     else
 	es_loop ();
 
+    free (samples);
     ao_close (output);
     print_fps (1);
     return 0;
