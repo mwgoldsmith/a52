@@ -2,7 +2,6 @@
 * get rid of statics in parse.c : q_1, q_1_pointer, etc
 * finish API documentation
 * avoid overflows, including reading the ac3 stream !!!
-* have flag to disable accelerations
 
 * finish ac3_internal.h cleanup
 	* use sensible data types

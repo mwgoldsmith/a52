@@ -43,6 +43,7 @@ static int elapsed;
 static int total_elapsed;
 static int last_count = 0;
 static int demux_track = 0;
+static int disable_accel = 0;
 static ao_open_t * output_open = NULL;
 static ao_instance_t * output;
 
@@ -108,8 +109,9 @@ static void print_usage (char * argv[])
     int i;
     ao_driver_t * drivers;
 
-    fprintf (stderr, "usage: %s [-o <mode>] [-s[<track>]] <file>\n"
+    fprintf (stderr, "usage: %s [-o <mode>] [-s[<track>]] [-c] <file>\n"
 	     "\t-s\tuse program stream demultiplexer, track 0-7 or 0x80-0x87\n"
+	     "\t-c\tuse c implementation, disables all accelerations\n"
 	     "\t-o\taudioo output mode\n", argv[0]);
 
     drivers = ao_drivers ();
@@ -126,7 +128,7 @@ static void handle_args (int argc, char * argv[])
     int i;
 
     drivers = ao_drivers ();
-    while ((c = getopt (argc, argv, "s::o:")) != -1)
+    while ((c = getopt (argc, argv, "s::co:")) != -1)
 	switch (c) {
 	case 'o':
 	    for (i = 0; drivers[i].name != NULL; i++)
@@ -151,6 +153,10 @@ static void handle_args (int argc, char * argv[])
 		    print_usage (argv);
 		}
 	    }
+	    break;
+
+	case 'c':
+	    disable_accel = 1;
 	    break;
 
 	default:
@@ -344,10 +350,14 @@ static void es_loop (void)
 
 int main (int argc,char *argv[])
 {
+    uint32_t accel;
+
     fprintf (stderr, PACKAGE"-"VERSION
 	     " (C) 2000-2001 Aaron Holtzman <aholtzma@ess.engr.uvic.ca>\n");
 
     handle_args (argc, argv);
+
+    accel = disable_accel ? 0 : MM_ACCEL_MLIB;
 
     output = ao_open (output_open);
     if (output == NULL) {
@@ -355,7 +365,7 @@ int main (int argc,char *argv[])
 	return 1;
     }
 
-    ac3_init (MM_ACCEL_MLIB);
+    ac3_init (accel);
 
     signal (SIGINT, signal_handler);
 
