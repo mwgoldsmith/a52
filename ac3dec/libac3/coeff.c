@@ -33,39 +33,139 @@
 #include "dither.h"
 #include "coeff.h"
 
-//
-//Lookup tables of 0.15 two's complement quantization values
-//
-static const int16_t q_1[3] = 
-{
-	( -2 << 15)/3, 0,(  2 << 15)/3 
+#define Q0 ((-2 << 15) / 3)
+#define Q1 (0)
+#define Q2 ((2 << 15) / 3)
+
+static const float q_1_0[ 32 ] = {
+    Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,
+    Q1,Q1,Q1,Q1,Q1,Q1,Q1,Q1,Q1,
+    Q2,Q2,Q2,Q2,Q2,Q2,Q2,Q2,Q2,
+    0,0,0,0,0
 };
 
-static const int16_t q_2[5] =
-{
-	( -4 << 15)/5,( -2 << 15)/5, 0,
-	(  2 << 15)/5,(  4 << 15)/5
+static const float q_1_1[ 32 ] = {
+    Q0,Q0,Q0,Q1,Q1,Q1,Q2,Q2,Q2,
+    Q0,Q0,Q0,Q1,Q1,Q1,Q2,Q2,Q2,
+    Q0,Q0,Q0,Q1,Q1,Q1,Q2,Q2,Q2,
+    0,0,0,0,0
 };
 
-static const int16_t q_3[7] = 
-{
-	( -6 << 15)/7,( -4 << 15)/7,( -2 << 15)/7, 0,
-	(  2 << 15)/7,(  4 << 15)/7,(  6 << 15)/7
+static const float q_1_2[ 32 ] = {
+    Q0,Q1,Q2,Q0,Q1,Q2,Q0,Q1,Q2,
+    Q0,Q1,Q2,Q0,Q1,Q2,Q0,Q1,Q2,
+    Q0,Q1,Q2,Q0,Q1,Q2,Q0,Q1,Q2,
+    0,0,0,0,0
 };
 
-static const int16_t q_4[11] = 
-{
-	(-10 << 15)/11,(-8 << 15)/11,(-6 << 15)/11, ( -4 << 15)/11,(-2 << 15)/11,  0,
-	(  2 << 15)/11,( 4 << 15)/11,( 6 << 15)/11, (  8 << 15)/11,(10 << 15)/11
+#undef Q0
+#undef Q1
+#undef Q2
+
+#define Q0 ((-4 << 15) / 5)
+#define Q1 ((-2 << 15) / 5)
+#define Q2 (0)
+#define Q3 ((2 << 15) / 5)
+#define Q4 ((4 << 15) / 5)
+
+static const float q_2_0[ 128 ] = {
+    Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,
+    Q1,Q1,Q1,Q1,Q1,Q1,Q1,Q1,Q1,Q1,Q1,Q1,Q1,Q1,Q1,Q1,Q1,Q1,Q1,Q1,Q1,Q1,Q1,Q1,Q1,
+    Q2,Q2,Q2,Q2,Q2,Q2,Q2,Q2,Q2,Q2,Q2,Q2,Q2,Q2,Q2,Q2,Q2,Q2,Q2,Q2,Q2,Q2,Q2,Q2,Q2,
+    Q3,Q3,Q3,Q3,Q3,Q3,Q3,Q3,Q3,Q3,Q3,Q3,Q3,Q3,Q3,Q3,Q3,Q3,Q3,Q3,Q3,Q3,Q3,Q3,Q3,
+    Q4,Q4,Q4,Q4,Q4,Q4,Q4,Q4,Q4,Q4,Q4,Q4,Q4,Q4,Q4,Q4,Q4,Q4,Q4,Q4,Q4,Q4,Q4,Q4,Q4,
+    0,0,0
 };
 
-static const int16_t q_5[15] = 
-{
-	(-14 << 15)/15,(-12 << 15)/15,(-10 << 15)/15,
-	( -8 << 15)/15,( -6 << 15)/15,( -4 << 15)/15,
-	( -2 << 15)/15,   0          ,(  2 << 15)/15,
-	(  4 << 15)/15,(  6 << 15)/15,(  8 << 15)/15,
-	( 10 << 15)/15,( 12 << 15)/15,( 14 << 15)/15
+static const float q_2_1[ 128 ] = {
+    Q0,Q0,Q0,Q0,Q0,Q1,Q1,Q1,Q1,Q1,Q2,Q2,Q2,Q2,Q2,Q3,Q3,Q3,Q3,Q3,Q4,Q4,Q4,Q4,Q4,
+    Q0,Q0,Q0,Q0,Q0,Q1,Q1,Q1,Q1,Q1,Q2,Q2,Q2,Q2,Q2,Q3,Q3,Q3,Q3,Q3,Q4,Q4,Q4,Q4,Q4,
+    Q0,Q0,Q0,Q0,Q0,Q1,Q1,Q1,Q1,Q1,Q2,Q2,Q2,Q2,Q2,Q3,Q3,Q3,Q3,Q3,Q4,Q4,Q4,Q4,Q4,
+    Q0,Q0,Q0,Q0,Q0,Q1,Q1,Q1,Q1,Q1,Q2,Q2,Q2,Q2,Q2,Q3,Q3,Q3,Q3,Q3,Q4,Q4,Q4,Q4,Q4,
+    Q0,Q0,Q0,Q0,Q0,Q1,Q1,Q1,Q1,Q1,Q2,Q2,Q2,Q2,Q2,Q3,Q3,Q3,Q3,Q3,Q4,Q4,Q4,Q4,Q4,
+    0,0,0
+};
+
+static const float q_2_2[ 128 ] = {
+    Q0,Q1,Q2,Q3,Q4,Q0,Q1,Q2,Q3,Q4,Q0,Q1,Q2,Q3,Q4,Q0,Q1,Q2,Q3,Q4,Q0,Q1,Q2,Q3,Q4,
+    Q0,Q1,Q2,Q3,Q4,Q0,Q1,Q2,Q3,Q4,Q0,Q1,Q2,Q3,Q4,Q0,Q1,Q2,Q3,Q4,Q0,Q1,Q2,Q3,Q4,
+    Q0,Q1,Q2,Q3,Q4,Q0,Q1,Q2,Q3,Q4,Q0,Q1,Q2,Q3,Q4,Q0,Q1,Q2,Q3,Q4,Q0,Q1,Q2,Q3,Q4,
+    Q0,Q1,Q2,Q3,Q4,Q0,Q1,Q2,Q3,Q4,Q0,Q1,Q2,Q3,Q4,Q0,Q1,Q2,Q3,Q4,Q0,Q1,Q2,Q3,Q4,
+    Q0,Q1,Q2,Q3,Q4,Q0,Q1,Q2,Q3,Q4,Q0,Q1,Q2,Q3,Q4,Q0,Q1,Q2,Q3,Q4,Q0,Q1,Q2,Q3,Q4,
+    0,0,0
+};
+
+#undef Q0
+#undef Q1
+#undef Q2
+#undef Q3
+#undef Q4
+
+static const float q_3[7] = {
+    (-6 << 15)/7, (-4 << 15)/7, (-2 << 15)/7, 0,
+    ( 2 << 15)/7, ( 4 << 15)/7, ( 6 << 15)/7
+};
+
+#define Q0 ((-10 << 15) / 11)
+#define Q1 ((-8 << 15) / 11)
+#define Q2 ((-6 << 15) / 11)
+#define Q3 ((-4 << 15) / 11)
+#define Q4 ((-2 << 15) / 11)
+#define Q5 (0)
+#define Q6 ((2 << 15) / 11)
+#define Q7 ((4 << 15) / 11)
+#define Q8 ((6 << 15) / 11)
+#define Q9 ((8 << 15) / 11)
+#define QA ((10 << 15) / 11)
+
+static const float q_4_0[ 128 ] = {
+    Q0, Q0, Q0, Q0, Q0, Q0, Q0, Q0, Q0, Q0, Q0,
+    Q1, Q1, Q1, Q1, Q1, Q1, Q1, Q1, Q1, Q1, Q1,
+    Q2, Q2, Q2, Q2, Q2, Q2, Q2, Q2, Q2, Q2, Q2,
+    Q3, Q3, Q3, Q3, Q3, Q3, Q3, Q3, Q3, Q3, Q3,
+    Q4, Q4, Q4, Q4, Q4, Q4, Q4, Q4, Q4, Q4, Q4,
+    Q5, Q5, Q5, Q5, Q5, Q5, Q5, Q5, Q5, Q5, Q5,
+    Q6, Q6, Q6, Q6, Q6, Q6, Q6, Q6, Q6, Q6, Q6,
+    Q7, Q7, Q7, Q7, Q7, Q7, Q7, Q7, Q7, Q7, Q7,
+    Q8, Q8, Q8, Q8, Q8, Q8, Q8, Q8, Q8, Q8, Q8,
+    Q9, Q9, Q9, Q9, Q9, Q9, Q9, Q9, Q9, Q9, Q9,
+    QA, QA, QA, QA, QA, QA, QA, QA, QA, QA, QA,
+    0,  0,  0,  0,  0,  0,  0
+};
+
+static const float q_4_1[ 128 ] = {
+    Q0, Q1, Q2, Q3, Q4, Q5, Q6, Q7, Q8, Q9, QA,
+    Q0, Q1, Q2, Q3, Q4, Q5, Q6, Q7, Q8, Q9, QA,
+    Q0, Q1, Q2, Q3, Q4, Q5, Q6, Q7, Q8, Q9, QA,
+    Q0, Q1, Q2, Q3, Q4, Q5, Q6, Q7, Q8, Q9, QA,
+    Q0, Q1, Q2, Q3, Q4, Q5, Q6, Q7, Q8, Q9, QA,
+    Q0, Q1, Q2, Q3, Q4, Q5, Q6, Q7, Q8, Q9, QA,
+    Q0, Q1, Q2, Q3, Q4, Q5, Q6, Q7, Q8, Q9, QA,
+    Q0, Q1, Q2, Q3, Q4, Q5, Q6, Q7, Q8, Q9, QA,
+    Q0, Q1, Q2, Q3, Q4, Q5, Q6, Q7, Q8, Q9, QA,
+    Q0, Q1, Q2, Q3, Q4, Q5, Q6, Q7, Q8, Q9, QA,
+    Q0, Q1, Q2, Q3, Q4, Q5, Q6, Q7, Q8, Q9, QA,
+    0,  0,  0,  0,  0,  0,  0
+};
+
+#undef Q0
+#undef Q1
+#undef Q2
+#undef Q3
+#undef Q4
+#undef Q5
+#undef Q6
+#undef Q7
+#undef Q8
+#undef Q9
+#undef QA
+
+static const float q_5[15] = {
+    (-14 << 15)/15,(-12 << 15)/15,(-10 << 15)/15,
+    ( -8 << 15)/15,( -6 << 15)/15,( -4 << 15)/15,
+    ( -2 << 15)/15,   0          ,(  2 << 15)/15,
+    (  4 << 15)/15,(  6 << 15)/15,(  8 << 15)/15,
+    ( 10 << 15)/15,( 12 << 15)/15,( 14 << 15)/15
 };
 
 //
@@ -176,9 +276,9 @@ coeff_get_float(uint16_t bap, uint16_t dithflag, int exp)
 	group_code = bitstream_get(5);
 
 	q_1_pointer = 1;
-	q_1_[1] = q_1[(group_code % 9) / 3];
-	q_1_[0] = q_1[(group_code % 9) % 3];
-	return q_1[group_code / 9] * scale_factor[exp];
+	q_1_[0] = q_1_2[group_code];
+	q_1_[1] = q_1_1[group_code];
+	return q_1_0[group_code] * scale_factor[exp];
 
     case 2:
 	if (q_2_pointer >= 0)
@@ -187,9 +287,9 @@ coeff_get_float(uint16_t bap, uint16_t dithflag, int exp)
 	group_code = bitstream_get(7);
 
 	q_2_pointer = 1;
-	q_2_[1] = q_2[(group_code % 25) / 5];
-	q_2_[0] = q_2[(group_code % 25) % 5];
-	return q_2[group_code / 25] * scale_factor[exp];
+	q_2_[0] = q_2_2[group_code];
+	q_2_[1] = q_2_1[group_code];
+	return q_2_0[group_code] * scale_factor[exp];
 
     case 3:
 	group_code = bitstream_get(3);
@@ -204,8 +304,8 @@ coeff_get_float(uint16_t bap, uint16_t dithflag, int exp)
 	group_code = bitstream_get(7);
 
 	q_4_pointer = 0;
-	q_4_ = q_4[group_code % 11];
-	return q_4[group_code / 11] * scale_factor[exp];
+	q_4_ = q_4_1[group_code];
+	return q_4_0[group_code] * scale_factor[exp];
 
     case 5:
 	group_code = bitstream_get(4);
