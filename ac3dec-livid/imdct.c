@@ -27,15 +27,46 @@ static complex_t pre_trans[N/4];
 static complex_t post_trans[N/4];
 static complex_t pre_window[N/4];
 
+/* 128 point bit-reverse LUT */
+static uint_8 bit_reverse[] = {
+	0x00, 0x40, 0x20, 0x60, 0x10, 0x50, 0x30, 0x70, 
+	0x08, 0x48, 0x28, 0x68, 0x18, 0x58, 0x38, 0x78, 
+	0x04, 0x44, 0x24, 0x64, 0x14, 0x54, 0x34, 0x74, 
+	0x0c, 0x4c, 0x2c, 0x6c, 0x1c, 0x5c, 0x3c, 0x7c, 
+	0x02, 0x42, 0x22, 0x62, 0x12, 0x52, 0x32, 0x72, 
+	0x0a, 0x4a, 0x2a, 0x6a, 0x1a, 0x5a, 0x3a, 0x7a, 
+	0x06, 0x46, 0x26, 0x66, 0x16, 0x56, 0x36, 0x76, 
+	0x0e, 0x4e, 0x2e, 0x6e, 0x1e, 0x5e, 0x3e, 0x7e, 
+	0x01, 0x41, 0x21, 0x61, 0x11, 0x51, 0x31, 0x71, 
+	0x09, 0x49, 0x29, 0x69, 0x19, 0x59, 0x39, 0x79, 
+	0x05, 0x45, 0x25, 0x65, 0x15, 0x55, 0x35, 0x75, 
+	0x0d, 0x4d, 0x2d, 0x6d, 0x1d, 0x5d, 0x3d, 0x7d, 
+	0x03, 0x43, 0x23, 0x63, 0x13, 0x53, 0x33, 0x73, 
+	0x0b, 0x4b, 0x2b, 0x6b, 0x1b, 0x5b, 0x3b, 0x7b, 
+	0x07, 0x47, 0x27, 0x67, 0x17, 0x57, 0x37, 0x77, 
+	0x0f, 0x4f, 0x2f, 0x6f, 0x1f, 0x5f, 0x3f, 0x7f};
+
+/* Twiddle factor LUT */
+static complex_t *w[7];
+static complex_t w_1[1];
+static complex_t w_2[2];
+static complex_t w_4[4];
+static complex_t w_8[8];
+static complex_t w_16[16];
+static complex_t w_32[32];
+static complex_t w_64[64];
+
+#if 0 //FIXME remove
 /* LUTs for DFT */
 static float cos_dft[128][128];
 static float sin_dft[128][128];
+#endif
 
 /* Twiddle factors for IMDCT */
 static float xcos1[N/4];
 static float xsin1[N/4];
 /* Windowing function for Modified DCT - Thank you acroread */
-static float w[] = {
+static float window[] = {
 	0.00014, 0.00024, 0.00037, 0.00051, 0.00067, 0.00086, 0.00107, 0.00130,
 	0.00157, 0.00187, 0.00220, 0.00256, 0.00297, 0.00341, 0.00390, 0.00443,
 	0.00501, 0.00564, 0.00632, 0.00706, 0.00785, 0.00871, 0.00962, 0.01061,
@@ -69,9 +100,51 @@ static float w[] = {
 	0.99999, 0.99999, 0.99999, 1.00000, 1.00000, 1.00000, 1.00000, 1.00000,
 	1.00000, 1.00000, 1.00000, 1.00000, 1.00000, 1.00000, 1.00000, 1.00000 };
 
+
+static void swap_cmplx(complex_t *a, complex_t *b)
+{
+	complex_t tmp;
+
+	tmp = *a;
+	*a = *b;
+	*b = tmp;
+}
+
+static inline complex_t cmplx_add(complex_t a, complex_t b)
+{
+	complex_t ret;
+
+	ret.real = a.real + b.real;
+	ret.imag = a.imag + b.imag;
+
+	return ret;
+} 
+
+static inline complex_t cmplx_sub(complex_t a, complex_t b)
+{
+	complex_t ret;
+
+	ret.real = a.real - b.real;
+	ret.imag = a.imag - b.imag;
+
+	return ret;
+}
+
+static inline complex_t cmplx_mult(complex_t a, complex_t b)
+{
+	complex_t ret;
+
+	ret.real = a.real * b.real - a.imag * b.imag;
+	ret.imag = a.real * b.imag + a.imag * b.real;
+
+	return ret;
+}
+
 void imdct_init(void)
 {
 	int i,k;
+	complex_t angle_step;
+	complex_t current_angle;
 
 	for( i=0; i < N/4; i++)
 	{
@@ -79,12 +152,37 @@ void imdct_init(void)
 		xsin1[i] = -sin(2 * M_PI * (8*i+1)/(8*N)) ;
 	}
 	
+#if 0 //FIXME remove in lieu of FFT 
 	for( i=0; i < N/4; i++)
 		for( k=0; k < N/4; k++)
 		{
 			cos_dft[i][k] = cos(8*M_PI*k*i/N);
 			sin_dft[i][k] = sin(8*M_PI*k*i/N);
 		}
+#endif
+
+	w[0] = w_1;
+	w[1] = w_2;
+	w[2] = w_4;
+	w[3] = w_8;
+	w[4] = w_16;
+	w[5] = w_32;
+	w[6] = w_64;
+
+	for( i = 0; i < 7; i++)
+	{
+		angle_step.real = cos(-2.0 * M_PI / (1 << (i+1)));
+		angle_step.imag = sin(-2.0 * M_PI / (1 << (i+1)));
+
+		current_angle.real = 1.0;
+		current_angle.imag = 0.0;
+
+		for (k = 0; k < 1 << i; k++)
+		{
+			w[i][k] = current_angle;
+			current_angle = cmplx_mult(current_angle,angle_step);
+		}
+	}
 }
 
 void 
@@ -103,6 +201,8 @@ void
 imdct_do(float x[],float y[])
 {
 	int i,k;
+	int p,q;
+	int m;
 
 	/* Pre IFFT complex multiply */
 	for( i=0; i < N/4; i++)
@@ -112,6 +212,7 @@ imdct_do(float x[],float y[])
 	  pre_trans[i].imag =(x[2*i]       * xcos1[i])  +  (x[N/2-2*i-1] * xsin1[i]);
 	}
 
+#if 0
 	/* BIGASS FIXME We do complex IDFT because we're lazy */
 	for(i=0; i<N/4; i++) { 
 		post_trans[i].real = 0.0; 
@@ -122,6 +223,31 @@ imdct_do(float x[],float y[])
 			post_trans[i].real += (pre_trans[k].real * cos_dft[i][k]) - (pre_trans[k].imag * sin_dft[i][k]);
 			post_trans[i].imag += (pre_trans[k].real * sin_dft[i][k]) + (pre_trans[k].imag * cos_dft[i][k]);
 		} 
+	}
+#endif
+
+	/* Begin FFT shuffle */
+	for(i=0; i<N/16; i++) 
+	{ 
+		swap_cmplx(&pre_trans[i],&pre_trans[bit_reverse[i]]);
+	}
+
+	/* FFT Merge */
+	for (m=0; m < 7; m++)
+	{
+		for(k = 0; k < (1 << m); k++)
+		{
+			for(i = 0; i < 128; i += 1 << (m+1))
+			{
+				p = k + i;
+				q = p + (1 << m);
+				post_trans[p] = cmplx_add(pre_trans[p],
+						cmplx_mult(pre_trans[q],w[m][k]));
+				post_trans[q] = cmplx_sub(pre_trans[p],
+						cmplx_mult(pre_trans[q],w[m][k]));
+
+			}
+		}
 	}
 
 	/* Post IFFT complex multiply */
@@ -135,13 +261,13 @@ imdct_do(float x[],float y[])
 	/* Window and convert to real valued signal */
 
 	for(i=0; i<N/8; i++) { 
-		y[2*i]         = -pre_window[N/8+i].imag   * w[2*i]; 
-		y[2*i+1]       =  pre_window[N/8-i-1].real * w[2*i+1]; 
-		y[N/4+2*i]     = -pre_window[i].real       * w[N/4+2*i]; 
-		y[N/4+2*i+1]   =  pre_window[N/4-i-1].imag * w[N/4+2*i+1]; 
-		y[N/2+2*i]     = -pre_window[N/8+i].real   * w[N/2-2*i-1];
-		y[N/2+2*i+1]   =  pre_window[N/8-i-1].imag * w[N/2-2*i-2];
-		y[3*N/4+2*i]   =  pre_window[i].imag       * w[N/4-2*i-1];
-		y[3*N/4+2*i+1] = -pre_window[N/4-i-1].real * w[N/4-2*i-2];
+		y[2*i]         = -pre_window[N/8+i].imag   * window[2*i]; 
+		y[2*i+1]       =  pre_window[N/8-i-1].real * window[2*i+1]; 
+		y[N/4+2*i]     = -pre_window[i].real       * window[N/4+2*i]; 
+		y[N/4+2*i+1]   =  pre_window[N/4-i-1].imag * window[N/4+2*i+1]; 
+		y[N/2+2*i]     = -pre_window[N/8+i].real   * window[N/2-2*i-1];
+		y[N/2+2*i+1]   =  pre_window[N/8-i-1].imag * window[N/2-2*i-2];
+		y[3*N/4+2*i]   =  pre_window[i].imag       * window[N/4-2*i-1];
+		y[3*N/4+2*i+1] = -pre_window[N/4-i-1].real * window[N/4-2*i-2];
 	}
 }

@@ -22,7 +22,7 @@ timing_test_2(void (*func)(void*,void*),void *arg_1,void *arg_2,char name[])
 		start_i = gethrtime();
 		func(arg_1,arg_2);
 		end_i = gethrtime();
-		printf("Iteration %d - %lld nsec\n",i,(end_i - start_i) / iters);
+		printf("Iteration %d - %lld nsec\n",i,end_i - start_i);
 	}
 	end = gethrtime();
 
