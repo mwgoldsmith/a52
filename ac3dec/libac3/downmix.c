@@ -225,6 +225,7 @@ void downmix(bsi_t* bsi, stream_samples_t samples,int16_t *s16_samples)
 	if(bsi->acmod > 7)
 		dprintf("(downmix) invalid acmod number\n"); 
 
+#if 0
 	//
 	//There are two main cases, with or without Dolby Surround
 	//
@@ -233,6 +234,7 @@ void downmix(bsi_t* bsi, stream_samples_t samples,int16_t *s16_samples)
 		fprintf(stderr,"Dolby Surround Mixes not currently enabled\n");
 		exit(1);
 	}
+#endif
 
 	//Non-Dolby surround downmixes
 	switch(bsi->acmod)
@@ -273,7 +275,9 @@ void downmix(bsi_t* bsi, stream_samples_t samples,int16_t *s16_samples)
 
 		// 1+1
 		case 0:
+#if 0
 			downmix_1f_0r_to_2ch(samples[ac3_config.dual_mono_ch_sel],s16_samples);
+#endif
 		break;
 	}
 }

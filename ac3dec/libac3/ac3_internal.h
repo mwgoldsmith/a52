@@ -40,8 +40,6 @@
 /* samples work structure */
 typedef float stream_samples_t[6][256];
 
-/* global config structure */
-extern ac3_config_t ac3_config;
 /* global error flag */
 extern uint32_t error_flag;
 

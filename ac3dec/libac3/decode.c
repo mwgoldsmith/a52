@@ -35,7 +35,6 @@
 #include "coeff.h"
 #include "bit_allocate.h"
 #include "parse.h"
-#include "crc.h"
 #include "stats.h"
 #include "rematrix.h"
 #include "sanity_check.h"
@@ -43,7 +42,6 @@
 #include "debug.h"
 
 //our global config structure
-ac3_config_t ac3_config;
 uint32_t error_flag = 0;
 
 static audblk_t audblk;
@@ -61,26 +59,57 @@ static stream_samples_t samples;
 static int16_t s16_samples[2 * 6 * 256];
 
 void
-ac3_init(ac3_config_t *config)
+ac3_init(void)
 {
-    memcpy(&ac3_config,config,sizeof(ac3_config_t));
-
-    bitstream_init(config->fill_buffer_callback);
     imdct_init();
     sanity_check_init(&syncinfo,&bsi,&audblk);
 
     frame.audio_data = s16_samples;
 }
 
+int ac3_frame_length(uint8_t * buf)
+{
+    static int rate[] = { 32,  40,  48,  56,  64,  80,  96, 112,
+			 128, 160, 192, 224, 256, 320, 384, 448,
+			 512, 576, 640};
+    int bitrate;
+
+    if ((buf[0] != 0x0b) || (buf[1] != 0x77)) {
+	fprintf (stderr, "bad sync word\n");
+	exit (1);
+    }
+
+    bitrate = (buf[4] >> 1) & 31;
+    if (bitrate > 18) {
+	fprintf (stderr, "bad bit rate\n");
+	exit (1);
+    }
+    bitrate = rate[bitrate];
+
+    switch (buf[4] & 0xc0) {
+    case 0:	// 48 KHz
+	return 4 * bitrate;
+    case 0x40:
+	return 2 * (320 * bitrate / 147 + (buf[4] & 1));
+    case 0x80:
+	return 6 * bitrate;
+    default:
+	fprintf (stderr, "bad sample rate\n");
+	exit (1);
+    }
+}
+
 ac3_frame_t*
-ac3_decode_frame(void)
+ac3_decode_frame(uint8_t * buf)
 {
     uint32_t i;
 
     //find a syncframe and parse
-    parse_syncinfo(&syncinfo);
+    parse_syncinfo(&syncinfo, buf);
     if(error_flag)
 	goto error;
+
+    bitstream_set_ptr (buf + 5);
 
     dprintf("(decode) begin frame %d\n",frame_count++);
     frame.sampling_rate = syncinfo.sampling_rate;

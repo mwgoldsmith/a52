@@ -50,13 +50,7 @@
 extern uint32_t bits_left;
 extern uint32_t current_word;
 
-void bitstream_init(void(*fill_function)(uint8_t**,uint8_t**));
-
-uint8_t bitstream_get_byte(void);
-
-uint8_t *bitstream_get_buffer_start(void);
-void bitstream_buffer_frame(uint32_t frame_size);
-
+void bitstream_set_ptr (uint8_t * buf);
 uint32_t bitstream_get_bh(uint32_t num_bits);
 
 static inline uint32_t 

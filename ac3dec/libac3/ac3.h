@@ -44,5 +44,6 @@ typedef struct ac3_frame_s
     int16_t * audio_data;
 } ac3_frame_t;
 
-void ac3_init(ac3_config_t *config);
-ac3_frame_t* ac3_decode_frame(void);
+void ac3_init(void);
+int ac3_frame_length(uint8_t * buf);
+ac3_frame_t* ac3_decode_frame(uint8_t * buf);
