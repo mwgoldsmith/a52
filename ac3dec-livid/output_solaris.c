@@ -29,7 +29,7 @@
 static char dev[] = "/dev/audio";
 static audio_info_t info;
 static int fd;
-static uint_16 out_buf[1024];
+static sint_16 out_buf[1024];
 
 /*
  * open the audio device for writing to
