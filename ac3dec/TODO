@@ -1,4 +1,4 @@
-* expose the downmix functionality
+* clean includes, put in include directory
 * allow LFE channel output
 
 * finish ac3_internal.h cleanup
@@ -18,8 +18,6 @@
 
 * update imdct code
 * update bitstream/parse code
-
-* clean includes, put in include directory
 
 
 from aaron:
