@@ -5,6 +5,7 @@
 EXTRA_DIST = configure.incl
 
 INCLUDES += -I$(top_srcdir)/include
+INCLUDES += -I$(top_srcdir)/libao
 libdir = $(PLUGIN_DIR)
 
 SOURCE_KNI = srfft_kni_c.c srfft_kni.S downmix_kni.S imdct512_kni.S imdct_kni.c
