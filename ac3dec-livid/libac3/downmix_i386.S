@@ -69,7 +69,7 @@ stream_sample_1ch_to_s16_i386:
 	movl -8(%ebp),%eax
 	movw %ax,-2(%ebp)
 	addl $4,%ecx
-	filds -2(%ebp)
+	flds -2(%ebp)
 	fistpl -8(%ebp)
 	movl -8(%ebp),%eax
 	movw %ax,(%edx)

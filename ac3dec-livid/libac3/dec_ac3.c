@@ -43,7 +43,7 @@
 
 static int _ac3dec_open		(plugin_t *plugin, void *foo);
 static int _ac3dec_close	(plugin_t *plugin);
-static int _ac3dec_read		(plugin_codec_audio_t *plugin, buf_t *buf, buf_entry_t *buf_entry);
+static int _ac3dec_read		(plugin_t *plugin, buf_t *buf, buf_entry_t *buf_entry);
 
 static plugin_codec_audio_t codec_ac3dec = {
 	open:		_ac3dec_open,
@@ -66,7 +66,7 @@ static int _ac3dec_close (plugin_t *plugin)
 }
 
 
-static int _ac3dec_read (plugin_codec_audio_t *plugin, buf_t *buf, buf_entry_t *buf_entry)
+static int _ac3dec_read (plugin_t *plugin, buf_t *buf, buf_entry_t *buf_entry)
 {
 	return ac3dec_decode_data (codec_ac3dec.output, buf, buf_entry);
 }

@@ -67,10 +67,13 @@ void downmix_init()
 		downmix_2f_1r_to_2ch = downmix_2f_1r_to_2ch_c;
 		downmix_3f_0r_to_2ch = downmix_3f_0r_to_2ch_c;
 #ifdef __i386__
+#if 1
 		stream_sample_2ch_to_s16 = stream_sample_2ch_to_s16_c;
 		stream_sample_1ch_to_s16 = stream_sample_1ch_to_s16_c;
-//		stream_sample_2ch_to_s16 = stream_sample_2ch_to_s16_i386;
-//		stream_sample_1ch_to_s16 = stream_sample_1ch_to_s16_i386;
+#else
+		stream_sample_2ch_to_s16 = stream_sample_2ch_to_s16_i386;
+		stream_sample_1ch_to_s16 = stream_sample_1ch_to_s16_i386;
+#endif
 #else
 		stream_sample_2ch_to_s16 = stream_sample_2ch_to_s16_c;
 		stream_sample_1ch_to_s16 = stream_sample_1ch_to_s16_c;
