@@ -31,22 +31,28 @@
 
 #define BUFFER_SIZE 4096
 
-static uint8_t *buffer_start;
+static uint32_t * buffer_start;
 
 uint32_t bits_left;
 uint32_t current_word;
 
 void bitstream_set_ptr (uint8_t * buf)
 {
-    buffer_start = buf;
+    int align;
+
+    align = (int)buf & 3;
+    buffer_start = (uint32_t *) (buf - align);
     bits_left = 0;
+    bitstream_get (align * 8);
 }
 
 static inline void
 bitstream_fill_current()
 {
-    current_word = *((uint32_t*)buffer_start)++;
-    current_word = swab32(current_word);
+    uint32_t tmp;
+
+    tmp = *(buffer_start++);
+    current_word = swab32 (tmp);
 }
 
 //
