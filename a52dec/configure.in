@@ -48,6 +48,9 @@ if test x"$GCC" = x"yes"; then
 elif test x"$CC" = x"tcc"; then
     dnl TenDRA portability checking compiler
     CFLAGS="-Xp -Yansi -f`pwd`/include/tendra.h"
+    enable_mlib=no
+    enable_oss=no
+    enable_solaris_audio=no
 else
     dnl non-gcc flags - we probably need exact configuration triplets here.
     case "$host_alias" in
