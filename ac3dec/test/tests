@@ -1,7 +1,7 @@
 #basedir ../../ac3dec-streams
 
-ac3test
-arm
-egypt
-thx
-zorro
+ac3test		#OK - 5-channel test stream
+arm		#OK - produced glitches in oms ac3dec
+egypt		#OK - dolby digital "egypt" trailer
+thx		#OK - thx chord
+zorro		#OK - likely to overdrive output if not properly downmixed
