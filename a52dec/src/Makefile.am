@@ -1,4 +1,4 @@
-CFLAGS = @CFLAGS@ @A52DEC_CFLAGS@
+CFLAGS = @A52DEC_CFLAGS@
 
 bin_PROGRAMS = a52dec extract_a52
 a52dec_SOURCES = a52dec.c getopt.c
