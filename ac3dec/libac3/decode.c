@@ -59,22 +59,34 @@ int ac3_frame_length(uint8_t * buf)
     return parse_syncinfo (buf, &dummy, &dummy);
 }
 
-static int16_t blah (float f)
+static int16_t blah (int32_t i)
 {
-    int i;
-
-    i = rint (f);
-    if (i > 32767)
+    if (i > 0x43c07fff)
 	return 32767;
-    else if (i < -32768)
+    else if (i < 0x43bf8000)
 	return -32768;
     else
-	return i;
+	return i - 0x43c00000;
 }
 
-static void float_to_int (float * f, int16_t * s16) 
+static void float_to_int (float * _f, int16_t * s16) 
 {
     int i;
+    int32_t * f = (int32_t *) _f;	// XXX assumes IEEE float format
+
+#if 0
+    i = *_f = 0;
+    *_f += 384;
+    printf ("%x %x\n", i, *f);
+
+    i = *_f = 1.0 / 32768;
+    *_f += 384;
+    printf ("%x %x\n", i, *f);
+
+    i = *_f = -1.0 / 32768;
+    *_f += 384;
+    printf ("%x %x\n", i, *f);
+#endif
 
     for (i = 0; i < 256; i++) {
 	s16[2*i] = blah (f[i]);
