@@ -601,7 +601,7 @@ int main (int argc, char ** argv)
 	es_loop ();
 
     a52_free (state);
-    ao_close (output);
     print_fps (1);
+    ao_close (output);
     return 0;
 }
