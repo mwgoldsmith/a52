@@ -33,7 +33,11 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <math.h>
+#if defined(__OpenBSD__)
+#include <soundcard.h>
+#else
 #include <sys/soundcard.h>
+#endif
 #include <sys/ioctl.h>
 
 
@@ -47,7 +51,7 @@
 
 #define BUFFER_SIZE 1024 
 
-static char dev[] = "/dev/dsp";
+static char dev[] = "/dev/audio";
 static int fd;
 
 //FIXME uncomment all the matlab calls in this module
@@ -138,7 +142,7 @@ void output_play(bsi_t *bsi,stream_samples_t *samples)
 {
   int i;
 	float *left,*right;
-	float norm = 1.0;
+	float norm;
 	float left_tmp = 0.0;
 	float right_tmp = 0.0;
 	sint_16 *out_buf;
@@ -167,6 +171,9 @@ void output_play(bsi_t *bsi,stream_samples_t *samples)
 	//100% digital [-1.0,1.0]
 	//
 	//perhaps use the dynamic range info to do this instead
+	
+	norm = 1.0;
+
 	for(i=0; i< 256;i++)
 	{
     left_tmp = samples->channel[0][i];
@@ -174,15 +181,15 @@ void output_play(bsi_t *bsi,stream_samples_t *samples)
 
 		if(left_tmp > norm)
 			norm = left_tmp;
-		if(left_tmp < -norm)
+		else if(left_tmp < -norm)
 			norm = -left_tmp;
 
 		if(right_tmp > norm)
 			norm = right_tmp;
-		if(right_tmp < -norm)
+		else if(right_tmp < -norm)
 			norm = -right_tmp; 
 	}
-	norm = 32000.0/norm;
+	norm = 32000.0f/norm;
 
 	/* Take the floating point audio data and convert it into
 	 * 16 bit signed PCM data */

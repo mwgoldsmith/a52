@@ -229,6 +229,10 @@ imdct_do_512(float x[],float y[],float delay[])
 	float tmp_b_r;
 
 
+	float *y_ptr;
+	float *delay_ptr;
+	float *window_ptr;
+
 	/* Pre IFFT complex multiply plus IFFT cmplx conjugate */
 	for( i=0; i < N/4; i++)
 	{
@@ -236,7 +240,6 @@ imdct_do_512(float x[],float y[],float delay[])
 		buf[i].real =         (x[N/2-2*i-1] * xcos1[i])  -  (x[2*i]       * xsin1[i]);
 	  buf[i].imag = -1.0 * ((x[2*i]       * xcos1[i])  +  (x[N/2-2*i-1] * xsin1[i]));
 	}
-
 
 	//Bit reversed shuffling
 	for(i=0; i<N/4; i++) 
@@ -246,6 +249,7 @@ imdct_do_512(float x[],float y[],float delay[])
 			swap_cmplx(&buf[i],&buf[k]);
 	}
 
+#if 1
 	/* FFT Merge */
 	for (m=0; m < 7; m++)
 	{
@@ -270,7 +274,9 @@ imdct_do_512(float x[],float y[],float delay[])
 			}
 		}
 	}
+#endif
 
+#if 1
 	/* Post IFFT complex multiply  plus IFFT complex conjugate*/
 	for( i=0; i < N/4; i++)
 	{
@@ -280,7 +286,9 @@ imdct_do_512(float x[],float y[],float delay[])
 		buf[i].real =(tmp_a_r * xcos1[i])  -  (tmp_a_i  * xsin1[i]);
 	  buf[i].imag =(tmp_a_r * xsin1[i])  +  (tmp_a_i  * xcos1[i]);
 	}
+#endif 
 	
+#if 0
 	/* Window and convert to real valued signal */
 	for(i=0; i<N/8; i++) 
 	{ 
@@ -294,12 +302,47 @@ imdct_do_512(float x[],float y[],float delay[])
 		y[384 + 2*i+1] = -buf[N/4-i-1].real * window[128 - 2*i-2];
 	}
 
-	/* Overlap and add */
+#else 
+  y_ptr = y;
+	delay_ptr = delay;
+	window_ptr = window;
+	/* Window and convert to real valued signal */
+	for(i=0; i<N/8; i++) 
+	{ 
+		*y_ptr++   = 2.0f * (-buf[N/8+i].imag   * *window_ptr++ + *delay_ptr++); 
+		*y_ptr++   = 2.0f * ( buf[N/8-i-1].real * *window_ptr++ + *delay_ptr++); 
+	}
+
+	for(i=0; i<N/8; i++) 
+	{ 
+		*y_ptr++  = 2.0f * (-buf[i].real       * *window_ptr++ + *delay_ptr++); 
+		*y_ptr++  = 2.0f * ( buf[N/4-i-1].imag * *window_ptr++ + *delay_ptr++); 
+	}
+
+	/* The trailing edge of the window goes into the delay line */
+	delay_ptr = delay;
+
+	for(i=0; i<N/8; i++) 
+	{ 
+		*delay_ptr++  = -buf[N/8+i].real   * *--window_ptr; 
+		*delay_ptr++  =  buf[N/8-i-1].imag * *--window_ptr; 
+	}
+
+	for(i=0; i<N/8; i++) 
+	{
+		*delay_ptr++  =  buf[i].imag       * *--window_ptr; 
+		*delay_ptr++  = -buf[N/4-i-1].real * *--window_ptr; 
+	}
+
+#endif
+
+#if 0
 	for(i=0; i< 256; i++) 
 	{ 
-		y[i] = 2.0 * (y[i] + delay[i]); 
+		y[i] = 2.0f * (y[i] + delay[i]); 
 		delay[i] = y[256 +i]; 
 	}
+#endif
 }
 
 void
