@@ -8,6 +8,16 @@ if test x"$enable_oss" != x"no"; then
     *-linux*|*-openbsd*|*-freebsd*)
 	AC_DEFINE([LIBAO_OSS],,[libao OSS support])
 	AC_CHECK_LIB([ossaudio],[_oss_ioctl],
-	    [LIBAO_LIBS="$LIBAO_LIBS -lossaudio"])
+	    [LIBAO_LIBS="$LIBAO_LIBS -lossaudio"]);;
+    esac
+fi
+
+dnl check for solaris
+AC_ARG_ENABLE([solaris-audio],
+    [  --disable-solaris-audio make a version not using solaris audio])
+if test x"$enable_solaris_audio" != x"no"; then
+    case "$host" in
+    *-sun-solaris*)
+	AC_DEFINE([LIBAO_SOLARIS],,[libao solaris support]);;
     esac
 fi
