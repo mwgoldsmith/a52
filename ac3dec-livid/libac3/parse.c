@@ -595,7 +595,7 @@ parse_audblk(bsi_t *bsi,audblk_t *audblk)
 		}
 	}
 
-	stats_print_audblk(audblk);
+	stats_print_audblk(bsi,audblk);
 }
 
 void

@@ -318,7 +318,7 @@ coeff_uncouple_ch(float samples[],bsi_t *bsi,audblk_t *audblk,uint_32 ch)
 			else
 				cpl_mant_tmp = ((0x10) | audblk->cplcomant[ch][bnd]) << 10;
 			
-			cpl_coord = convert_to_float(cpl_exp_tmp,cpl_mant_tmp) * 8.0;
+			cpl_coord = convert_to_float(cpl_exp_tmp,cpl_mant_tmp) * 8.0f;
 
 			//Invert the phase for the right channel if necessary
 			if(bsi->acmod == 0x2 && audblk->phsflginu && ch == 1 && audblk->phsflg[bnd])

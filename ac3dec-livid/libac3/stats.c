@@ -156,15 +156,23 @@ void stats_print_bsi(bsi_t *bsi)
 
 char *exp_strat_tbl[4] = {"R   ","D15 ","D25 ","D45 "};
 
-void stats_print_audblk(audblk_t *audblk)
+void stats_print_audblk(bsi_t *bsi,audblk_t *audblk)
 {
+	uint_32 i;
+
 	dprintf("(audblk) ");
 	dprintf("%s ",audblk->cplinu ? "cpl on " : "cpl off");
 	dprintf("%s ",audblk->baie? "bai " : "    ");
 	dprintf("%s ",audblk->snroffste? "snroffst " : "         ");
 	dprintf("%s ",audblk->deltbaie? "deltba " : "       ");
+	dprintf("%s ",audblk->phsflginu? "phsflg " : "       ");
 	dprintf("(%s %s %s %s %s) ",exp_strat_tbl[audblk->chexpstr[0]],
 		exp_strat_tbl[audblk->chexpstr[1]],exp_strat_tbl[audblk->chexpstr[2]],
 		exp_strat_tbl[audblk->chexpstr[3]],exp_strat_tbl[audblk->chexpstr[4]]);
+	dprintf("[");
+	for(i=0;i<bsi->nfchans;i++)
+		dprintf("%1d",audblk->blksw[i]);
+	dprintf("]");
+
 	dprintf("\n");
 }
