@@ -24,7 +24,7 @@
 
 int debug_is_on(void);
 
-#ifdef __GNUC__
+#if defined (__GNUC__) && defined (DEBUG)
 #define dprintf(format,args...)\
 {\
 	if (debug_is_on())\

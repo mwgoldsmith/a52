@@ -36,6 +36,7 @@
 #include "ac3.h"
 #include "ac3_internal.h"
 #include "bitstream.h"
+#include "downmix.h"
 #include "imdct.h"
 #include "exponent.h"
 #include "coeff.h"
@@ -45,47 +46,48 @@
 #include "stats.h"
 #include "rematrix.h"
 #include "sanity_check.h"
-#include "downmix.h"
 #include "debug.h"
 
 //our global config structure
 ac3_config_t ac3_config;
-uint_32 error_flag = 0;
+uint32_t error_flag = 0;
 
 static audblk_t audblk;
 static bsi_t bsi;
 static syncinfo_t syncinfo;
-static uint_32 frame_count = 0;
-static uint_32 done_banner;
-static uint_32 is_output_initialized = 0;
+static uint32_t frame_count = 0;
+static uint32_t done_banner;
+static uint32_t is_output_initialized = 0;
 
 //the floating point samples for one audblk
 static stream_samples_t samples;
 
 //the integer samples for the entire frame (with enough space for 2 ch out)
 //if this size change, be sure to change the size when muting
-static sint_16 s16_samples[2 * 6 * 256];
+static int16_t s16_samples[2 * 6 * 256] __attribute__ ((aligned(16)));
 
-
+// downmix stuff
+static float cmixlev_lut[4] = { 0.707, 0.595, 0.500, 0.707 };
+static float smixlev_lut[4] = { 0.707, 0.500, 0.0   , 0.500 };
+static dm_par_t dm_par;
+ 
 static ao_functions_t ac3_output;
 
 //Storage for the syncframe
 #define BUFFER_MAX_SIZE 4096
-static uint_8 buffer[BUFFER_MAX_SIZE];
-static uint_32 buffer_size = 0;;
+static uint8_t buffer[BUFFER_MAX_SIZE];
+static uint32_t buffer_size = 0;;
 
-uint_32
-decode_buffer_syncframe(syncinfo_t *syncinfo, uint_8 **start,uint_8 *end)
+uint32_t
+decode_buffer_syncframe(syncinfo_t *syncinfo, uint8_t **start,uint8_t *end)
 {
-	uint_8 *cur = *start;
-	uint_16 syncword = syncinfo->syncword;
-	uint_32 ret = 0;
+	uint8_t *cur = *start;
+	uint16_t syncword = syncinfo->syncword;
+	uint32_t ret = 0;
 
 	// 
 	// Find an ac3 sync frame.
 	// 
-resync:
-
 	while(syncword != 0x0b77)
 	{
 		if(cur >= end)
@@ -119,10 +121,9 @@ resync:
 
 	if(!crc_validate())
 	{
+		error_flag = 1;
 		fprintf(stderr,"** CRC failed - skipping frame **\n");
-		syncword = 0xffff;
-		buffer_size = 0;
-		goto resync;
+		goto done;
 	}
 
 	//
@@ -147,9 +148,8 @@ done:
 void
 decode_mute(void)
 {
-	fprintf(stderr,"muting frame\n");
 	//mute the frame
-	memset(s16_samples,0,sizeof(sint_16) * 256 * 2 * 6);
+	memset(s16_samples,0,sizeof(int16_t) * 256 * 2 * 6);
 	error_flag = 0;
 }
 
@@ -165,10 +165,10 @@ ac3_init(ac3_config_t *config,ao_functions_t *foo)
 	ac3_output = *foo;
 }
 
-uint_32
-ac3_decode_data(uint_8 *data_start,uint_8 *data_end)
+uint32_t
+ac3_decode_data(uint8_t *data_start,uint8_t *data_end)
 {
-	uint_32 i;
+	uint32_t i;
 
 	while(decode_buffer_syncframe(&syncinfo,&data_start,data_end))
 	{
@@ -182,14 +182,25 @@ ac3_decode_data(uint_8 *data_start,uint_8 *data_end)
 
 		parse_bsi(&bsi);
 
-		if(!done_banner)
-		{
+		if(!done_banner) {
 			stats_print_banner(&syncinfo,&bsi);
 			done_banner = 1;
 		}
 
-		for(i=0; i < 6; i++)
-		{
+		// compute downmix parameters
+		// downmix to tow channels for now
+		dm_par.clev = 0.0; dm_par.slev = 0.0; dm_par.unit = 1.0;
+		if (bsi.acmod & 0x1)	// have center
+			dm_par.clev = cmixlev_lut[bsi.cmixlev];
+
+		if (bsi.acmod & 0x4)	// have surround channels
+			dm_par.slev = smixlev_lut[bsi.surmixlev];
+
+		dm_par.unit /= 1.0 + dm_par.clev + dm_par.slev;
+		dm_par.clev *= dm_par.unit;
+		dm_par.slev *= dm_par.unit;
+
+		for(i=0; i < 6; i++) {
 			//Initialize freq/time sample storage
 			memset(samples,0,sizeof(float) * 256 * (bsi.nfchans + bsi.lfeon));
 
@@ -216,11 +227,11 @@ ac3_decode_data(uint_8 *data_start,uint_8 *data_end)
 				rematrix(&audblk,samples);
 
 			// Convert the frequency samples into time samples 
-			imdct(&bsi,&audblk,samples);
+			imdct(&bsi,&audblk,samples, &s16_samples[i * 2 * 256], &dm_par);
 
 			// Downmix into the requested number of channels
-			// and convert floating point to sint_16
-			downmix(&bsi,samples,&s16_samples[i * 2 * 256]);
+			// and convert floating point to int16_t
+			// downmix(&bsi,samples,&s16_samples[i * 2 * 256]);
 
 			sanity_check(&syncinfo,&bsi,&audblk);
 			if(error_flag)
@@ -228,7 +239,6 @@ ac3_decode_data(uint_8 *data_start,uint_8 *data_end)
 
 			continue;
 		}
-		parse_auxdata(&syncinfo);
 
 		if(!is_output_initialized)
 		{

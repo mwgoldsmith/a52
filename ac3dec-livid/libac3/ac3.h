@@ -22,22 +22,7 @@
  *
  */
 
-
-#ifndef AARONS_TYPES
-#define AARONS_TYPES
-typedef unsigned long long uint_64;
-typedef unsigned int   uint_32;
-typedef unsigned short uint_16;
-typedef unsigned char  uint_8;
-
-typedef signed long long sint_64;
-typedef signed int     sint_32;
-typedef signed short   sint_16;
-typedef signed char    sint_8;
-#endif
-
-//FIXME take this out once we pull the audio_out stuff out of libac3
-#include "audio_out.h"
+#include <inttypes.h>
 
 #define AC3_DOLBY_SURR_ENABLE 0x1
 #define AC3_3DNOW_ENABLE      0x2
@@ -46,15 +31,12 @@ typedef signed char    sint_8;
 
 typedef struct ac3_config_s
 {
-	//Bit flags that enable various things
-	uint_32 flags;
-	//Callback that points the decoder to new stream data
-  void   (*fill_buffer_callback)(uint_8 **, uint_8 **);
-	//Number of discrete channels in final output (for downmixing)
-	uint_16 num_output_ch;
-	//Which channel of a dual mono stream to select
-	uint_16 dual_mono_ch_sel;
+//Bit flags that enable various things
+	uint32_t flags;
+//Callback that points the decoder to new stream data
+	void   (*fill_buffer_callback)(uint8_t **, uint8_t **);
+//Number of discrete channels in final output (for downmixing)
+	uint16_t num_output_ch;
+//Which channel of a dual mono stream to select
+	uint16_t dual_mono_ch_sel;
 } ac3_config_t;
-
-void ac3_init(ac3_config_t *,ao_functions_t*);
-uint_32 ac3_decode_data(uint_8 *data_start,uint_8 *data_end);
