@@ -60,13 +60,6 @@ static null_instance_t instance = {{null_setup, null_play, null_close}, 0};
 
 ao_instance_t * ao_null_open (void)
 {
-    instance.channels = AC3_3F2R | AC3_LFE;
-
-    return (ao_instance_t *) &instance;
-}
-
-ao_instance_t * ao_null2_open (void)
-{
     instance.channels = AC3_STEREO;
 
     return (ao_instance_t *) &instance;
@@ -75,6 +68,13 @@ ao_instance_t * ao_null2_open (void)
 ao_instance_t * ao_null4_open (void)
 {
     instance.channels = AC3_2F2R;
+
+    return (ao_instance_t *) &instance;
+}
+
+ao_instance_t * ao_null6_open (void)
+{
+    instance.channels = AC3_3F2R | AC3_LFE;
 
     return (ao_instance_t *) &instance;
 }
