@@ -11,6 +11,6 @@ lib_LTLIBRARIES = dec_ac3.la
 
 dec_ac3 = @MM_CFLAGS@
 dec_ac3_la_LDFLAGS = -avoid-version -module Wl,-soname,dec_ac3.so -lm @MM_LIBS@
-dec_ac3_la_SOURCES = dec_ac3.c bitstream.c decode.c coeff.c exponent.c stats.c bit_allocate.c  parse.c crc.c debug.c rematrix.c dither.c sanity_check.c srfft.c cpu_accel.c srfft_kni_c.c srfft_kni.S downmix.c downmix_kni.S downmix_i386.S imdct512_kni.S imdct_kni.c imdct_c.c imdct.c downmix_c.c
+dec_ac3_la_SOURCES = dec_ac3.c bitstream.c decode.c coeff.c exponent.c stats.c bit_allocate.c  parse.c crc.c debug.c rematrix.c dither.c sanity_check.c srfft.c srfft_kni_c.c srfft_kni.S downmix.c downmix_kni.S downmix_i386.S imdct512_kni.S imdct_kni.c imdct_c.c imdct.c downmix_c.c
 
 noinst_HEADERS = ac3_internal.h bitstream.h imdct.h stats.h coeff.h exponent.h bit_allocate.h parse.h crc.h debug.h rematrix.h downmix.h dither.h sanity_check.h ac3.h srfft.h srfftp.h mm_accel.h imdct_kni.h imdct_c.h downmix_c.h downmix_i386.h downmix_kni.h

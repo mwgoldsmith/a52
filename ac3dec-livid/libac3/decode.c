@@ -245,7 +245,11 @@ size_t ac3dec_decode_data (ac3_config_t *config, ao_functions_t *ao_functions, u
 		if (!is_output_initialized) {
 #ifdef __OMS__
 			plugin_output_audio_attr_t attr;
+#ifdef __sun__
+			attr.format = 16;
+#else
 			attr.format = AFMT_S16_NE;
+#endif
 			attr.speed = syncinfo.sampling_rate;
 			attr.channels = 2;
 
