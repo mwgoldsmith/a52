@@ -21,7 +21,7 @@ void print_bits(unsigned long data,unsigned long num_bits)
 	}
 
 }
-#define BIT_SIZE (8 * 128)
+#define BIT_SIZE (10 * 128)
 int main(void)
 {
 	bitstream_t *bs;
@@ -30,7 +30,6 @@ int main(void)
 	long i = 0;
 
 	bs = bitstream_open("bitstream_test.dat");
-	printf("using bitstream %x\n",bs);
 
 	while (i < BIT_SIZE)
 	{

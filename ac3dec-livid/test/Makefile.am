@@ -6,3 +6,7 @@ imdct_test_SOURCES = imdct_test.c
 bitstream_test_LDADD = ../bitstream.o
 imdct_test_LDADD = ../imdct.o
 
+check:
+	rm -f bitstream_test.out
+	./bitstream_test > bitstream_test.out
+	diff bitstream_test.out bitstream_test.out.ref
