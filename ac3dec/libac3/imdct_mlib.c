@@ -24,14 +24,13 @@
 
 #ifdef LIBAC3_MLIB
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <math.h>
-
+#include <inttypes.h>
 #include <mlib_types.h>
 #include <mlib_status.h>
 #include <mlib_signal.h>
 
+#include "ac3.h"
+#include "ac3_internal.h"
 
 extern sample_t imdct_window[];
 

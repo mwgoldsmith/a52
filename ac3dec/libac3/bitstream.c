@@ -21,9 +21,9 @@
  *
  */
 
+#include "config.h"
+
 #include <inttypes.h>
-#include <stdlib.h>
-#include <stdio.h>
 
 #include "ac3.h"
 #include "ac3_internal.h"

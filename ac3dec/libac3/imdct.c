@@ -25,17 +25,15 @@
 #include "config.h"
 
 #include <inttypes.h>
-#include <stdlib.h>
-#include <stdio.h>
 #include <math.h>
+
 #include "ac3.h"
 #include "ac3_internal.h"
 
 void (* imdct_256) (sample_t data[], sample_t delay[]);
 void (* imdct_512) (sample_t data[], sample_t delay[]);
 
-typedef struct complex_s
-{
+typedef struct complex_s {
     sample_t real;
     sample_t imag;
 } complex_t;
@@ -375,9 +373,6 @@ imdct_do_256(sample_t data[],sample_t delay[])
 void imdct_init (void)
 {
 #ifdef LIBAC3_MLIB
-    void imdct_do_256_mlib(sample_t data[],sample_t delay[]);
-    void imdct_do_512_mlib(sample_t data[],sample_t delay[]);
-
     imdct_512 = imdct_do_512_mlib;
     imdct_256 = imdct_do_256_mlib;
 #else

@@ -193,7 +193,7 @@ static inline void float_to_int (float * _f, int16_t * s16)
     }
 }
 
-int ac3_decode_data (uint8_t * start, uint8_t * end)
+void ac3_decode_data (uint8_t * start, uint8_t * end)
 {
     static ac3_state_t state;
 
@@ -201,7 +201,6 @@ int ac3_decode_data (uint8_t * start, uint8_t * end)
     static uint8_t * bufptr = buf;
     static int16_t s16_samples[2 * 6 * 256]; 
     static uint8_t * bufpos = buf + 7;
-    int num_frames = 0;
     int sample_rate;
     int bit_rate;
     int flags;
@@ -260,8 +259,6 @@ int ac3_decode_data (uint8_t * start, uint8_t * end)
 	    }
 	}
     }
-
-    return num_frames;
 }
 
 static void ps_loop (void)
@@ -341,13 +338,8 @@ static void ps_loop (void)
 		}
 		if (*tmp1 == 0x80) {	/* ac3 */
 		    tmp1 += 4;
-		    if (tmp1 < tmp2) {
-			int num_frames;
-
-			num_frames = ac3_decode_data (tmp1, tmp2);
-			while (num_frames--)
-			    print_fps (0);
-		    }
+		    if (tmp1 < tmp2)
+			ac3_decode_data (tmp1, tmp2);
 		}
 		buf = tmp2;
 		break;
@@ -378,18 +370,12 @@ static void ps_loop (void)
 
 static void es_loop (void)
 {
-    uint8_t * end;
-    int num_frames;
+    int size;
 		
     do {
-	end = buffer + fread (buffer, 1, BUFFER_SIZE, in_file);
-
-	num_frames = ac3_decode_data (buffer, end);
-
-	while (num_frames--)
-	    print_fps (0);
-
-    } while (end == buffer + BUFFER_SIZE);
+	size = fread (buffer, 1, BUFFER_SIZE, in_file);
+	ac3_decode_data (buffer, buffer + size);
+    } while (size == BUFFER_SIZE);
 }
 
 int main (int argc,char *argv[])
