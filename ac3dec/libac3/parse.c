@@ -316,9 +316,9 @@ static const float q_2_2[ 128 ] = {
 #undef Q3
 #undef Q4
 
-static const float q_3[7] = {
+static const float q_3[8] = {
     (-6 << 15)/7, (-4 << 15)/7, (-2 << 15)/7, 0,
-    ( 2 << 15)/7, ( 4 << 15)/7, ( 6 << 15)/7
+    ( 2 << 15)/7, ( 4 << 15)/7, ( 6 << 15)/7, 0
 };
 
 #define Q0 ((-10 << 15) / 11)
@@ -375,12 +375,13 @@ static const float q_4_1[ 128 ] = {
 #undef Q9
 #undef QA
 
-static const float q_5[15] = {
+static const float q_5[16] = {
     (-14 << 15)/15,(-12 << 15)/15,(-10 << 15)/15,
     ( -8 << 15)/15,( -6 << 15)/15,( -4 << 15)/15,
     ( -2 << 15)/15,   0          ,(  2 << 15)/15,
     (  4 << 15)/15,(  6 << 15)/15,(  8 << 15)/15,
-    ( 10 << 15)/15,( 12 << 15)/15,( 14 << 15)/15
+    ( 10 << 15)/15,( 12 << 15)/15,( 14 << 15)/15,
+    0
 };
 
 static const uint32_t u32_scale_factors[25] = 
@@ -577,8 +578,12 @@ int parse_audblk (ac3_state_t * state, audblk_t * audblk)
 
 	    for (i = 0; i < state->nfchans; i++)
 		audblk->chincpl[i] = bitstream_get (1);
-	    if (state->acmod == 0x2)
+	    switch (state->acmod) {
+	    case 0: case 1:
+		return 1;
+	    case 2:
 		audblk->phsflginu = bitstream_get (1);
+	    }
 	    cplbegf = bitstream_get (4);
 	    cplendf = bitstream_get (4);
 
