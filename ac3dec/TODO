@@ -1,3 +1,6 @@
+* expose the downmix functionality
+* allow LFE channel output
+
 * finish ac3_internal.h cleanup
 	* use sensible data types
 	* move some arrays into bit fields
