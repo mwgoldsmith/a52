@@ -28,9 +28,9 @@ error=0
 
 for dir in $dirs; do
     echo $dir
-    ../src/ac3dec $basedir/$dir/stream >/dev/null 2>&1
-    ./compare output.pcm $basedir/$dir/output.pcm || error=1
-    rm -f output.pcm
+    ../src/ac3dec -o float $basedir/$dir/stream >/dev/null 2>&1 >output.float
+    ./compare output.float $basedir/$dir/output.float || error=1
+    rm -f output.float
 done
 
 exit $error

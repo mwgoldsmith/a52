@@ -1,9 +1,7 @@
 /*
  *
- *  output.h
- *
- *  Based on original code by Angus Mackay (amackay@gus.ml.org)
- *
+ *  output_linux.c
+ *    
  *	Copyright (C) Aaron Holtzman - May 1999
  *
  *  This file is part of ac3dec, a free Dolby AC-3 stream decoder.
@@ -22,8 +20,41 @@
  *  along with GNU Make; see the file COPYING.  If not, write to
  *  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA. 
  *
+ *
  */
 
-int output_open(int bits, int rate, int channels);
-void output_play(int16_t* output_samples, uint32_t num_bytes);
-void output_close(void);
+#include "config.h"
+
+#include <inttypes.h>
+#include <stdio.h>
+
+#include "ac3.h"
+#include "audio_out.h"
+
+int float_setup (ao_instance_t * instance, int sample_rate, int * flags,
+		 sample_t * level, sample_t * bias)
+{
+    *flags = AC3_STEREO;
+    *level = 1;
+    *bias = 0;
+
+    return 0;
+}
+
+int float_play (ao_instance_t * instance, int flags, sample_t * samples)
+{
+    fwrite (samples, sizeof (sample_t), 256 * 2, stdout);
+
+    return 0;
+}
+
+void float_close (ao_instance_t * instance)
+{
+}
+
+static ao_instance_t instance = {float_setup, float_play, float_close};
+
+ao_instance_t * ao_float_open (void)
+{
+    return &instance;
+}

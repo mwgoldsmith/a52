@@ -1,13 +1,15 @@
 #include <stdio.h>
+#include <math.h>
 
 int main (int argc, char ** argv)
 {
     FILE * f1;
     FILE * f2;
-    short buf1[512];
-    short buf2[512];
-    int i, j, total = 0, max = 0;
-    long long err = 0, square = 0;
+    float buf1[512];
+    float buf2[512];
+    int i, j;
+    int total = 0;
+    double max = 0, err = 0, square = 0;
 
     if (argc != 3)
 	return 1;
@@ -18,29 +20,36 @@ int main (int argc, char ** argv)
 	return 1;
     }
     while (1) {
-	i = fread (buf1, sizeof (short), 512, f1);
-	j = fread (buf2, sizeof (short), 512, f2);
+	i = fread (buf1, sizeof (float), 512, f1);
+	j = fread (buf2, sizeof (float), 512, f2);
 	if ((i < 512) || (j < 512))
 	    break;
 	for (i = 0; i < 512; i++) {
-	    j = buf2[i] - buf1[i];
+	    double delta;
+
+	    delta = buf2[i] - buf1[i];
 	    if (j) {
-		err += j;
-		square += j * j;
-		if (j > max)
-		    max = j;
-		if (-j > max)
-		    max = -j;
+		err += delta;
+		square += delta * delta;
+		if (delta > max)
+		    max = delta;
+		if (-delta > max)
+		    max = -delta;
 	    }
 	}
 	total += 512;
     }
+    if (i == j) {
+	max *= 32768;
+	err *= 32768 / total;
+	square = 32768 * sqrt (square / total);
+	printf ("max error %f mean error %f standard deviation %f\n",
+		max, err, square);
+	return ((max > 0.01) || (err > 0.001) || (square > 0.001));
+    }
     if (i < j)
 	printf ("%s is too short\n", argv[1]);
-    else if (j < i)
-	printf ("%s is too short\n", argv[2]);
     else
-	printf ("max error %d mean error %f mean square error %f\n",
-		max, (float)err/total, (float)square/total);
-    return (i != j) || (max > 1);
+	printf ("%s is too short\n", argv[2]);
+    return 1;
 }

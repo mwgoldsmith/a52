@@ -35,7 +35,7 @@
 #endif
 
 #include "ac3.h"
-#include "libao.h"
+#include "audio_out.h"
 
 #define BUFFER_SIZE 262144
 static uint8_t buffer[BUFFER_SIZE];
@@ -47,6 +47,8 @@ static uint32_t elapsed;
 static uint32_t total_elapsed;
 static uint32_t last_count = 0;
 static uint32_t demux_ps = 0;
+static ao_open_t * output_open = NULL;
+static ao_instance_t * output;
 
 sample_t samples[6][256];
 sample_t delay[6*256];
@@ -107,18 +109,16 @@ static RETSIGTYPE signal_handler (int sig)
 
 static void print_usage (char * argv[])
 {
-#if 0
     int i;
-    vo_driver_t * drivers;
+    ao_driver_t * drivers;
 
     fprintf (stderr, "usage: %s [-o mode] [-s] file\n"
 	     "\t-s\tuse program stream demultiplexer\n"
-	     "\t-o\tvideo output mode\n", argv[0]);
+	     "\t-o\taudioo output mode\n", argv[0]);
 
-    drivers = vo_drivers ();
+    drivers = ao_drivers ();
     for (i = 0; drivers[i].name; i++)
 	fprintf (stderr, "\t\t\t%s\n", drivers[i].name);
-#endif
 
     exit (1);
 }
@@ -126,17 +126,14 @@ static void print_usage (char * argv[])
 static void handle_args (int argc, char * argv[])
 {
     int c;
-#if 0
-    vo_driver_t * drivers;
+    ao_driver_t * drivers;
     int i;
 
-    drivers = vo_drivers ();
-#endif
+    drivers = ao_drivers ();
     while ((c = getopt (argc,argv,"so:")) != -1) {
 	switch (c) {
-#if 0
 	case 'o':
-	    for (i=0; drivers[i].name != NULL; i++)
+	    for (i = 0; drivers[i].name != NULL; i++)
 		if (strcmp (drivers[i].name, optarg) == 0)
 		    output_open = drivers[i].open;
 	    if (output_open == NULL) {
@@ -144,7 +141,6 @@ static void handle_args (int argc, char * argv[])
 		print_usage (argv);
 	    }
 	    break;
-#endif
 
 	case 's':
 	    demux_ps = 1;
@@ -155,11 +151,9 @@ static void handle_args (int argc, char * argv[])
 	}
     }
 
-#if 0
     /* -o not specified, use a default driver */
     if (output_open == NULL)
 	output_open = drivers[0].open;
-#endif
 
     if (optind < argc) {
 	in_file = fopen (argv[optind], "rb");
@@ -172,34 +166,12 @@ static void handle_args (int argc, char * argv[])
 	in_file = stdin;
 }
 
-static inline int16_t blah (int32_t i)
-{
-    if (i > 0x43c07fff)
-	return 32767;
-    else if (i < 0x43bf8000)
-	return -32768;
-    else
-	return i - 0x43c00000;
-}
-
-static inline void float_to_int (float * _f, int16_t * s16) 
-{
-    int i;
-    int32_t * f = (int32_t *) _f;	// XXX assumes IEEE float format
-
-    for (i = 0; i < 256; i++) {
-	s16[2*i] = blah (f[i]);
-	s16[2*i+1] = blah (f[i+256]);
-    }
-}
-
 void ac3_decode_data (uint8_t * start, uint8_t * end)
 {
     static ac3_state_t state;
 
     static uint8_t buf[3840];
     static uint8_t * bufptr = buf;
-    static int16_t s16_samples[2 * 6 * 256]; 
     static uint8_t * bufpos = buf + 7;
     int sample_rate;
     int bit_rate;
@@ -220,34 +192,20 @@ void ac3_decode_data (uint8_t * start, uint8_t * end)
 		}
 		bufpos = buf + length;
 	    } else {
-		static int do_init = 1;
+		sample_t level, bias;
 		int i;
-		sample_t level;
 
-		flags = AC3_STEREO | AC3_ADJUST_LEVEL;
-		level = 1;
-		if (ac3_frame (&state, buf, &flags, &level, 384, delay))
+		if (ao_setup (output, sample_rate, &flags, &level, &bias))
+		    goto error;
+		flags |= AC3_ADJUST_LEVEL;
+		if (ac3_frame (&state, buf, &flags, &level, bias, delay))
 		    goto error;
 		for (i = 0; i < 6; i++) {
-#if 0
-		    float zor[512];
-		    int j;
-#endif
 		    if (ac3_block (&state, samples))
 			goto error;
-#if 0
-		    for (j = 0; j < 512; j++)
-			zor[j] = (*samples)[j];
-		    float_to_int (zor, s16_samples + i * 512);
-#else
-		    float_to_int (*samples, s16_samples + i * 512);
-#endif
+		    if (ao_play (output, flags, samples[0]))
+			goto error;
 		}
-		if (do_init) {
-		    do_init = 0;
-		    output_open (16, sample_rate, 2);
-		}
-		output_play (s16_samples, 256 * 6 * 2);
 		bufptr = buf;
 		bufpos = buf + 7;
 		print_fps (0);
@@ -385,6 +343,12 @@ int main (int argc,char *argv[])
 
     handle_args (argc, argv);
 
+    output = ao_open (output_open);
+    if (output == NULL) {
+	fprintf (stderr, "Can not open output\n");
+	return 1;
+    }
+
     ac3_init ();
 
     signal (SIGINT, signal_handler);
@@ -396,7 +360,7 @@ int main (int argc,char *argv[])
     else
 	es_loop ();
 
-    output_close ();
+    ao_close (output);
     print_fps (1);
     return 0;
 }

@@ -1,1 +1,1 @@
-pkginclude_HEADERS = ac3.h libao.h
+pkginclude_HEADERS = ac3.h audio_out.h
