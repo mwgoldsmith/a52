@@ -6,4 +6,4 @@ extract_a52_SOURCES = extract_a52.c getopt.c
 
 man_MANS = a52dec.1 extract_a52.1
 
-EXTRA_DIST = configure.incl getopt.h gettimeofday.h $(man_MANS)
+EXTRA_DIST = getopt.h gettimeofday.h $(man_MANS)
