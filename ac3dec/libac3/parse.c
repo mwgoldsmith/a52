@@ -188,11 +188,12 @@ static inline int zero_snr_offsets (ac3_state_t * state, audblk_t * audblk)
 {
     int i;
 
-    if ((audblk->cplinu && (audblk->cplsnroffst != -960)) ||
-	(state->lfeon && (audblk->lfesnroffst != -960)))
+    if ((audblk->csnroffst) ||
+	(audblk->cplinu && audblk->cplfsnroffst) ||
+	(state->lfeon && audblk->lfefsnroffst))
 	return 0;
     for (i = 0; i < state->nfchans; i++)
-	if (audblk->snroffst[i] != -960)
+	if (audblk->fsnroffst[i])
 	    return 0;
     return 1;
 }
@@ -329,20 +330,18 @@ int parse_audblk (ac3_state_t * state, audblk_t * audblk)
 	audblk->floorcod = bitstream_get (3);
     }
     if (bitstream_get (1)) {	//snroffste
-	int csnroffst;
-
 	do_bit_alloc = 1;
-	csnroffst = (bitstream_get (6) << 6) - 960;
+	audblk->csnroffst = bitstream_get (6);
 	if (audblk->cplinu) {
-	    audblk->cplsnroffst = csnroffst + (bitstream_get (4) << 2);
+	    audblk->cplfsnroffst = bitstream_get (4);
 	    audblk->cplfgaincod = bitstream_get (3);
 	}
 	for (i = 0; i < state->nfchans; i++) {
-	    audblk->snroffst[i] = csnroffst + (bitstream_get (4) << 2);
+	    audblk->fsnroffst[i] = bitstream_get (4);
 	    audblk->fgaincod[i] = bitstream_get (3);
 	}
 	if (state->lfeon) {
-	    audblk->lfesnroffst = csnroffst + (bitstream_get (4) << 2);
+	    audblk->lfefsnroffst = bitstream_get (4);
 	    audblk->lfefgaincod = bitstream_get (3);
 	}
     }
@@ -388,7 +387,8 @@ int parse_audblk (ac3_state_t * state, audblk_t * audblk)
 	    if (audblk->cplinu)
 		bit_allocate (state->fscod, audblk, audblk->cplstrtmant,
 			      audblk->cplendmant, audblk->cplfgaincod,
-			      audblk->cplsnroffst,
+			      (((audblk->csnroffst - 15) << 4) +
+			       audblk->cplfsnroffst) << 2,
 			      (audblk->cplfleak << 8) + 768,
 			      (audblk->cplsleak << 8) + 768,
 			      audblk->cpl_exp, audblk->cpl_bap,
@@ -397,15 +397,19 @@ int parse_audblk (ac3_state_t * state, audblk_t * audblk)
 			      audblk->cpldeltlen, 0);
 	    for (i = 0; i < state->nfchans; i++)
 		bit_allocate (state->fscod, audblk, 0, audblk->endmant[i],
-			      audblk->fgaincod[i], audblk->snroffst[i], 0, 0,
+			      audblk->fgaincod[i],
+			      (((audblk->csnroffst - 15) << 4) +
+			       audblk->fsnroffst[i]) << 2, 0, 0,
 			      audblk->fbw_exp[i], audblk->fbw_bap[i],
 			      audblk->deltbae[i], audblk->deltnseg[i],
 			      audblk->deltoffst[i], audblk->deltba[i],
 			      audblk->deltlen[i], 0);
 	    if (state->lfeon)
 		bit_allocate (state->fscod, audblk, 0, 7, audblk->lfefgaincod,
-			      audblk->lfesnroffst, 0, 0, audblk->lfe_exp,
-			      audblk->lfe_bap, 2, 0, NULL, NULL, NULL, 1);
+			      (((audblk->csnroffst - 15) << 4) +
+			       audblk->lfefsnroffst) << 2, 0, 0,
+			      audblk->lfe_exp, audblk->lfe_bap,
+			      2, 0, NULL, NULL, NULL, 1);
 	}
     }
 

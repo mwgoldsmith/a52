@@ -122,11 +122,12 @@ typedef struct audblk_s
     uint16_t dbpbcod;		// dB per bit - encodes the dbknee value
     uint16_t floorcod;		// masking floor
 
-    int16_t cplsnroffst;	// coupling SNR offset
+    uint16_t csnroffst;		// coarse SNR offset
+    uint16_t cplfsnroffst;	// coupling fine SNR offset
     uint16_t cplfgaincod;	// coupling fast gain
-    int16_t snroffst[5];	// channel SNR offset
+    uint16_t fsnroffst[5];	// channel fine SNR offset
     uint16_t fgaincod[5];	// channel fast gain
-    int16_t lfesnroffst;	// lfe SNR offset
+    uint16_t lfefsnroffst;	// lfe fast SNR offset
     uint16_t lfefgaincod;	// lfe fast gain
 	
     uint16_t cplfleak;		// coupling fast leak init
