@@ -36,7 +36,6 @@
 #include "parse.h"
 #include "stats.h"
 #include "rematrix.h"
-#include "sanity_check.h"
 #include "downmix.h"
 #include "debug.h"
 
@@ -60,7 +59,6 @@ void
 ac3_init(void)
 {
     imdct_init();
-    sanity_check_init(&state,&audblk);
 
     frame.audio_data = s16_samples;
 }
@@ -118,10 +116,6 @@ ac3_decode_frame(uint8_t * buf)
 	// and convert floating point to int16_t
 	downmix (*samples, state.acmod, 2, 32767, 1, state.clev, state.slev);
 	float_to_int (*samples, s16_samples + i * 512);
-
-	sanity_check(&state,&audblk);
-	if(error_flag)
-	    goto error;
     }
 
     return &frame;	
