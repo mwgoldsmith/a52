@@ -27,8 +27,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
-#include <inttypes.h>
 #include <getopt.h>
+#ifdef HAVE_SYS_TIME_H
+#include <sys/time.h>
+#include <signal.h>
+#endif
+#include <inttypes.h>
 
 #include "a52.h"
 #include "audio_out.h"
@@ -46,9 +50,6 @@ static ao_instance_t * output;
 static sample_t * samples;
 
 #ifdef HAVE_SYS_TIME_H
-
-#include <sys/time.h>
-#include <signal.h>
 
 static void print_fps (int final);
 

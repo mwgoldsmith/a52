@@ -23,8 +23,8 @@
 
 #include "config.h"
 
-#include <inttypes.h>
 #include <stdlib.h>
+#include <inttypes.h>
 
 #include "a52.h"
 #include "audio_out.h"

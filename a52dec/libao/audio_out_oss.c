@@ -25,12 +25,12 @@
 
 #ifdef LIBAO_OSS
 
-#include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/ioctl.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <inttypes.h>
 
 #if defined(__OpenBSD__)
 #include <soundcard.h>

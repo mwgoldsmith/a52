@@ -25,13 +25,13 @@
 
 #ifdef LIBAO_SOLARIS
 
-#include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/ioctl.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/audioio.h>
+#include <inttypes.h>
 
 #include "a52.h"
 #include "audio_out.h"

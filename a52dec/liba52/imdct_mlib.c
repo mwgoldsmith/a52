@@ -25,11 +25,11 @@
 
 #ifdef LIBA52_MLIB
 
-#include <inttypes.h>
-#include <string.h>
 #include <mlib_types.h>
 #include <mlib_status.h>
 #include <mlib_signal.h>
+#include <string.h>
+#include <inttypes.h>
 
 #include "a52.h"
 #include "a52_internal.h"
