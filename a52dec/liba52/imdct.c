@@ -1,7 +1,10 @@
 /*
  * imdct.c
- * Copyright (C) 2000-2001 Michel Lespinasse <walken@zoy.org>
+ * Copyright (C) 2000-2002 Michel Lespinasse <walken@zoy.org>
  * Copyright (C) 1999-2000 Aaron Holtzman <aholtzma@ess.engr.uvic.ca>
+ *
+ * The ifft algorithms in this file have been largely inspired by Dan
+ * Bernstein's work, djbfft, available at http://cr.yp.to/djbfft.html
  *
  * This file is part of a52dec, a free ATSC A-52 stream decoder.
  * See http://liba52.sourceforge.net/ for updates.
