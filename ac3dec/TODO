@@ -10,7 +10,7 @@
 	* use split-radix algorithm
 * move samples/delay array to the right structures
 * use sample_t instead of float
-* move coeff_get_cpl function inline ??????
+* clean up coeff_get_cpl
 * cplfleak/cplsleak: move 2304-x in bit_allocate.c ?
 * scale_factors[]: use float initialisation not int
 
@@ -18,6 +18,8 @@
 
 * update imdct code
 * update bitstream/parse code
+
+* implement dynamic range control
 
 
 from aaron:

@@ -60,7 +60,7 @@ int ac3_syncinfo (uint8_t * buf, int * flags,
 	return 0;
     half = halfrate[buf[5] >> 3];
 
-    // parse acmod, dsurmod and lfeon
+    // acmod, dsurmod and lfeon
     acmod = buf[6] >> 5;
     *flags = ((((buf[6] & 0xf8) == 0x50) ? AC3_DOLBY : acmod) |
 	      (buf[6] & lfeon[acmod]) ? AC3_LFE : 0);
