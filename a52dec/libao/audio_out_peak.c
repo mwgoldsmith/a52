@@ -33,8 +33,8 @@ static int peak_play (ao_instance_t * _instance, int flags, sample_t * samples)
     int i;
 
     for (i = 0; i < 256 * 2; i++) {
-	if (instance->peak < fabs(samples[i]))
-	    instance->peak = fabs(samples[i]);
+	if (instance->peak < fabs (samples[i]))
+	    instance->peak = fabs (samples[i]);
     }
 
     return 0;
