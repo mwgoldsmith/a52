@@ -280,7 +280,7 @@ void a52_decode_data (uint8_t * start, uint8_t * end)
 		    goto error;
 		if (!disable_adjust)
 		    flags |= A52_ADJUST_LEVEL;
-		level *= gain;
+		level = (level_t) (level * gain);
 		if (a52_frame (state, buf, &flags, &level, bias))
 		    goto error;
 		if (disable_dynrng)
