@@ -35,7 +35,6 @@
 #include "bit_allocate.h"
 #include "parse.h"
 #include "stats.h"
-#include "downmix.h"
 #include "debug.h"
 
 //our global config structure
@@ -69,13 +68,25 @@ int ac3_frame_length(uint8_t * buf)
     return parse_syncinfo (buf, &dummy, &dummy);
 }
 
+static int16_t blah (float f)
+{
+#if 0
+    if (f > 32767)
+	return 32767;
+    else if (f < -32768)
+	return -32768;
+    else
+#endif
+	return f;
+}
+
 static void float_to_int (float * f, int16_t * s16) 
 {
     int i;
 
     for (i = 0; i < 256; i++) {
-	s16[2*i] = f[i];
-	s16[2*i+1] = f[i+256];
+	s16[2*i] = blah (f[i]);
+	s16[2*i+1] = blah (f[i+256]);
     }
 }
 
@@ -98,19 +109,10 @@ ac3_decode_frame(uint8_t * buf)
 	done_banner = 1;
     }
 
-    for(i=0; i < 6; i++) {
-	//Initialize freq/time sample storage
-	memset(samples,0,sizeof(float) * 256 * (state.nfchans + state.lfeon));
-
+    for (i = 0; i < 6; i++) {
 	if (parse_audblk (&state, &audblk))
 	    goto error;
 
-	// Convert the frequency samples into time samples 
-	imdct(&state,&audblk,samples);
-
-	// Downmix into the requested number of channels
-	// and convert floating point to int16_t
-	downmix (*samples, state.acmod, 2, 32767, 1, state.clev, state.slev);
 	float_to_int (*samples, s16_samples + i * 512);
     }
 
@@ -118,7 +120,7 @@ ac3_decode_frame(uint8_t * buf)
 
 error:
     printf ("error\n");
-    memset(s16_samples,0,sizeof(int16_t) * 256 * 2 * 6);	//mute frame
+    memset (s16_samples, 0, sizeof(int16_t) * 256 * 2 * 6);	//mute frame
 
     error_flag = 0;
     return &frame;

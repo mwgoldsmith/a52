@@ -33,6 +33,8 @@
 #include "bit_allocate.h"
 #include "dither.h"
 #include "rematrix.h"
+#include "imdct.h"
+#include "downmix.h"
 
 extern stream_samples_t samples;	// FIXME
 
@@ -779,21 +781,39 @@ int parse_audblk (ac3_state_t * state, audblk_t * audblk)
     done_cpl = 0;
 
     for (i = 0; i < state->nfchans; i++) {
+	int j;
+
 	coeff_get (samples[i], audblk->fbw_exp[i], audblk->fbw_bap[i],
 		   audblk->dithflag[i], 0, audblk->endmant[i]);
 
-	if (audblk->cplinu && audblk->chincpl[i] && !done_cpl) {
-	    coeff_get_cpl (state, audblk, samples);
-	    done_cpl = 1;
-	}
+	if (audblk->cplinu && audblk->chincpl[i]) {
+	    if (!done_cpl) {
+		coeff_get_cpl (state, audblk, samples);
+		done_cpl = 1;
+	    }
+	    j = audblk->cplendmant;
+	} else
+	    j = audblk->endmant[i];
+	for (; j < 256; j++)
+	    samples[i][j] = 0;
     }
 
-    if (state->lfeon)
+    if (state->lfeon) {
+	int j;
+
 	coeff_get (samples[5], audblk->lfe_exp, audblk->lfe_bap, 0, 0, 7);
+	for (j = 7; j < 256; j++)
+	    samples[5][j] = 0;
+    }
 
     if (state->acmod == 2)
 	rematrix (audblk, samples);
 
     stats_print_audblk (state, audblk);
+
+    imdct (state, audblk, samples);
+
+    downmix (*samples, state->acmod, 2, 32767, 1, state->clev, state->slev);
+
     return 0;
 }
