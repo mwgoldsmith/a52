@@ -268,77 +268,6 @@ static int q_1_pointer;
 static int q_2_pointer;
 static int q_4_pointer;
 
-#define GET_COEFF(COEFF,DITHER)						\
-    switch (bap[i]) {							\
-    case 0:								\
-	DITHER (scale_factor[exp[i]]);					\
-									\
-    case -1:								\
-	if (q_1_pointer >= 0) {						\
-	    COEFF (q_1[q_1_pointer--] * scale_factor[exp[i]]);		\
-	} else {							\
-	    int code;							\
-									\
-	    code = bitstream_get (5);					\
-									\
-	    q_1_pointer = 1;						\
-	    q_1[0] = q_1_2[code];					\
-	    q_1[1] = q_1_1[code];					\
-	    COEFF (q_1_0[code] * scale_factor[exp[i]]);			\
-	}								\
-									\
-    case -2:								\
-	if (q_2_pointer >= 0) {						\
-	    COEFF (q_2[q_2_pointer--] * scale_factor[exp[i]]);		\
-	} else {							\
-	    int code;							\
-									\
-	    code = bitstream_get (7);					\
-									\
-	    q_2_pointer = 1;						\
-	    q_2[0] = q_2_2[code];					\
-	    q_2[1] = q_2_1[code];					\
-	    COEFF (q_2_0[code] * scale_factor[exp[i]]);			\
-	}								\
-									\
-    case 3:								\
-	COEFF (q_3[bitstream_get (3)] * scale_factor[exp[i]]);		\
-									\
-    case -3:								\
-	if (q_4_pointer == 0) {						\
-	    q_4_pointer = -1;						\
-	    COEFF (q_4 * scale_factor[exp[i]]);				\
-	} else {							\
-	    int code;							\
-									\
-	    code = bitstream_get (7);					\
-									\
-	    q_4_pointer = 0;						\
-	    q_4 = q_4_1[code];						\
-	    COEFF (q_4_0[code] * scale_factor[exp[i]]);			\
-	}								\
-									\
-    case 4:								\
-	COEFF (q_5[bitstream_get (4)] * scale_factor[exp[i]]);		\
-									\
-    default:								\
-	COEFF (((int16_t)(bitstream_get(bap[i]) << (16 - bap[i]))) *	\
-	       scale_factor[exp[i]]);					\
-    }
-
-#define CHANNEL_COEFF(val)			\
-    coeff[i++] = val;				\
-    continue;
-
-#define CHANNEL_DITHER(val)			\
-    if (dither) {				\
-	coeff[i++] = dither_gen () * val;	\
-	continue;				\
-    } else {					\
-	coeff[i++] = 0;				\
-	continue;				\
-    }
-
 static uint16_t lfsr_state = 1;
 
 static inline int16_t dither_gen(void)
@@ -359,25 +288,181 @@ static void coeff_get (sample_t * coeff, uint8_t * exp, int8_t * bap,
 
     i = 0;
     while (i < end)
-	GET_COEFF (CHANNEL_COEFF, CHANNEL_DITHER);
+    switch (bap[i]) {
+    case 0:
+	if (dither) {
+	    coeff[i++] = dither_gen() * scale_factor[exp[i]];
+	    continue;
+	} else {
+	    coeff[i++] = 0;
+	    continue;
+	}
+
+    case -1:
+	if (q_1_pointer >= 0) {
+	    coeff[i++] = q_1[q_1_pointer--] * scale_factor[exp[i]];
+	    continue;
+	} else {
+	    int code;
+
+	    code = bitstream_get (5);
+
+	    q_1_pointer = 1;
+	    q_1[0] = q_1_2[code];
+	    q_1[1] = q_1_1[code];
+	    coeff[i++] = q_1_0[code] * scale_factor[exp[i]];
+	    continue;
+	}
+
+    case -2:
+	if (q_2_pointer >= 0) {
+	    coeff[i++] = q_2[q_2_pointer--] * scale_factor[exp[i]];
+	    continue;
+	} else {
+	    int code;
+
+	    code = bitstream_get (7);
+
+	    q_2_pointer = 1;
+	    q_2[0] = q_2_2[code];
+	    q_2[1] = q_2_1[code];
+	    coeff[i++] = q_2_0[code] * scale_factor[exp[i]];
+	    continue;
+	}
+
+    case 3:
+	coeff[i++] = q_3[bitstream_get (3)] * scale_factor[exp[i]];
+	continue;
+
+    case -3:
+	if (q_4_pointer == 0) {
+	    q_4_pointer = -1;
+	    coeff[i++] = q_4 * scale_factor[exp[i]];
+	    continue;
+	} else {
+	    int code;
+
+	    code = bitstream_get (7);
+
+	    q_4_pointer = 0;
+	    q_4 = q_4_1[code];
+	    coeff[i++] = q_4_0[code] * scale_factor[exp[i]];
+	    continue;
+	}
+
+    case 4:
+	coeff[i++] = q_5[bitstream_get (4)] * scale_factor[exp[i]];
+	continue;
+
+    default:
+	coeff[i++] = (((int16_t)(bitstream_get (bap[i]) << (16 - bap[i]))) *
+		      scale_factor[exp[i]]);
+    }
 }
 
-#define COUPLING_COEFF(val)	\
-    cplcoeff = val;		\
-    break;
+static void coeff_get_coupling (ac3_state_t * state, int nfchans,
+				sample_t (* samples)[256], uint8_t dithflag[5])
+{
+    int sub_bnd, bnd, i, i_end, ch;
+    sample_t cplcoeff;
+    int8_t * bap;
+    uint8_t * exp;
 
-#define COUPLING_DITHER(val)						\
-    cplcoeff = val;							\
-    for (ch = 0; ch < nfchans; ch++)					\
-	if (state->chincpl[ch]) {					\
-	    if (dithflag[ch])						\
-		samples[ch][i] =					\
-		    state->cplco[ch][bnd] * dither_gen () * cplcoeff;	\
-	    else							\
-		samples[ch][i] = 0;					\
-	}								\
-    i++;								\
-    continue;
+    bap = state->cpl_bap;
+    exp = state->cpl_exp;
+    sub_bnd = bnd = 0;
+    i = state->cplstrtmant;
+    while (i < state->cplendmant) {
+	i_end = i + 12;
+	while (state->cplbndstrc[sub_bnd++])
+	    i_end += 12;
+
+	while (i < i_end) {
+	    switch (bap[i]) {
+	    case 0:
+		cplcoeff = scale_factor[exp[i]];
+		for (ch = 0; ch < nfchans; ch++)
+		    if (state->chincpl[ch]) {
+			if (dithflag[ch])
+			    samples[ch][i] = (state->cplco[ch][bnd] *
+					      dither_gen () * cplcoeff);
+			else
+			    samples[ch][i] = 0;
+		    }
+		i++;
+		continue;
+
+	    case -1:
+		if (q_1_pointer >= 0) {
+		    cplcoeff = q_1[q_1_pointer--] * scale_factor[exp[i]];
+		    break;
+		} else {
+		    int code;
+
+		    code = bitstream_get (5);
+
+		    q_1_pointer = 1;
+		    q_1[0] = q_1_2[code];
+		    q_1[1] = q_1_1[code];
+		    cplcoeff = q_1_0[code] * scale_factor[exp[i]];
+		    break;
+		}
+
+	    case -2:
+		if (q_2_pointer >= 0) {
+		    cplcoeff = q_2[q_2_pointer--] * scale_factor[exp[i]];
+		    break;
+		} else {
+		    int code;
+
+		    code = bitstream_get (7);
+
+		    q_2_pointer = 1;
+		    q_2[0] = q_2_2[code];
+		    q_2[1] = q_2_1[code];
+		    cplcoeff = q_2_0[code] * scale_factor[exp[i]];
+		    break;
+		}
+
+	    case 3:
+		cplcoeff = q_3[bitstream_get (3)] * scale_factor[exp[i]];
+		break;
+
+	    case -3:
+		if (q_4_pointer == 0) {
+		    q_4_pointer = -1;
+		    cplcoeff = q_4 * scale_factor[exp[i]];
+		    break;
+		} else {
+		    int code;
+
+		    code = bitstream_get (7);
+
+		    q_4_pointer = 0;
+		    q_4 = q_4_1[code];
+		    cplcoeff = q_4_0[code] * scale_factor[exp[i]];
+		    break;
+		}
+
+	    case 4:
+		cplcoeff = q_5[bitstream_get (4)] * scale_factor[exp[i]];
+		break;
+
+	    default:
+		cplcoeff = (((int16_t)
+			     (bitstream_get(bap[i]) << (16 - bap[i]))) *
+			    scale_factor[exp[i]]);
+	    }
+
+	    for (ch = 0; ch < nfchans; ch++)
+		if (state->chincpl[ch])
+		    samples[ch][i] =
+			state->cplco[ch][bnd] * cplcoeff;
+	    i++;
+	}
+	bnd++;
+    }
+}
 
 int ac3_block (ac3_state_t * state, sample_t * _samples)
 {
@@ -620,34 +705,8 @@ int ac3_block (ac3_state_t * state, sample_t * _samples)
 
 	if (state->cplinu && state->chincpl[i]) {
 	    if (!done_cpl) {
-		int i, i_end, bnd, sub_bnd, ch;
-		sample_t cplcoeff;
-
 		done_cpl = 1;
-
-#define bap state->cpl_bap
-#define exp state->cpl_exp
-
-		sub_bnd = bnd = 0;
-		i = state->cplstrtmant;
-		while (i < state->cplendmant) {
-		    i_end = i + 12;
-		    while (state->cplbndstrc[sub_bnd++])
-			i_end += 12;
-
-		    while (i < i_end) {
-			GET_COEFF (COUPLING_COEFF, COUPLING_DITHER);
-			for (ch = 0; ch < nfchans; ch++)
-			    if (state->chincpl[ch])
-				samples[ch][i] =
-				    state->cplco[ch][bnd] * cplcoeff;
-			i++;
-		    }
-		    bnd++;
-		}
-
-#undef bap
-#undef exp
+		coeff_get_coupling (state, nfchans, samples, dithflag);
 	    }
 	    j = state->cplendmant;
 	} else
