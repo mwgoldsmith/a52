@@ -262,110 +262,210 @@ void a52_decode_data (uint8_t * start, uint8_t * end)
     }
 }
 
-static void ps_loop (void)
+static int demux (uint8_t * buf, uint8_t * end)
 {
     static int mpeg1_skip_table[16] = {
-	     1, 0xffff,      5,     10, 0xffff, 0xffff, 0xffff, 0xffff,
-	0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff
+	0, 0, 4, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
     };
 
-    uint8_t * buf;
-    uint8_t * end;
-    uint8_t * tmp1;
-    uint8_t * tmp2;
-    int complain_loudly;
+    /*
+     * the demuxer keeps some state between calls:
+     * if "state" = DEMUX_HEADER, then "head_buf" contains the first
+     *     "bytes" bytes from some header.
+     * if "state" == DEMUX_DATA, then we need to copy "bytes" bytes
+     *     of ES data before the next header.
+     * if "state" == DEMUX_SKIP, then we need to skip "bytes" bytes
+     *     of data before the next header.
+     *
+     * NEEDBYTES makes sure we have the requested number of bytes for a
+     * header. If we dont, it copies what we have into head_buf and returns,
+     * so that when we come back with more data we finish decoding this header.
+     *
+     * DONEBYTES updates "buf" to point after the header we just parsed.
+     */
 
-    complain_loudly = 1;
-    buf = buffer;
+#define DEMUX_HEADER 0
+#define DEMUX_DATA 1
+#define DEMUX_SKIP 2
+    static int state = DEMUX_HEADER;
+    static int state_bytes = 0;
+    static uint8_t head_buf[268];
 
-    do {
-	end = buf + fread (buf, 1, buffer + BUFFER_SIZE - buf, in_file);
-	buf = buffer;
+    uint8_t * header;
+    int bytes;
+    int len;
 
-	while (buf + 4 <= end) {
-	    /* check start code */
-	    if (buf[0] || buf[1] || (buf[2] != 0x01)) {
-		if (complain_loudly) {
-		    fprintf (stderr, "missing start code at %#lx\n",
-			     ftell (in_file) - (end - buf));
-		    if ((buf[0] == 0) && (buf[1] == 0) && (buf[2] == 0))
-			fprintf (stderr, "this stream appears to use "
-				 "zero-byte padding before start codes,\n"
-				 "which is not correct according to the "
-				 "mpeg system standard.\n"
-				 "mp1e was one encoder known to do this "
-				 "before version 1.8.0.\n");
-		    complain_loudly = 0;
-		}
+#define NEEDBYTES(x)						\
+    do {							\
+	int missing;						\
+								\
+	missing = (x) - bytes;					\
+	if (missing > 0) {					\
+	    if (header == head_buf) {				\
+		if (missing <= end - buf) {			\
+		    memcpy (header + bytes, buf, missing);	\
+		    buf += missing;				\
+		    bytes = (x);				\
+		} else {					\
+		    memcpy (header + bytes, buf, end - buf);	\
+		    state_bytes = bytes + end - buf;		\
+		    return 0;					\
+		}						\
+	    } else {						\
+		memcpy (head_buf, header, bytes);		\
+		state = DEMUX_HEADER;				\
+		state_bytes = bytes;				\
+		return 0;					\
+	    }							\
+	}							\
+    } while (0)
+
+#define DONEBYTES(x)		\
+    do {			\
+	if (header != head_buf)	\
+	    buf = header + (x);	\
+    } while (0)
+
+    switch (state) {
+    case DEMUX_HEADER:
+	if (state_bytes > 0) {
+	    header = head_buf;
+	    bytes = state_bytes;
+	    goto continue_header;
+	}
+	break;
+    case DEMUX_DATA:
+	if (state_bytes > end - buf) {
+	    a52_decode_data (buf, end);
+	    state_bytes -= end - buf;
+	    return 0;
+	}
+	a52_decode_data (buf, buf + state_bytes);
+	buf += state_bytes;
+	break;
+    case DEMUX_SKIP:
+	if (state_bytes > end - buf) {
+	    state_bytes -= end - buf;
+	    return 0;
+	}
+	buf += state_bytes;
+	break;
+    }
+
+    while (1) {
+	header = buf;
+	bytes = end - buf;
+    continue_header:
+	NEEDBYTES (4);
+	if (header[0] || header[1] || (header[2] != 1)) {
+	    if (header != head_buf) {
 		buf++;
 		continue;
-	    }
-
-	    switch (buf[3]) {
-	    case 0xb9:	/* program end code */
-		return;
-	    case 0xba:	/* pack header */
-		/* skip */
-		if ((buf[4] & 0xc0) == 0x40)	/* mpeg2 */
-		    tmp1 = buf + 14 + (buf[13] & 7);
-		else if ((buf[4] & 0xf0) == 0x20)	/* mpeg1 */
-		    tmp1 = buf + 12;
-		else if (buf + 5 > end)
-		    goto copy;
-		else {
-		    fprintf (stderr, "weird pack header\n");
-		    exit (1);
-		}
-		if (tmp1 > end)
-		    goto copy;
-		buf = tmp1;
-		break;
-	    case 0xbd:	/* private stream 1 */
-		tmp2 = buf + 6 + (buf[4] << 8) + buf[5];
-		if (tmp2 > end)
-		    goto copy;
-		if ((buf[6] & 0xc0) == 0x80)	/* mpeg2 */
-		    tmp1 = buf + 9 + buf[8];
-		else {	/* mpeg1 */
-		    for (tmp1 = buf + 6; *tmp1 == 0xff; tmp1++)
-			if (tmp1 == buf + 6 + 16) {
-			    fprintf (stderr, "too much stuffing\n");
-			    buf = tmp2;
-			    break;
-			}
-		    if ((*tmp1 & 0xc0) == 0x40)
-			tmp1 += 2;
-		    tmp1 += mpeg1_skip_table [*tmp1 >> 4];
-		}
-		if (*tmp1 == demux_track) {	/* a52 */
-		    tmp1 += 4;
-		    if (tmp1 < tmp2)
-			a52_decode_data (tmp1, tmp2);
-		}
-		buf = tmp2;
-		break;
-	    default:
-		if (buf[3] < 0xb9) {
-		    fprintf (stderr,
-			     "looks like a video stream, not system stream\n");
-		    exit (1);
-		}
-		/* skip */
-		tmp1 = buf + 6 + (buf[4] << 8) + buf[5];
-		if (tmp1 > end)
-		    goto copy;
-		buf = tmp1;
-		break;
+	    } else {
+		header[0] = header[1];
+		header[1] = header[2];
+		header[2] = header[3];
+		bytes = 3;
+		goto continue_header;
 	    }
 	}
-
-	if (buf < end) {
-	copy:
-	    /* we only pass here for mpeg1 ps streams */
-	    memmove (buffer, buf, end - buf);
+	switch (header[3]) {
+	case 0xb9:	/* program end code */
+	    /* DONEBYTES (4); */
+	    /* break;         */
+	    return 1;
+	case 0xba:	/* pack header */
+	    NEEDBYTES (12);
+	    if ((header[4] & 0xc0) == 0x40) {	/* mpeg2 */
+		NEEDBYTES (14);
+		len = 14 + (header[13] & 7);
+		NEEDBYTES (len);
+		DONEBYTES (len);
+		/* header points to the mpeg2 pack header */
+	    } else if ((header[4] & 0xf0) == 0x20) {	/* mpeg1 */
+		DONEBYTES (12);
+		/* header points to the mpeg1 pack header */
+	    } else {
+		fprintf (stderr, "weird pack header\n");
+		exit (1);
+	    }
+	    break;
+	case 0xbd:	/* private stream 1 */
+	    NEEDBYTES (7);
+	    if ((header[6] & 0xc0) == 0x80) {	/* mpeg2 */
+		NEEDBYTES (9);
+		len = 10 + header[8];
+		NEEDBYTES (len);
+		/* header points to the mpeg2 pes header */
+	    } else {	/* mpeg1 */
+		len = 7;
+		while ((header-1)[len] == 0xff) {
+		    len++;
+		    NEEDBYTES (len);
+		    if (len == 23) {
+			fprintf (stderr, "too much stuffing\n");
+			break;
+		    }
+		}
+		if (((header-1)[len] & 0xc0) == 0x40) {
+		    len += 2;
+		    NEEDBYTES (len);
+		}
+		len += mpeg1_skip_table[(header - 1)[len] >> 4] + 1;
+		NEEDBYTES (len);
+		/* header points to the mpeg1 pes header */
+	    }
+	    if ((header-1)[len] != demux_track) {
+		DONEBYTES (len);
+		bytes = 6 + (header[4] << 8) + header[5] - len;
+		if (bytes <= 0)
+		    continue;
+		goto skip;
+	    }
+	    len += 3;
+	    NEEDBYTES (len);
+	    DONEBYTES (len);
+	    bytes = 6 + (header[4] << 8) + header[5] - len;
+	    if (bytes <= 0)
+		continue;
+	    if (bytes > end - buf) {
+		a52_decode_data (buf, end);
+		state = DEMUX_DATA;
+		state_bytes = bytes - (end - buf);
+		return 0;
+	    }
+	    a52_decode_data (buf, buf + bytes);
+	    buf += bytes;
+	    break;
+	default:
+	    if (header[3] < 0xb9) {
+		fprintf (stderr,
+			 "looks like a video stream, not system stream\n");
+		exit (1);
+	    } else {
+		NEEDBYTES (6);
+		DONEBYTES (6);
+		bytes = (header[4] << 8) + header[5];
+	    skip:
+		if (bytes > end - buf) {
+		    state = DEMUX_SKIP;
+		    state_bytes = bytes - (end - buf);
+		    return 0;
+		}
+		buf += bytes;
+	    }
 	}
-	buf = buffer + (end - buf);
+    }
+}
 
+static void ps_loop (void)
+{
+    uint8_t * end;
+
+    do {
+	end = buffer + fread (buffer, 1, BUFFER_SIZE, in_file);
+	if (demux (buffer, end))
+	    break;	/* hit program_end_code */
     } while (end == buffer + BUFFER_SIZE);
 }
 
