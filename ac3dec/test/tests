@@ -5,3 +5,6 @@ arm		#OK - produced glitches in oms ac3dec
 egypt		#OK - dolby digital "egypt" trailer
 thx		#OK - thx chord
 zorro		#OK - likely to overdrive output if not properly downmixed
+thx_2_0
+matrix
+blade_runner
