@@ -180,7 +180,15 @@ int ac3_decode_data (uint8_t * start, uint8_t * end)
 	*bufptr++ = *start++;
 	if (bufptr == bufpos) {
 	    if (bufpos == buf + 5) {
-		bufpos = buf + ac3_frame_length (buf);
+		int length;
+
+		length = ac3_frame_length (buf);
+		if (!length) {
+		    for (bufptr = buf; bufptr < buf + 4; bufptr++)
+			bufptr[0] = bufptr[1];
+		    continue;
+		}
+		bufpos = buf + length;
 	    } else {
 		static int do_init = 1;
 		ac3_frame_t * frame;
