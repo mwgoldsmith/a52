@@ -1,21 +1,53 @@
-Introduction to the liba52 API
+Using the liba52 API
+--------------------
+
+liba52 provides a low-level interface to decoding audio frames encoded
+using ATSC standard A/52 aka AC-3. liba52 provides downmixing and
+dynamic range compression for the following output configurations:
+
+A52_CHANNEL  : dual-mono. two independant mono channels.
+A52_CHANNEL1 : first of the two mono channels above.
+A52_CHANNEL2 : second of the two mono channels above.
+A52_MONO     : mono
+A52_STEREO   : stereo
+A52_DOLBY    : dolby-surround compatible stereo
+A52_3F       : 3 front channels (left, center, right)
+A52_2F1R     : 2 front channels, 1 surround channel (L, R, S)
+A52_3F1R     : 3 front channels, 1 surround channel (L, C, R, S)
+A52_2F2R     : 2 front channels, 2 surround channels (L, R, LS, RS)
+A52_3F2R     : 3 front channels, 2 surround channels (L, C, R, LS, RS)
+
+AC3_LFE      : low-frequency channel.
+               can be used in combination with any of the above.
 
 
-I - initializing the library
+Initialization
+--------------
 
-void a52_init(void);
+sample_t * a52_init (uint32_t mm_accel);
+
+Initializes the A/52 library. Takes as a parameter the acceptable
+optimizations which may be used, such as MMX. These are found in the
+included header file 'mm_accel', along with an autodetection function
+(mm_accel()). Currently, the only accelleration implemented is
+MM_ACCEL_MLIB, which uses the 'mlib' library if installed. mlib is
+only available on some Sun Microsystems platforms.
+
+The return value is a pointer to a properly-aligned sample buffer used
+for output samples.
 
 
-II - basic information about the a52 bitstream
+Probing the Bitstream
+---------------------
 
 int a52_syncinfo (uint8_t * buf, int * flags,
-		  int * sample_rate, int * bit_rate);
+                  int * sample_rate, int * bit_rate);
 
-The a52 bitstream is composed of several a52 frames concatenated one
-after each other. An a52 frams is the smallest unit that can be
+The A/52 bitstream is composed of several a52 frames concatenated one
+after each other. An a52 frame is the smallest unit that can be
 independantly decoded in the stream.
 
-Before calling this function, you should read 7 bytes into buf.  Then
+Before calling this function, you should read 7 bytes into buf. Then
 this function analyses these bytes and sees if these look like the
 start of a valid a52 frame. If this can not possibly be a valid frame,
 then the function returns 0. In that case you should try to
@@ -31,9 +63,7 @@ is for the compressed stream and is in bits per second, and flags is a
 description of the coded channels: the A52_LFE bit is set if there is
 an LFE channel coded in this stream, and by masking flags with
 A52_CHANNEL_MASK you will get a value that describes the
-full-bandwidth channels, either 0-7 as described in "acmod" in the a52
-standard, or A52_DOLBY for a stereo stream when the encoder has
-specified that the stream was encoded in dolby-stereo.
+full-bandwidth channels, as one of the A52_CHANNEL...A52_3F2R flags.
 
 It is recommended to call this function for each frame, for several
 reasons: this function detects errors that the other functions will
@@ -41,11 +71,136 @@ not double-check, consecutive frames might have different lengths, and
 it helps you re-sync with the stream if you get de-synchronized.
 
 
-III - start to decode an a52 frame
+Starting to decode a Frame
+--------------------------
 
 int a52_frame (a52_state_t * state, uint8_t * buf, int * flags,
-               sample_t * level, sample_t bias, sample_t * delay);
+	       sample_t * level, sample_t bias);
 
-Now that you've found an a52 frame, you want to start decoding it. buf
-points to the a52 frame, and you've read at least the number of bytes
+This starts the work of decoding the A/52 frame. buf should be set to
+point to the beginning of the complete frame of the full size as
 returned by a52_syncinfo().
+
+You should pass in the flags the speaker configuration that you
+support, and liba52 will return the speaker configuration it will use
+for its output, based on what is coded in the stream and what you
+asked for. For example, if the stream contains 2+2 channels
+(ac3_syncinfo() returned A52_2F2R in the flags), and you have 3+1
+speakers (you passed A52_3F1R), then liba52 will choose do downmix to
+2+1 speakers, since there is no center channel to send to your center
+speaker. So in that case the left and right channels will be
+essentially unmodified by the downmix, and the two surround channels
+will be added together and sent to your surround speaker. liba52 will
+return A52_2F1R to indicate this.
+
+The good news is that when you downmix to stereo you dont have to
+worry about this, you will ALWAYS get a stereo output no matter what
+was coded in the stream. For more complex output configurations you
+will have to handle the case where liba52 couldnt give you what you
+wanted because some of the channels were not encoded in the stream
+though.
+
+Level, bias, and the flag A52_ADJUST_LEVEL:
+
+Before downmixing, samples are floating point values with a range of
+[-1,1]. Most types of downmixing will combine channels together, which
+will potentially result in a larger range for the output
+samples. liba52 provides two methods of controlling the range of the
+output, either before or after the downmix stage.
+
+If you do not set A52_ADJUST_LEVEL, liba52 will multiply the samples
+by your level value, so that they fit in the [-level,level]
+range. Then it will apply the standardized downmix equations,
+potentially making the samples go out of that interval again. The
+level parameter is not modified.
+
+Setting the A52_ADJUST_LEVEL flag will instruct liba52 to treat your
+level value as the intended range interval after downmixing. It will
+then figure out what level to use before the downmix (what you should
+have passed if you hadnt used the A52_ADJUST_LEVEL flag), and
+overwrite the level value you gave it with that new level value.
+
+The bias represents a value which should be added to the result
+regardless:
+
+output_sample = (input_sample * level) + bias;
+
+For example, a bias of 384 and a level of 1 tells liba52 you want
+samples between 383 and 385 instead of -1 and 1. This is what the
+sample program a52dec does, as it makes it faster to convert the
+samples to integer format, using a trick based on the IEEE
+floating-point format.
+
+This function also initialises the state for that frame, which will be
+reused next when decoding blocks.
+
+
+Dynamic Range Compression
+-------------------------
+
+void a52_dynrng (a52_state_t * state,
+                 sample_t (* call) (sample_t, void *), void * data);
+
+This function is purely optional. If you dont call it, liba52 will
+provide the default behaviour, which is to apply the full dynamic
+range compression as specified in the A/52 stream. This basically
+makes the loud sounds softer, and the soft sounds louder, so you can
+more easily listen to the stream in a noisy environment without
+disturbing anyone.
+
+If you do call this function and set a NULL callback, this will
+totally disable the dynamic range compression and provide a playback
+more adapted to a movie theater or a listening room.
+
+If you call this function and specify a callback function, this
+callback might be called up to once for each block, with two
+arguments: the compression factor 'c' recommended by the bitstream,
+and the private data pointer you specified in a52_dynrng(). The
+callback will then return the amount of compression to actually use -
+typically pow(c,x) where x is somewhere between 0 and 1. More
+elaborate compression functions might want to use a different value
+for 'x' depending wether c>1 or c<1 - or even something more complex
+if this is what you want.
+
+
+Decoding Blocks
+---------------
+
+int a52_block (a52_state_t * state, sample_t * samples);
+
+Every A/52 frame is composed of 6 blocks, each with an output of 256
+samples per channel. The a52_block function decodes the next block in
+the frame, and should be called 6 times to decode all of the audio in
+the frame (and after each call, extract the audio data from the
+samples buffer).
+
+The sample pointer should be the one returned by a52_init().
+
+After this function returns, the samples buuffer will contain 256
+samples for the first channel, followed by 256 samples for the second
+channel, etc... the channel order is LFE, left, center, right, left
+surround, right surround. If one of the channels is not present in the
+liba52 output, as indicated by the flags returned by a52_frame(), then
+this channel is skipped and the following channels are shifted so we
+do not leave a blank.
+
+
+Pseudocode Example
+------------------
+
+sample_t * samples = a52_init (mm_accel());
+
+loop on input bytes:
+  if at least 7 bytes in the buffer:
+
+    bytes_to_get = a52_syncinfo (...)
+
+    if bytes_to_get == 0:
+      goto loop to keep looking for sync point
+    else
+      get rest of bytes
+
+      a52_frame (state, buf, ...)
+      for i = 1 ... 6:
+        a52_block (state, samples)
+        convert samples to integer and queue to soundcard
