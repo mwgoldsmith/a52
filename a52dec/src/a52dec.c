@@ -32,7 +32,7 @@
 #include <fcntl.h>
 #include <io.h>
 #endif
-#ifdef HAVE_SYS_TIME_H
+#if defined(HAVE_SYS_TIME_H) && defined(HAVE_GETTIMEOFDAY)
 #include <sys/time.h>
 #include <signal.h>
 #endif
@@ -53,7 +53,7 @@ static ao_open_t * output_open = NULL;
 static ao_instance_t * output;
 static a52_state_t * state;
 
-#ifdef HAVE_SYS_TIME_H
+#if defined(HAVE_SYS_TIME_H) && defined(HAVE_GETTIMEOFDAY) 
 
 static void print_fps (int final);
 
@@ -119,7 +119,7 @@ static void print_fps (int final)
     last_count = frame_counter;
 }
 
-#else /* !HAVE_SYS_TIME_H */
+#else /* !HAVE_SYS_TIME_H || !HAVE_GETTIMEOFDAY */
 
 static void print_fps (int final)
 {
