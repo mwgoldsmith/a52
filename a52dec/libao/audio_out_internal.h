@@ -32,7 +32,7 @@ typedef sample_t convert_t;
 #define CONVERT_BIAS 0
 #else
 #define CONVERT_LEVEL 1
-#define CONVERT_BIAS 0
+#define CONVERT_BIAS 384
 #endif
 
 void convert2s16_1 (convert_t * f, int16_t * s16);
