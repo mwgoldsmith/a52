@@ -44,6 +44,7 @@ static int total_elapsed;
 static int last_count = 0;
 static int demux_track = 0;
 static int disable_accel = 0;
+static int disable_dynrng = 0;
 static ao_open_t * output_open = NULL;
 static ao_instance_t * output;
 static sample_t * samples;
@@ -107,9 +108,10 @@ static void print_usage (char * argv[])
     int i;
     ao_driver_t * drivers;
 
-    fprintf (stderr, "usage: %s [-o <mode>] [-s[<track>]] [-c] <file>\n"
+    fprintf (stderr, "usage: %s [-o <mode>] [-s[<track>]] [-c] [-r] <file>\n"
 	     "\t-s\tuse program stream demultiplexer, track 0-7 or 0x80-0x87\n"
 	     "\t-c\tuse c implementation, disables all accelerations\n"
+	     "\t-r\tdisable dynamic range compression\n"
 	     "\t-o\taudioo output mode\n", argv[0]);
 
     drivers = ao_drivers ();
@@ -126,7 +128,7 @@ static void handle_args (int argc, char * argv[])
     int i;
 
     drivers = ao_drivers ();
-    while ((c = getopt (argc, argv, "s::co:")) != -1)
+    while ((c = getopt (argc, argv, "s::cro:")) != -1)
 	switch (c) {
 	case 'o':
 	    for (i = 0; drivers[i].name != NULL; i++)
@@ -155,6 +157,10 @@ static void handle_args (int argc, char * argv[])
 
 	case 'c':
 	    disable_accel = 1;
+	    break;
+
+	case 'r':
+	    disable_dynrng = 1;
 	    break;
 
 	default:
@@ -210,6 +216,8 @@ void ac3_decode_data (uint8_t * start, uint8_t * end)
 		flags |= AC3_ADJUST_LEVEL;
 		if (ac3_frame (&state, buf, &flags, &level, bias))
 		    goto error;
+		if (disable_dynrng)
+		    ac3_dynrng (&state, NULL, NULL);
 		for (i = 0; i < 6; i++) {
 		    if (ac3_block (&state, samples))
 			goto error;

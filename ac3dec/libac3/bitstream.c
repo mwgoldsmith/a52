@@ -79,3 +79,21 @@ bitstream_get_bh(uint32_t num_bits)
 
     return result;
 }
+
+int32_t
+bitstream_get_bh_2(uint32_t num_bits)
+{
+    int32_t result;
+
+    num_bits -= bits_left;
+    result = (((int32_t)current_word) << (32 - bits_left)) >> (32 - bits_left);
+
+    bitstream_fill_current();
+
+    if(num_bits != 0)
+	result = (result << num_bits) | (current_word >> (32 - num_bits));
+	
+    bits_left = 32 - num_bits;
+
+    return result;
+}

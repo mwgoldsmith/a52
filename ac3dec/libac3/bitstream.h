@@ -49,6 +49,7 @@ extern uint32_t current_word;
 
 void bitstream_set_ptr (uint8_t * buf);
 uint32_t bitstream_get_bh(uint32_t num_bits);
+int32_t bitstream_get_bh_2(uint32_t num_bits);
 
 static inline uint32_t 
 bitstream_get(uint32_t num_bits)
@@ -62,4 +63,18 @@ bitstream_get(uint32_t num_bits)
     }
 
     return bitstream_get_bh(num_bits);
+}
+
+static inline int32_t 
+bitstream_get_2(uint32_t num_bits)
+{
+    int32_t result;
+	
+    if(num_bits < bits_left) {
+	result = (((int32_t)current_word) << (32 - bits_left)) >> (32 - num_bits);
+	bits_left -= num_bits;
+	return result;
+    }
+
+    return bitstream_get_bh_2(num_bits);
 }

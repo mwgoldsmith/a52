@@ -134,8 +134,11 @@ int ac3_frame (ac3_state_t * state, uint8_t * buf, int * flags,
     if (state->lfeon && (*flags & AC3_LFE))
 	state->output |= AC3_LFE;
     *flags = state->output;
-    state->level = 2 * *level;	// the 2* compensates for differences in imdct
+    // the 2* compensates for differences in imdct
+    state->dynrng = state->level = 2 * *level;
     state->bias = bias;
+    state->dynrnge = 1;
+    state->dynrngcall = NULL;
 
     chaninfo = !acmod;
     do {
@@ -165,6 +168,17 @@ int ac3_frame (ac3_state_t * state, uint8_t * buf, int * flags,
     }
 
     return 0;
+}
+
+void ac3_dynrng (ac3_state_t * state,
+		 sample_t (* call) (sample_t, void *), void * data)
+{
+    state->dynrnge = 0;
+    if (call) {
+	state->dynrnge = 1;
+	state->dynrngcall = call;
+	state->dynrngdata = data;
+    }
 }
 
 static int parse_exponents (int expstr, int ngrps, uint8_t exponent,
@@ -359,7 +373,7 @@ static void coeff_get (sample_t * coeff, uint8_t * exp, int8_t * bap,
 	    continue;
 
 	default:
-	    coeff[i++] = (((int16_t) (bitstream_get (bapi) << (16 - bapi))) *
+	    coeff[i++] = ((bitstream_get_2 (bapi) << (16 - bapi)) *
 			  factor[exp[i]]);
 	}
     }
@@ -462,7 +476,7 @@ static void coeff_get_coupling (ac3_state_t * state, int nfchans,
 		break;
 
 	    default:
-		cplcoeff = (int16_t)(bitstream_get(bapi) << (16 - bapi));
+		cplcoeff = bitstream_get_2 (bapi) << (16 - bapi);
 	    }
 
 	    cplcoeff *= scale_factor[exp[i]];
@@ -494,8 +508,20 @@ int ac3_block (ac3_state_t * state, sample_t * samples)
 
     chaninfo = !(state->acmod);
     do {
-	if (bitstream_get (1))	/* dynrnge */
-	    bitstream_get (8);	/* dynrng */
+	if (bitstream_get (1)) {	/* dynrnge */
+	    int dynrng;
+
+	    dynrng = bitstream_get_2 (8);
+	    if (state->dynrnge) {
+		sample_t range;
+
+		range = ((((dynrng & 0x1f) | 0x20) << 13) *
+			 scale_factor[3 - (dynrng >> 5)]);
+		if (state->dynrngcall)
+		    range = state->dynrngcall (range, state->dynrngdata);
+		state->dynrng = state->level * range;
+	    }
+	}
     } while (chaninfo--);
 
     if (bitstream_get (1)) {	/* cplstre */
@@ -706,8 +732,8 @@ int ac3_block (ac3_state_t * state, sample_t * samples)
     if (state->output & AC3_LFE)
 	samples += 256;	/* shift for LFE channel */
 
-    chanbias = downmix_coeff (coeff, state->acmod, state->output, state->level,
-			      state->clev, state->slev);
+    chanbias = downmix_coeff (coeff, state->acmod, state->output,
+			      state->dynrng, state->clev, state->slev);
 
     q_1_pointer = q_2_pointer = q_4_pointer = -1;
     done_cpl = 0;
@@ -762,7 +788,7 @@ int ac3_block (ac3_state_t * state, sample_t * samples)
     if (state->lfeon) {
 	if (state->output & AC3_LFE) {
 	    coeff_get (samples - 256, state->lfe_exp, state->lfe_bap,
-		       state->level, 0, 7);
+		       state->dynrng, 0, 7);
 	    for (i = 7; i < 256; i++)
 		(samples-256)[i] = 0;
 	    imdct_512 (samples - 256, samples + 1536 - 256, state->bias);
@@ -789,7 +815,7 @@ int ac3_block (ac3_state_t * state, sample_t * samples)
 	    sample_t bias;
 
 	    bias = 0;
-	    if (chanbias & (i << i))
+	    if (!(chanbias & (1 << i)))
 		bias = state->bias;
 
 	    if (coeff[i]) {

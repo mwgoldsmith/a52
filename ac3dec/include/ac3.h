@@ -44,6 +44,11 @@ typedef struct ac3_state_s {
     sample_t level;		/* output level */
     sample_t bias;		/* output bias */
 
+    int dynrnge;		/* apply dynamic range */
+    sample_t dynrng;		/* dynamic range */
+    void * dynrngdata;		/* dynamic range callback funtion and data */
+    sample_t (* dynrngcall) (sample_t range, void * dynrngdata);
+
     uint16_t cplinu;		/* coupling in use */
     uint16_t chincpl[5];	/* channel coupled */
     uint16_t phsflginu;		/* phase flags in use (stereo only) */
@@ -105,4 +110,6 @@ int ac3_syncinfo (uint8_t * buf, int * flags,
 		  int * sample_rate, int * bit_rate);
 int ac3_frame (ac3_state_t * state, uint8_t * buf, int * flags,
 	       sample_t * level, sample_t bias);
+void ac3_dynrng (ac3_state_t * state,
+		 sample_t (* call) (sample_t, void *), void * data);
 int ac3_block (ac3_state_t * state, sample_t * samples);
