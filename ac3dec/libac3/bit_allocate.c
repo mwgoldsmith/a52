@@ -171,6 +171,7 @@ void bit_allocate(int fscod, audblk_t * audblk, ac3_ba_t * ba, uint16_t start,
     uint16_t snroffset;
     int i, j;
     int bndstrt;
+    int lowcomp;
 
     /* Do some setup before we do the bit alloc */
     sdecay = slowdec[audblk->sdcycod];
@@ -210,28 +211,59 @@ void bit_allocate(int fscod, audblk_t * audblk, ac3_ba_t * ba, uint16_t start,
     } while (i < end);
 
     // j = bndend
+    j--;
 
     i = bndstrt;
-    if (i == 0) {
-	int lowcomp = 0;
-
-	lowcomp = calc_lowcomp(lowcomp, bndpsd[0], bndpsd[1], 0);
-	excite[0] = bndpsd[0] - fgain - lowcomp;
-	lowcomp = calc_lowcomp(lowcomp, bndpsd[1], bndpsd[2], 1);
-	excite[1] = bndpsd[1] - fgain - lowcomp;
-
-	i = 2;
+    lowcomp = 0;
+    if (i == 0) {	// not the coupling channel
 	do {
-	    if (!(is_lfe && (i == 6)))
-		lowcomp = calc_lowcomp(lowcomp, bndpsd[i], bndpsd[i+1], i);
-	    fastleak = bndpsd[i] - fgain;
-	    slowleak = bndpsd[i] - sgain;
-	    excite[i++] = fastleak - lowcomp;
-	} while ((i < 7) && (bndpsd[i] < bndpsd[i-1]));
+	    if (i < j) {
+		if (bndpsd[i+1] == bndpsd[i] + 256)
+		    lowcomp = 384;
+		else if (lowcomp && (bndpsd[i+1] < bndpsd[i]))
+		    lowcomp -= 64;
+	    }
+	    excite[i++] = bndpsd[i] - fgain - lowcomp;
+	} while ((i < 3) || ((i < 7) && (bndpsd[i] < bndpsd[i-1])));
+	fastleak = bndpsd[i-1] - fgain;
+	slowleak = bndpsd[i-1] - sgain;
 
-	while ((i < j) && (i < 22)) {
-	    if (!(is_lfe && (i == 6)))
-		lowcomp = calc_lowcomp(lowcomp, bndpsd[i], bndpsd[i+1], i);
+	while (i < 7) {
+	    if (i < j) {
+		if (bndpsd[i+1] == bndpsd[i] + 256)
+		    lowcomp = 384;
+		else if (lowcomp && (bndpsd[i+1] < bndpsd[i]))
+		    lowcomp -= 64;
+	    }
+	    fastleak -= fdecay;
+	    if (fastleak < bndpsd[i] - fgain)
+		fastleak = bndpsd[i] - fgain;
+	    slowleak -= sdecay;
+	    if (slowleak < bndpsd[i] - sgain)
+		slowleak = bndpsd[i] - sgain;
+	    excite[i++] = ((fastleak - lowcomp > slowleak) ?
+			   fastleak - lowcomp : slowleak);
+	}
+	if (i > j)	// lfe channel
+	    goto done_excite;
+
+	do {
+	    if (bndpsd[i+1] == bndpsd[i] + 256)
+		lowcomp = 320;
+	    else if (lowcomp && (bndpsd[i+1] < bndpsd[i]))
+		lowcomp -= 64;
+	    fastleak -= fdecay;
+	    if (fastleak < bndpsd[i] - fgain)
+		fastleak = bndpsd[i] - fgain;
+	    slowleak -= sdecay;
+	    if (slowleak < bndpsd[i] - sgain)
+		slowleak = bndpsd[i] - sgain;
+	    excite[i++] = ((fastleak - lowcomp > slowleak) ?
+			   fastleak - lowcomp : slowleak);
+	} while (i < 20);
+
+	while (lowcomp > 128) {		// two iterations maximum
+	    lowcomp -= 128;
 	    fastleak -= fdecay;
 	    if (fastleak < bndpsd[i] - fgain)
 		fastleak = bndpsd[i] - fgain;
@@ -243,7 +275,7 @@ void bit_allocate(int fscod, audblk_t * audblk, ac3_ba_t * ba, uint16_t start,
 	}
     }
 
-    while (i < j) {
+    do {
 	fastleak -= fdecay;
 	if (fastleak < bndpsd[i] - fgain)
 	    fastleak = bndpsd[i] - fgain;
@@ -251,7 +283,9 @@ void bit_allocate(int fscod, audblk_t * audblk, ac3_ba_t * ba, uint16_t start,
 	if (slowleak < bndpsd[i] - sgain)
 	    slowleak = bndpsd[i] - sgain;
 	excite[i++] = (fastleak > slowleak) ? fastleak : slowleak;
-    }
+    } while (i <= j);
+
+done_excite:
 
     ba_compute_mask(start, end, fscod, ba->deltbae, ba->deltnseg,
 		    ba->deltoffst, ba->deltba, ba->deltlen, excite, mask);
