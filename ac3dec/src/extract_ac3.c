@@ -60,6 +60,7 @@ static void handle_args (int argc, char * argv[])
 		fprintf (stderr, "Invalid track number: %s\n", optarg);
 		print_usage (argv);
 	    }
+
 	default:
 	    print_usage (argv);
 	}
