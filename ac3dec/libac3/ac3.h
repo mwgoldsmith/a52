@@ -30,16 +30,16 @@ typedef struct ac3_ba_s {
 } ac3_ba_t;
 
 typedef struct ac3_state_s {
-    uint8_t fscod;	// sample rate
-    uint8_t halfrate;	// halfrate factor
-    uint8_t acmod;	// coded channels
-    float clev;		// centre channel mix level
-    float slev;		// surround channels mix level
-    uint8_t lfeon;	// coded lfe channel
+    uint8_t fscod;		// sample rate
+    uint8_t halfrate;		// halfrate factor
+    uint8_t acmod;		// coded channels
+    float clev;			// centre channel mix level
+    float slev;			// surround channels mix level
+    uint8_t lfeon;		// coded lfe channel
 
-    int output;		// type of output
-    float level;	// output level
-    float bias;		// output bias
+    int output;			// type of output
+    float level;		// output level
+    float bias;			// output bias
 
     uint16_t cplinu;		// coupling in use
     uint16_t chincpl[5];	// channel coupled
