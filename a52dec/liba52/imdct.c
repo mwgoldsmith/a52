@@ -357,18 +357,13 @@ void a52_imdct_256(sample_t data[],sample_t delay[],sample_t bias)
 
 static double besselI0 (double x)
 {
-    double sum, power, fact;
-    int i;
+    double bessel = 1;
+    int i = 100;
 
-    sum = power = fact = 1;
-
-    for (i = 1; i < 100; i++) {
-	power *= x;
-	fact *= i * i;
-	sum += power / fact;
-    }
-
-    return sum;
+    do
+	bessel = bessel * x / (i * i) + 1;
+    while (--i);
+    return bessel;
 }
 
 void a52_imdct_init (uint32_t mm_accel)
