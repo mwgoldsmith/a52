@@ -363,7 +363,7 @@ static double besselI0 (double x)
     sum = power = fact = 1;
 
     for (i = 1; i < 100; i++) {
-	power *= 0.25 * x * x;
+	power *= x;
 	fact *= i * i;
 	sum += power / fact;
     }
@@ -379,7 +379,7 @@ void a52_imdct_init (uint32_t mm_accel)
     /* compute imdct window - kaiser-bessel derived window, alpha = 5.0 */
     sum = 0;
     for (i = 0; i < 256; i++) {
-	sum += besselI0 (5 * M_PI * sqrt (1.0 - pow (i / 128.0 - 1, 2)));
+	sum += besselI0 (i * (256 - i) * (5 * M_PI / 256) * (5 * M_PI / 256));
 	a52_imdct_window[i] = sum;
     }
     sum++;
