@@ -27,4 +27,4 @@
 
 CVSROOT $CVSROOT/CVSROOT/syncmail -u %{sVv} walken@users.sourceforge.net
 
-DEFAULT $CVSROOT/CVSROOT/syncmail -u %{sVv} liba52-checkins@lists.sourceforge.net
+DEFAULT $CVSROOT/CVSROOT/syncmail -u -f users.sourceforge.net %{sVv} liba52-checkins@lists.sourceforge.net
