@@ -133,8 +133,11 @@ void imdct_init (void)
 	int i;
 	float scale = 255.99609372;
 
+#ifdef __i386__
 	if (!imdct_init_kni ());
-	else if (!imdct_init_c ());
+	else
+#endif
+	if (!imdct_init_c ());
 
 	// More twiddle factors to turn IFFT into IMDCT */
 	for (i=0; i < 64; i++) {
