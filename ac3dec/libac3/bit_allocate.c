@@ -115,9 +115,7 @@ do {						\
 	mask -= (psd - dbknee) >> 2;		\
     if (mask > hth[i])				\
 	mask = hth[i];				\
-    if (deltba != NULL)				\
-	mask -= 128 * deltba[i];		\
-    mask -= snroffset;				\
+    mask -= snroffset + 128 * deltba[i];	\
     mask = (mask > 0) ? 0 : ((-mask) >> 5);	\
     mask -= floor;				\
 } while (0)
@@ -143,7 +141,11 @@ void bit_allocate(int fscod, audblk_t * audblk, ac3_ba_t * ba,
     sgain = slowgain[audblk->sgaincod];
     dbknee = dbpbtab[audblk->dbpbcod];
     hth = hthtab[fscod];
-    deltba = (ba->deltbae == DELTA_BIT_NONE) ? NULL : ba->deltba;
+    /*
+     * if there is no delta bit allocation, make deltba point to an area
+     * known to contain zeroes. baptab+156 here.
+     */
+    deltba = (ba->deltbae == DELTA_BIT_NONE) ? baptab + 156 : ba->deltba;
     floor = floortab[audblk->floorcod];
     snroffset = 960 - 64 * audblk->csnroffst - 4 * ba->fsnroffst + floor;
     floor >>= 5;

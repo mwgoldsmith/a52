@@ -70,6 +70,7 @@ void rematrix(audblk_t *audblk, stream_samples_t samples)
 
 	start = rematrix_band[i].start;
 	end = min(rematrix_band[i].end ,12 * audblk->cplbegf + 36);
+	// apparently bug if coupling not used - end is not right
 	
 	for(j=start;j < end; j++) {
 	    left  = samples[0][j] + samples[1][j];
