@@ -5,20 +5,21 @@ liba52 provides a low-level interface to decoding audio frames encoded
 using ATSC standard A/52 aka AC-3. liba52 provides downmixing and
 dynamic range compression for the following output configurations:
 
-A52_CHANNEL  : dual-mono. two independant mono channels.
-A52_CHANNEL1 : first of the two mono channels above.
-A52_CHANNEL2 : second of the two mono channels above.
-A52_MONO     : mono
-A52_STEREO   : stereo
-A52_DOLBY    : dolby-surround compatible stereo
+A52_CHANNEL  : Dual mono. Two independant mono channels.
+A52_CHANNEL1 : First of the two mono channels above.
+A52_CHANNEL2 : Second of the two mono channels above.
+A52_MONO     : Mono.
+A52_STEREO   : Stereo.
+A52_DOLBY    : Dolby surround compatible stereo.
 A52_3F       : 3 front channels (left, center, right)
-A52_2F1R     : 2 front channels, 1 surround channel (L, R, S)
-A52_3F1R     : 3 front channels, 1 surround channel (L, C, R, S)
-A52_2F2R     : 2 front channels, 2 surround channels (L, R, LS, RS)
-A52_3F2R     : 3 front channels, 2 surround channels (L, C, R, LS, RS)
+A52_2F1R     : 2 front, 1 rear surround channel (L, R, S)
+A52_3F1R     : 3 front, 1 rear surround channel (L, C, R, S)
+A52_2F2R     : 2 front, 2 rear surround channels (L, R, LS, RS)
+A52_3F2R     : 3 front, 2 rear surround channels (L, C, R, LS, RS)
 
-A52_LFE      : low-frequency channel.
-               can be used in combination with any of the above.
+A52_LFE      : Low frequency effects channel. Normally used to connect a
+               subwoofer. Can be combined with any of the above channels.
+               For example: A52_3F2R | A52_LFE -> 3 front, 2 rear, 1 LFE (5.1)
 
 
 Initialization
@@ -37,33 +38,33 @@ The return value is a pointer to a properly-aligned sample buffer used
 for output samples.
 
 
-Probing the Bitstream
+Probing the bitstream
 ---------------------
 
 int a52_syncinfo (uint8_t * buf, int * flags,
                   int * sample_rate, int * bit_rate);
 
 The A/52 bitstream is composed of several a52 frames concatenated one
-after each other. An a52 frame is the smallest unit that can be
-independantly decoded in the stream.
+after each other. An a52 frame is the smallest independantly decodable
+unit in the stream.
 
-Before calling this function, you should read 7 bytes into buf. Then
-this function analyses these bytes and sees if these look like the
-start of a valid a52 frame. If this can not possibly be a valid frame,
-then the function returns 0. In that case you should try to
-re-synchronize with the a52 stream - one way to try this would be to
-advance buf by one byte until its contents looks like a valid frame,
-but there might be better application-specific ways to synchronize.
+buf must contain at least 7 bytes from the input stream. If these look
+like the start of a valid a52 frame, a52_syncinfo() returns the size
+of the coded frame in bytes, and fills flags, sample_rate and bit_rate
+with the information encoded in the stream. The returned size is
+guaranteed to be an even number between 128 and 3840. sample_rate will
+be the sampling frequency in Hz, bit_rate is for the compressed stream
+and is in bits per second, and flags is a description of the coded
+channels: the A52_LFE bit is set if there is an LFE channel coded in
+this stream, and by masking flags with A52_CHANNEL_MASK you will get a
+value that describes the full-bandwidth channels, as one of the
+A52_CHANNEL...A52_3F2R flags.
 
-If buf looks like the start of a valid frame, then this function will
-fill flags, sample_rate and bit_rate, and return the total size of the
-coded frame in bytes. This size is guaranteed to be between 128 and
-3840 bytes. sample_rate will be the sampling frequency in Hz, bit_rate
-is for the compressed stream and is in bits per second, and flags is a
-description of the coded channels: the A52_LFE bit is set if there is
-an LFE channel coded in this stream, and by masking flags with
-A52_CHANNEL_MASK you will get a value that describes the
-full-bandwidth channels, as one of the A52_CHANNEL...A52_3F2R flags.
+If this can not possibly be a valid frame, then the function returns
+0. You should then try to re-synchronize with the a52 stream - one way
+to try this would be to advance buf by one byte until its contents
+looks like a valid frame, but there might be better
+application-specific ways to synchronize.
 
 It is recommended to call this function for each frame, for several
 reasons: this function detects errors that the other functions will
@@ -71,15 +72,15 @@ not double-check, consecutive frames might have different lengths, and
 it helps you re-sync with the stream if you get de-synchronized.
 
 
-Starting to decode a Frame
+Starting to decode a frame
 --------------------------
 
 int a52_frame (a52_state_t * state, uint8_t * buf, int * flags,
 	       sample_t * level, sample_t bias);
 
-This starts the work of decoding the A/52 frame. buf should be set to
-point to the beginning of the complete frame of the full size as
-returned by a52_syncinfo().
+This starts the work of decoding the A/52 frame (to be completed using
+a52_block()). buf should point to the beginning of the complete frame
+of the full size returned by a52_syncinfo().
 
 You should pass in the flags the speaker configuration that you
 support, and liba52 will return the speaker configuration it will use
@@ -100,7 +101,7 @@ will have to handle the case where liba52 couldnt give you what you
 wanted because some of the channels were not encoded in the stream
 though.
 
-Level, bias, and the flag A52_ADJUST_LEVEL:
+Level, bias, and A52_ADJUST_LEVEL:
 
 Before downmixing, samples are floating point values with a range of
 [-1,1]. Most types of downmixing will combine channels together, which
@@ -135,7 +136,7 @@ This function also initialises the state for that frame, which will be
 reused next when decoding blocks.
 
 
-Dynamic Range Compression
+Dynamic range compression
 -------------------------
 
 void a52_dynrng (a52_state_t * state,
@@ -163,29 +164,29 @@ for 'x' depending wether c>1 or c<1 - or even something more complex
 if this is what you want.
 
 
-Decoding Blocks
+Decoding blocks
 ---------------
 
 int a52_block (a52_state_t * state, sample_t * samples);
 
 Every A/52 frame is composed of 6 blocks, each with an output of 256
-samples per channel. The a52_block function decodes the next block in
-the frame, and should be called 6 times to decode all of the audio in
-the frame (and after each call, extract the audio data from the
-samples buffer).
+samples for each channel. The a52_block() function decodes the next
+block in the frame, and should be called 6 times to decode all of the
+audio in the frame. After each call, you should extract the audio data
+from the sample buffer.
 
-The sample pointer should be the one returned by a52_init().
+The sample pointer given should be the one a52_init() returned.
 
 After this function returns, the samples buuffer will contain 256
 samples for the first channel, followed by 256 samples for the second
 channel, etc... the channel order is LFE, left, center, right, left
 surround, right surround. If one of the channels is not present in the
 liba52 output, as indicated by the flags returned by a52_frame(), then
-this channel is skipped and the following channels are shifted so we
-do not leave a blank.
+this channel is skipped and the following channels are shifted so
+liba52 does not leave an empty space between channels.
 
 
-Pseudocode Example
+Pseudocode example
 ------------------
 
 sample_t * samples = a52_init (mm_accel());
@@ -201,6 +202,7 @@ loop on input bytes:
       get rest of bytes
 
       a52_frame (state, buf, ...)
+      [a52_dynrng (state, ...); this is only optional]
       for i = 1 ... 6:
         a52_block (state, samples)
         convert samples to integer and queue to soundcard
