@@ -25,6 +25,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
+#include <mm_accel.h>
+
 #include "ac3.h"
 #include "ac3_internal.h"
 
@@ -33,7 +35,6 @@
 #include "downmix_c.h"
 #include "downmix_i386.h"
 #include "downmix_kni.h"
-#include "oms_accel.h"
 
 void (*downmix_3f_2r_to_2ch)(float *samples, dm_par_t * dm_par);
 void (*downmix_3f_1r_to_2ch)(float *samples, dm_par_t * dm_par);
@@ -47,10 +48,10 @@ void (*stream_sample_1ch_to_s16)(int16_t *s16_samples, float *center);
 void downmix_init()
 {
 #ifdef __i386__
-	uint32_t accel = oms_cpu_accel ();
+	uint32_t accel = mm_accel ();
 
 // other dowmixing should go here too
-	if (accel & OMS_ACCEL_X86_MMXEXT) {
+	if (accel & MM_ACCEL_X86_MMXEXT) {
 		dprintf("Using SSE for downmix\n");
 		downmix_3f_2r_to_2ch = downmix_3f_2r_to_2ch_kni;
 		downmix_2f_2r_to_2ch = downmix_2f_2r_to_2ch_kni;
@@ -59,7 +60,7 @@ void downmix_init()
 		downmix_3f_0r_to_2ch = downmix_3f_0r_to_2ch_kni;
 		stream_sample_2ch_to_s16 = stream_sample_2ch_to_s16_kni;
 		stream_sample_1ch_to_s16 = stream_sample_1ch_to_s16_kni;
-	} else if (accel & OMS_ACCEL_X86_3DNOW) {
+	} else if (accel & MM_ACCEL_X86_3DNOW) {
 	} else
 #endif
 	{

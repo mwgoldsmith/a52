@@ -27,9 +27,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
+#include <mm_accel.h>
 #include "ac3.h"
 #include "ac3_internal.h"
-#include "oms_accel.h"
 
 #include "downmix.h"
 #include "imdct_kni.h"
@@ -57,9 +57,9 @@ static void imdct_do_512_nol_kni (float data[], float delay[]);
 
 int imdct_init_kni (void)
 {
-	uint32_t accel = oms_cpu_accel ();
+	uint32_t accel = mm_accel ();
 
-	if (accel & OMS_ACCEL_X86_MMXEXT) {
+	if (accel & MM_ACCEL_X86_MMXEXT) {
 		int i;
 		float scale = 255.99609372;
 
