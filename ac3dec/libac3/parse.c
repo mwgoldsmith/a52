@@ -665,7 +665,7 @@ int ac3_block (ac3_state_t * state, sample_t samples[][256])
     }
 
     if (state->lfeon) {
-	coeff_get (samples[5], state->lfe_exp, state->lfe_bap, 0, 7);
+	coeff_get (samples[-1], state->lfe_exp, state->lfe_bap, 0, 7);
 	if (state->output & AC3_LFE) {
 	    for (i = 7; i < 256; i++)
 		samples[-1][i] = 0;

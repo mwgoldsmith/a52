@@ -540,4 +540,7 @@ void downmix (sample_t * samples, int acmod, int output,
 	move1to1 (samples + 1024, samples + 768, level, bias);
 	break;
     }
+
+    if (output & AC3_LFE)
+	mix1to1 (samples - 256, level, bias);
 }
