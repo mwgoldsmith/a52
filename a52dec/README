@@ -9,11 +9,9 @@ is also known as AC-3.
 
 The main goals in liba52 development are:
 
-      *	Portability - most of the code is written in C, and when we
-	use platform-specific optimizations we always have a generic C
-	routine to fall back on. We actually have very few
-	platform-specific routines for now - only mlib which is a
-	binary-only library for sun solaris.
+      *	Portability - Currently all of the code is written in C, and
+	when we write platform-specific optimizations we will always
+	keep a generic C routine to fall back on.
 
       *	Reuseability - we do not want liba52 to include any
 	project-specific code, but it should still include enough
@@ -53,7 +51,7 @@ a52dec does a stereo downmix and outputs to your speakers, but you can
 try other choices using this option. This is also used for performance
 testing and conformance testing.
 
-The "-c" option is used to disable all optimizations (currently only mlib).
+The "-c" option is used to disable all optimizations (currently only djbfft).
 
 The "-r" option is used to disable the dynamic range compression.
 
