@@ -22,7 +22,11 @@
  *
  */
 
+#ifndef LIBAC3_DOUBLE
 typedef float sample_t;
+#else
+typedef double sample_t;
+#endif
 
 typedef struct ac3_ba_s {
     uint16_t fsnroffst;		// fine SNR offset

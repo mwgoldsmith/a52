@@ -1,6 +1,12 @@
 AC_SUBST([LIBAC3_CFLAGS])
 AC_SUBST([LIBAC3_LIBS])
 
+AC_ARG_ENABLE([double],
+    [  --enable-double         use double-precision samples])
+if test x"$enable_double" = x"yes"; then
+    AC_DEFINE([LIBAC3_DOUBLE],,[ac3 sample precision])
+fi
+
 dnl check for mlib
 AC_ARG_ENABLE([mlib],
     [  --disable-mlib          make a version not using mediaLib])

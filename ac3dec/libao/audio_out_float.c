@@ -41,9 +41,19 @@ int float_setup (ao_instance_t * instance, int sample_rate, int * flags,
     return 0;
 }
 
-int float_play (ao_instance_t * instance, int flags, sample_t * samples)
+int float_play (ao_instance_t * instance, int flags, sample_t * _samples)
 {
-    fwrite (samples, sizeof (sample_t), 256 * 2, stdout);
+#ifdef LIBAC3_DOUBLE
+    float samples[256 * 2];
+    int i;
+
+    for (i = 0; i < 256 * 2; i++)
+	samples[i] = _samples[i];
+#else
+    float * samples = _samples;
+#endif
+
+    fwrite (samples, sizeof (float), 256 * 2, stdout);
 
     return 0;
 }

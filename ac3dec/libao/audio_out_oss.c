@@ -171,11 +171,21 @@ static inline void float_to_int (float * _f, int16_t * s16, int flags)
     }
 }
 
-int oss_play (ao_instance_t * _instance, int flags, sample_t * samples)
+int oss_play (ao_instance_t * _instance, int flags, sample_t * _samples)
 {
     oss_instance_t * instance = (oss_instance_t *) _instance;
     int16_t int16_samples[256*6];
     int chans = -1;
+
+#ifdef LIBAC3_DOUBLE
+    float samples[256 * 6];
+    int i;
+
+    for (i = 0; i < 256 * 6; i++)
+	samples[i] = _samples[i];
+#else
+    float * samples = _samples;
+#endif
 
     flags &= 7 | AC3_LFE;
 

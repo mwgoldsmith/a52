@@ -40,9 +40,12 @@ int main (int argc, char ** argv)
 	total += 512;
     }
     if (i == j) {
+	err /= total;
+	square = (square / total) - (err * err);
+	if (square > 0)
+	    square = 32768 * sqrt (square);
+	err *= 32768;
 	max *= 32768;
-	err *= 32768 / total;
-	square = 32768 * sqrt (square / total);
 	printf ("max error %f mean error %f standard deviation %f\n",
 		max, err, square);
 	return ((max > 0.01) || (err > 0.001) || (square > 0.001));
