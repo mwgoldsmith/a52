@@ -126,6 +126,12 @@ int solaris_play (ao_instance_t * _instance, int flags, sample_t * _samples)
 
 	instance->flags = flags;
 	instance->set_params = 0;
+    } else if ((flags == A52_DOLBY) && (instance->flags == A52_STEREO)) {
+	fprintf (stderr, "Switching from stereo to dolby surround\n");
+	instance->flags = A52_DOLBY;
+    } else if ((flags == A52_STEREO) && (instance->flags == A52_DOLBY)) {
+	fprintf (stderr, "Switching from dolby surround to stereo\n");
+	instance->flags = A52_STEREO;
     } else if (flags != instance->flags)
 	return 1;
 
