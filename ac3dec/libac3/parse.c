@@ -31,6 +31,7 @@
 #include "stats.h"
 #include "debug.h"
 #include "parse.h"
+#include "bit_allocate.h"
 
 static const uint8_t nfchans[8] = {2, 1, 2, 3, 3, 4, 4, 5};
 
@@ -42,7 +43,7 @@ int parse_syncinfo (uint8_t * buf, int * sample_rate, int * bit_rate)
     int frmsizecod;
     int bitrate;
 
-    if ((buf[0] != 0x0b) || (buf[1] != 0x77))	// check syncword
+    if ((buf[0] != 0x0b) || (buf[1] != 0x77))	// syncword
 	return 0;
 
     frmsizecod = buf[4] & 63;
@@ -183,10 +184,24 @@ static int parse_exponents (int expstr, int ngrps, uint8_t exponent,
     return 0;
 }
 
+static inline int zero_snr_offsets (ac3_state_t * state, audblk_t * audblk)
+{
+    int i;
+
+    if ((audblk->csnroffst) ||
+	(audblk->cplinu && audblk->cplfsnroffst) ||
+	(state->lfeon && audblk->lfefsnroffst))
+	return 0;
+    for (i = 0; i < state->nfchans; i++)
+	if (audblk->fsnroffst[i])
+	    return 0;
+    return 1;
+}
+
 int parse_audblk (ac3_state_t * state, audblk_t * audblk)
 {
     int i, chaninfo;
-    uint8_t cplexpstr, chexpstr[5], lfeexpstr;
+    uint8_t cplexpstr, chexpstr[5], lfeexpstr, do_bit_alloc;
 
     for (i = 0; i < state->nfchans; i++)
 	audblk->blksw[i] = bitstream_get (1);
@@ -223,9 +238,9 @@ int parse_audblk (ac3_state_t * state, audblk_t * audblk)
     }
 
     if (audblk->cplinu) {
-	int cplcoe = 0;
-	int j;
+	int j, cplcoe;
 
+	cplcoe = 0;
 	for (i = 0; i < state->nfchans; i++)
 	    if (audblk->chincpl[i])
 		if (bitstream_get (1)) {	// cplcoe
@@ -272,12 +287,12 @@ int parse_audblk (ac3_state_t * state, audblk_t * audblk)
 	    }
 	}
 
-    audblk->do_bit_alloc = 0;
+    do_bit_alloc = 0;
 
     if (cplexpstr != EXP_REUSE) {
 	int cplabsexp, ncplgrps;
 
-	audblk->do_bit_alloc = 1;
+	do_bit_alloc = 1;
 	ncplgrps = ((audblk->cplendmant - audblk->cplstrtmant) /
 		    (3 << (cplexpstr - 1)));
 	cplabsexp = bitstream_get (4) << 1;
@@ -289,7 +304,7 @@ int parse_audblk (ac3_state_t * state, audblk_t * audblk)
 	if (chexpstr[i] != EXP_REUSE) {
 	    int grp_size, nchgrps;
 
-	    audblk->do_bit_alloc = 1;
+	    do_bit_alloc = 1;
 	    grp_size = 3 * (1 << (chexpstr[i] - 1));
 	    nchgrps = (audblk->endmant[i] - 1 + (grp_size - 3)) / grp_size;
 	    audblk->fbw_exp[i][0] = bitstream_get (4);
@@ -299,7 +314,7 @@ int parse_audblk (ac3_state_t * state, audblk_t * audblk)
 	    bitstream_get (2);	// gainrng
 	}
     if (lfeexpstr != EXP_REUSE) {
-	audblk->do_bit_alloc = 1;
+	do_bit_alloc = 1;
 	audblk->lfe_exp[0] = bitstream_get (4);
 	if (parse_exponents (lfeexpstr, 2, audblk->lfe_exp[0],
 			     audblk->lfe_exp + 1))
@@ -307,7 +322,7 @@ int parse_audblk (ac3_state_t * state, audblk_t * audblk)
     }
 
     if (bitstream_get (1)) {	// baie
-	audblk->do_bit_alloc = 1;
+	do_bit_alloc = 1;
 	audblk->sdcycod = bitstream_get (2);
 	audblk->fdcycod = bitstream_get (2);
 	audblk->sgaincod = bitstream_get (2);
@@ -315,7 +330,7 @@ int parse_audblk (ac3_state_t * state, audblk_t * audblk)
 	audblk->floorcod = bitstream_get (3);
     }
     if (bitstream_get (1)) {	//snroffste
-	audblk->do_bit_alloc = 1;
+	do_bit_alloc = 1;
 	audblk->csnroffst = bitstream_get (6);
 	if (audblk->cplinu) {
 	    audblk->cplfsnroffst = bitstream_get (4);
@@ -331,13 +346,13 @@ int parse_audblk (ac3_state_t * state, audblk_t * audblk)
 	}
     }
     if ((audblk->cplinu) && (bitstream_get (1))) {	// cplleake
-	audblk->do_bit_alloc = 1;
+	do_bit_alloc = 1;
 	audblk->cplfleak = bitstream_get (3);
 	audblk->cplsleak = bitstream_get (3);
     }
 
     if (bitstream_get (1)) {	// deltbaie
-	audblk->do_bit_alloc = 1;
+	do_bit_alloc = 1;
 	if (audblk->cplinu)
 	    audblk->cpldeltbae = bitstream_get (2);
 	for (i = 0; i < state->nfchans; i++)
@@ -360,6 +375,41 @@ int parse_audblk (ac3_state_t * state, audblk_t * audblk)
 		    audblk->deltba[i][j] = bitstream_get (3);
 		}
 	    }
+	}
+    }
+
+    if (do_bit_alloc) {
+	if (zero_snr_offsets (state, audblk)) {
+	    memset (audblk->cpl_bap, 0, sizeof (audblk->cpl_bap));
+	    memset (audblk->fbw_bap, 0, sizeof (audblk->fbw_bap));
+	    memset (audblk->lfe_bap, 0, sizeof (audblk->lfe_bap));
+	} else {
+	    if (audblk->cplinu)
+		bit_allocate (state->fscod, audblk, audblk->cplstrtmant,
+			      audblk->cplendmant, audblk->cplfgaincod,
+			      (((audblk->csnroffst - 15) << 4) +
+			       audblk->cplfsnroffst) << 2,
+			      (audblk->cplfleak << 8) + 768,
+			      (audblk->cplsleak << 8) + 768,
+			      audblk->cpl_exp, audblk->cpl_bap,
+			      audblk->cpldeltbae, audblk->cpldeltnseg,
+			      audblk->cpldeltoffst, audblk->cpldeltba,
+			      audblk->cpldeltlen, 0);
+	    for (i = 0; i < state->nfchans; i++)
+		bit_allocate (state->fscod, audblk, 0, audblk->endmant[i],
+			      audblk->fgaincod[i],
+			      (((audblk->csnroffst - 15) << 4) +
+			       audblk->fsnroffst[i]) << 2, 0, 0,
+			      audblk->fbw_exp[i], audblk->fbw_bap[i],
+			      audblk->deltbae[i], audblk->deltnseg[i],
+			      audblk->deltoffst[i], audblk->deltba[i],
+			      audblk->deltlen[i], 0);
+	    if (state->lfeon)
+		bit_allocate (state->fscod, audblk, 0, 7, audblk->lfefgaincod,
+			      (((audblk->csnroffst - 15) << 4) +
+			       audblk->lfefsnroffst) << 2, 0, 0,
+			      audblk->lfe_exp, audblk->lfe_bap,
+			      2, 0, NULL, NULL, NULL, 1);
 	}
     }
 

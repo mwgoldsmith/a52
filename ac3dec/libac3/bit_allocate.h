@@ -21,4 +21,8 @@
  *
  */
 
-void bit_allocate(ac3_state_t *state, audblk_t *audblk);
+void bit_allocate(int fscod, audblk_t * audblk, uint16_t start, uint16_t end, 
+		  uint16_t fgaincod, uint16_t snroffset, uint16_t fastleak, 
+		  uint16_t slowleak, uint8_t * exp, uint16_t * bap, 
+		  int deltbae, int deltnseg, uint16_t * deltoffst, 
+		  uint16_t * deltba, uint16_t * deltlen, int ls_lfe);

@@ -186,20 +186,13 @@ static inline int16_t logadd(int16_t a,int16_t  b)
 }
 
 
-void bit_allocate(ac3_state_t * state, audblk_t *audblk)
+void bit_allocate(int fscod, audblk_t * audblk, uint16_t start, uint16_t end,
+		  uint16_t fgaincod, uint16_t snroffset, uint16_t fastleak,
+		  uint16_t slowleak, uint8_t * exp, uint16_t * bap,
+		  int deltbae, int deltnseg, uint16_t * deltoffst,
+		  uint16_t * deltba, uint16_t * deltlen, int is_lfe)
 {
-    uint16_t i;
     int16_t fgain;
-    int16_t snroffset;
-    int16_t start;
-    int16_t end;
-    int16_t fastleak;
-    int16_t slowleak;
-
-    /* Only perform bit_allocation if the exponents have changed or we
-     * have new sideband information */
-    if (audblk->do_bit_alloc == 0)
-	return;
 
     /* Do some setup before we do the bit alloc */
     sdecay = slowdec[audblk->sdcycod]; 
@@ -208,69 +201,15 @@ void bit_allocate(ac3_state_t * state, audblk_t *audblk)
     dbknee = dbpbtab[audblk->dbpbcod]; 
     floor = floortab[audblk->floorcod]; 
 
-    /* if all the SNR offset constants are zero then the whole block is zero */
-    if(!audblk->csnroffst    && !audblk->fsnroffst[0] && 
-       !audblk->fsnroffst[1] && !audblk->fsnroffst[2] && 
-       !audblk->fsnroffst[3] && !audblk->fsnroffst[4] &&
-       !audblk->cplfsnroffst && !audblk->lfefsnroffst) {
-	memset(audblk->fbw_bap,0,sizeof(uint16_t) * 256 * 5);
-	memset(audblk->cpl_bap,0,sizeof(uint16_t) * 256);
-	memset(audblk->lfe_bap,0,sizeof(uint16_t) * 7);
-	return;
-    }
+    fgain = fastgain[fgaincod]; 
 
-    for(i = 0; i < state->nfchans; i++) {
-	start = 0;
-	end = audblk->endmant[i] ; 
-	fgain = fastgain[audblk->fgaincod[i]]; 
-	snroffset = (((audblk->csnroffst - 15) << 4) + audblk->fsnroffst[i]) << 2 ;
-	fastleak = 0;
-	slowleak = 0;
+    ba_compute_psd(start, end, exp, psd, bndpsd);
 
-	ba_compute_psd(start, end, audblk->fbw_exp[i], psd, bndpsd);
+    ba_compute_excitation(start, end , fgain, fastleak, slowleak, is_lfe, bndpsd, excite);
 
-	ba_compute_excitation(start, end , fgain, fastleak, slowleak, 0, bndpsd, excite);
-
-	ba_compute_mask(start, end, state->fscod, audblk->deltbae[i], audblk->deltnseg[i], 
-			audblk->deltoffst[i], audblk->deltba[i], audblk->deltlen[i], excite, mask);
-	ba_compute_bap(start, end, snroffset, psd, mask, audblk->fbw_bap[i]);
-    }
-
-    if(audblk->cplinu) {
-	start = audblk->cplstrtmant; 
-	end = audblk->cplendmant; 
-	fgain = fastgain[audblk->cplfgaincod];
-	snroffset = (((audblk->csnroffst - 15) << 4) + audblk->cplfsnroffst) << 2 ;
-	fastleak = (audblk->cplfleak << 8) + 768; 
-	slowleak = (audblk->cplsleak << 8) + 768;
-
-	ba_compute_psd(start, end, audblk->cpl_exp, psd, bndpsd);
-
-	ba_compute_excitation(start, end , fgain, fastleak, slowleak, 0, bndpsd, excite);
-
-	ba_compute_mask(start, end, state->fscod, audblk->cpldeltbae, audblk->cpldeltnseg, 
-			audblk->cpldeltoffst, audblk->cpldeltba, audblk->cpldeltlen, excite, mask);
-
-	ba_compute_bap(start, end, snroffset, psd, mask, audblk->cpl_bap);
-    }
-
-    if(state->lfeon) {
-	start = 0;
-	end = 7;
-	fgain = fastgain[audblk->lfefgaincod];
-	snroffset = (((audblk->csnroffst - 15) << 4) + audblk->lfefsnroffst) << 2 ;
-	fastleak = 0;
-	slowleak = 0;
-
-	ba_compute_psd(start, end, audblk->lfe_exp, psd, bndpsd);
-
-	ba_compute_excitation(start, end , fgain, fastleak, slowleak, 1, bndpsd, excite);
-
-	/* Perform no delta bit allocation for lfe */
-	ba_compute_mask(start, end, state->fscod, 2, 0, 0, 0, 0, excite, mask);
-
-	ba_compute_bap(start, end, snroffset, psd, mask, audblk->lfe_bap);
-    }
+    ba_compute_mask(start, end, fscod, deltbae, deltnseg, deltoffst,
+			deltba, deltlen, excite, mask);
+    ba_compute_bap(start, end, snroffset, psd, mask, bap);
 }
 
 

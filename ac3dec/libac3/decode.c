@@ -102,7 +102,7 @@ ac3_decode_frame(uint8_t * buf)
 	    goto error;
 
 	// Figure out how many bits per mantissa 
-	bit_allocate(&state,&audblk);
+	//bit_allocate(&state,&audblk);
 
 	// Extract the mantissas from the stream and
 	// generate floating point frequency coefficients

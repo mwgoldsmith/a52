@@ -116,8 +116,6 @@ typedef struct audblk_s
 
     uint32_t	magic2;
 
-    int do_bit_alloc;
-
     uint16_t sdcycod;		// slow decay
     uint16_t fdcycod;		// fast decay
     uint16_t sgaincod;		// slow gain
