@@ -38,15 +38,10 @@
 
 #include <audio.h>
 
-#include "ac3.h"
-#include "decode.h"
-#include "debug.h"
+
+typedef signed short sint_16;
+typedef unsigned int uint_32;
 #include "output.h"
-#include "downmix.h"
-#include "ring_buffer.h"
-
-
-#define BUFFER_SIZE 1024
 
 static int init = 0;
 static ALport alport = 0;
@@ -134,90 +129,19 @@ int output_open(int bits, int rate, int channels)
     }
   }
 
+	printf("I've synced the IRIX code with the mainline blindly.\n Let me know if it works.\n");
+
   return 1;
-}
-
-static void
-output_flush(void)
-{
-  int i,j = 0;
-  sint_16 *out_buf = 0;
-
-    out_buf = rb_begin_read();
-    if(out_buf) {
-        alWriteFrames(alport, out_buf, BUFFER_SIZE /(nChannels*bytesPerWord)); 
-    } 
-
-    rb_end_read();
 }
 
 /*
  * play the sample to the already opened file descriptor
  */
-void output_play(bsi_t *bsi,stream_samples_t *samples)
+
+void output_play(sint_16* output_samples, uint_32 num_bytes)
 {
-
-  int i;
-        float *left,*right;
-        float norm = 1.0;
-        float left_tmp = 0.0;
-        float right_tmp = 0.0;
-        sint_16 *out_buf;
-
-        if(!alport)
-                return;
-
-        out_buf = rb_begin_write();
-
-        /* Keep trying to dump frames from the ring buffer until we get a
-         * write slot available */
-        while(!out_buf)
-        {
-                output_flush();
-                out_buf = rb_begin_write();
-        }
-
-        //Downmix if necessary
-        downmix(bsi,samples);
-
-        //Determine a normalization constant if the signal exceeds
-        //100% digital [-1.0,1.0]
-        //
-        //perhaps use the dynamic range info to do this instead
-        for(i=0; i< 256;i++)
-        {
-    left_tmp = samples->channel[0][i];
-    right_tmp = samples->channel[1][i];
-
-                if(left_tmp > norm)
-                        norm = left_tmp;
-                if(left_tmp < -norm)
-                        norm = -left_tmp;
-
-                if(right_tmp > norm)
-                        norm = right_tmp;
-                if(right_tmp < -norm)
-                        norm = -right_tmp;
-        }
-        norm = 32000.0/norm;
-
-        /* Take the floating point audio data and convert it into
-         * 16 bit signed PCM data */
-        left = samples->channel[0];
-        right = samples->channel[1];
-
-        for(i=0; i < 256; i++)
-        {
-        //      if((fabs(*left * norm) > 32768.0) || (fabs(*right * norm) > 32768.0))
-        //              printf("clipping (%f, %f)\n",*left,*right);
-                out_buf[i * 2 ]    = (sint_16) (*left++  * norm);
-                out_buf[i * 2 + 1] = (sint_16) (*right++ * norm);
-
-        }
-        rb_end_write();
-
+	alWriteFrames(alport, output_samples, 6 * 256); 
 }
-
 
 void
 output_close(void)

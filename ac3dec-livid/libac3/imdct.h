@@ -1,5 +1,5 @@
 /* 
- *    dither.h
+ *  imdct.h
  *
  *	Copyright (C) Aaron Holtzman - May 1999
  *
@@ -19,7 +19,8 @@
  *  along with GNU Make; see the file COPYING.  If not, write to
  *  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA. 
  *
+ *
  */
 
-
-uint_16 dither_gen(void);
+void imdct(bsi_t *bsi,audblk_t *audblk, stream_samples_t samples);
+void imdct_init(void);

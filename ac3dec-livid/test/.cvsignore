@@ -3,6 +3,7 @@
 Makefile.in
 Makefile
 bitstream_test
+dither_test
 imdct_test
 imdct_timing
 uncouple_timing

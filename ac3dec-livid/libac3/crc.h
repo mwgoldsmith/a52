@@ -1,6 +1,5 @@
-/*
- *
- *  matlab.h
+/* 
+ *  crc.h
  *
  *	Copyright (C) Aaron Holtzman - May 1999
  *
@@ -20,15 +19,9 @@
  *  along with GNU Make; see the file COPYING.  If not, write to
  *  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA. 
  *
- *
  */
-
-typedef struct matlab_file_s
-{
-	FILE *f;
-} matlab_file_t;
-
-void matlab_write(matlab_file_t *out_fp,float x[], int length);
-matlab_file_t *matlab_open(char name[]);
-void matlab_close(matlab_file_t *mf);
-
+ 
+int crc_validate(void);
+void crc_init(void);
+void crc_process_byte(uint_8 data);
+void crc_process_frame(uint_8 *data,uint_32 num_bytes);

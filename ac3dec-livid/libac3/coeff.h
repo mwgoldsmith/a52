@@ -1,8 +1,7 @@
-/*
+/* 
+ *    coeff.h
  *
- * debug.c
- *
- *	Copyright (C) Aaron Holtzman - May 1999
+ *	Copyright (C) Aaron Holtzman - Feb 2000
  *
  *  This file is part of ac3dec, a free Dolby AC-3 stream decoder.
  *	
@@ -22,36 +21,4 @@
  *
  */
 
-#include <stdlib.h>
-#include "debug.h"
-
-static int debug_level = -1;
-
-// Determine is debug output is required.
-// We could potentially have multiple levels of debug info
-int debug_is_on(void)
-{
-	char *env_var;
-	
-	if(debug_level < 0)
-	{
-	  env_var = getenv("AC3_DEBUG");
-
-		if (env_var)
-		{
-			debug_level = 1;
-		}
-		else
-			debug_level = 0;
-	}
-	
-	return debug_level;
-}
-
-//If you don't have gcc, then ya don't get debug output
-#ifndef __GNUC__
-void dprintf(char fmt[],...)
-{
-	int foo = 0;
-}
-#endif
+void coeff_unpack(bsi_t *bsi, audblk_t *audblk,stream_samples_t samples);

@@ -1,4 +1,4 @@
-.*.swp
+.*.sw?
 *~
 Makefile
 Makefile.in
@@ -10,7 +10,7 @@ config.log
 config.status
 config.sub
 configure
-decode
+ac3dec
 install-sh
 missing
 mkinstalldirs

@@ -1,5 +1,5 @@
 /* 
- *    mantissa.h
+ *    parse.h
  *
  *	Copyright (C) Aaron Holtzman - May 1999
  *
@@ -21,4 +21,8 @@
  *
  */
 
-void mantissa_unpack(bsi_t *bsi, audblk_t *audblk,bitstream_t *bs);
+void parse_syncinfo(syncinfo_t *syncinfo);
+void parse_audblk(bsi_t *bsi,audblk_t *audblk);
+void parse_bsi(bsi_t *bsi);
+void parse_auxdata(syncinfo_t *syncinfo);
+

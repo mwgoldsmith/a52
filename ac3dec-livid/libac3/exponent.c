@@ -25,6 +25,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "ac3.h"
+#include "ac3_internal.h"
+
+
 #include "decode.h"
 #include "exponent.h"
 
@@ -33,7 +36,7 @@ static void exp_unpack_ch(uint_16 type,uint_16 expstr,uint_16 ngrps,uint_16 init
 		uint_16 exps[], uint_16 *dest);
 
 void
-exponent_unpack( bsi_t *bsi, audblk_t *audblk, stream_coeffs_t *coeffs)
+exponent_unpack( bsi_t *bsi, audblk_t *audblk)
 {
 	uint_16 i;
 
@@ -75,11 +78,7 @@ exp_unpack_ch(uint_16 type,uint_16 expstr,uint_16 ngrps,uint_16 initial_exp,
 	for(i=0; i< ngrps; i++)
 	{
 		if(exps[i] > 124)
-		{
-			//FIXME set an error flag and mute the frame
-			printf("\n!! Invalid exponent !!\n");
-			exit(1);
-		}
+			error_flag = 1;
 
 		exp_1 = exps[i] / 25;
 		exp_2 = (exps[i] - (exp_1 * 25)) / 5;

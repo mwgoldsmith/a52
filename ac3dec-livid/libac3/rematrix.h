@@ -1,7 +1,7 @@
 /* 
- *  decode.h
+ *    rematrix.h
  *
- *	Copyright (C) Aaron Holtzman - May 1999
+ *	Copyright (C) Aaron Holtzman - July 1999
  *
  *  This file is part of ac3dec, a free Dolby AC-3 stream decoder.
  *	
@@ -19,20 +19,7 @@
  *  along with GNU Make; see the file COPYING.  If not, write to
  *  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA. 
  *
+ *
  */
 
-typedef struct stream_coeffs_s
-{
-	float fbw[5][256];
-	float lfe[256];
-} stream_coeffs_t;
-
-typedef struct stream_samples_s
-{
-	float channel[6][256];
-} stream_samples_t;
-
-#define DECODE_MAGIC_NUMBER 0xdeadbeef
-
-void decode_sanity_check_init(void);
-void decode_sanity_check(void);
+void rematrix(audblk_t *audblk, stream_samples_t samples);

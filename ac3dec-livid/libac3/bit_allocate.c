@@ -24,6 +24,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include "ac3.h"
+#include "ac3_internal.h"
+
+
 
 static inline sint_16 logadd(sint_16 a,sint_16  b);
 static sint_16 calc_lowcomp(sint_16 a,sint_16 b0,sint_16 b1,sint_16 bin);

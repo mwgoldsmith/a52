@@ -1,6 +1,5 @@
-/*
- *
- *  matlab.c
+/* 
+ *    exponent.h
  *
  *	Copyright (C) Aaron Holtzman - May 1999
  *
@@ -20,46 +19,10 @@
  *  along with GNU Make; see the file COPYING.  If not, write to
  *  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA. 
  *
- *
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include "matlab.h"
+#define UNPACK_FBW  1
+#define UNPACK_CPL  2
+#define UNPACK_LFE  4
 
-
-matlab_file_t *matlab_open(char name[])
-{
-	matlab_file_t *mf;	
-
-	mf = malloc(sizeof(matlab_file_t));
-	if(!mf)
-		return 0;
-
-	mf->f = fopen(name,"w");
-	if(!mf->f)
-	{
-		free(mf);
-		return 0;
-	}
-
-  fprintf(mf->f,"s = [\n");
-
-	return mf;
-}
-
-void matlab_close(matlab_file_t *mf)
-{
-  fprintf(mf->f,"];\n");
-	fclose(mf->f);
-	free(mf);
-}
-
-void matlab_write(matlab_file_t *mf,float x[], int length)
-{
-  int i;
-
-  for(i=0;i< length;i++)
-    fprintf(mf->f,"%5f;\n ",x[i]);
-}
-
+void exponent_unpack( bsi_t *bsi, audblk_t *audblk);

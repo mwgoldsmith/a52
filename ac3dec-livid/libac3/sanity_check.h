@@ -1,6 +1,5 @@
-/*
- *
- *  ring_buffer.h
+/* 
+ *  sanity_check.h
  *
  *	Copyright (C) Aaron Holtzman - May 1999
  *
@@ -20,12 +19,9 @@
  *  along with GNU Make; see the file COPYING.  If not, write to
  *  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA. 
  *
- *
  */
 
-void rb_init(void);
-sint_16* rb_begin_read(void);
-void rb_end_read(void);
-sint_16* rb_begin_write(void);
-void rb_end_write(void);
+#define AC3_MAGIC_NUMBER 0xdeadbeef
 
+void sanity_check_init(syncinfo_t *syncinfo, bsi_t *bsi, audblk_t *audblk);
+void sanity_check(syncinfo_t *syncinfo, bsi_t *bsi, audblk_t *audblk);

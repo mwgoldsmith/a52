@@ -1,5 +1,6 @@
-/* 
- *    exponent.h
+/*
+ *
+ * debug.c
  *
  *	Copyright (C) Aaron Holtzman - May 1999
  *
@@ -21,8 +22,37 @@
  *
  */
 
-#define UNPACK_FBW  1
-#define UNPACK_CPL  2
-#define UNPACK_LFE  4
+#include <stdlib.h>
+#include "debug.h"
 
-void exponent_unpack( bsi_t *bsi, audblk_t *audblk, stream_coeffs_t *coeffs);
+static int debug_level = -1;
+
+// Determine is debug output is required.
+// We could potentially have multiple levels of debug info
+int debug_is_on(void)
+{
+	char *env_var;
+	
+	if(debug_level < 0)
+	{
+	  env_var = getenv("AC3_DEBUG");
+
+		if (env_var)
+		{
+			debug_level = 1;
+		}
+		else
+			debug_level = 0;
+	}
+	
+	return debug_level;
+}
+
+//If you don't have gcc, then ya don't get debug output
+#ifndef __GNUC__
+void dprintf(char fmt[],...)
+{
+	int foo = 0;
+}
+#endif
+

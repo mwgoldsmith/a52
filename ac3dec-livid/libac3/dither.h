@@ -1,5 +1,5 @@
 /* 
- *  imdct.h
+ *    dither.h
  *
  *	Copyright (C) Aaron Holtzman - May 1999
  *
@@ -19,9 +19,19 @@
  *  along with GNU Make; see the file COPYING.  If not, write to
  *  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA. 
  *
- *
  */
 
-void imdct(bsi_t *bsi,audblk_t *audblk_t, 
-		stream_coeffs_t *coeffs, stream_samples_t *samples);
-void imdct_init(void);
+
+extern uint_16 lfsr_state;
+extern const uint_16 dither_lut[256]; 
+
+static inline uint_16 dither_gen(void)
+{
+	sint_16 state;
+
+	state = dither_lut[lfsr_state >> 8] ^ (lfsr_state << 8);
+	
+	lfsr_state = (uint_16) state;
+
+	return ((state * (sint_32) (0.707106 * 256.0))>>8);
+}

@@ -1,3 +1,10 @@
+ac3dec-0.6.0 Sat Mar 18 19:43:25 EST 2000
+-New library interface 
+-Fix bug wrt coupling channels that was causing sound quality problems. 
+-Fix 2.0 mode problems (aka the I forgot to implement the phase flags bug). 
+-All around speed improvements (almost twice as fast) 
+-Improved robustness when fed bad data. The entire frame is checksummed before playback.
+
 ac3dec-0.5.6 Tue Nov 16 00:37:34 EST 1999
 -Irix support 
 -Alpha fixes 

@@ -1,5 +1,5 @@
 /* 
- *    parse.h
+ *  decode.h
  *
  *	Copyright (C) Aaron Holtzman - May 1999
  *
@@ -20,9 +20,3 @@
  *  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA. 
  *
  */
-
-void parse_syncinfo(syncinfo_t *syncinfo,bitstream_t *bs);
-void parse_audblk(bsi_t *bsi,audblk_t *audblk,bitstream_t *bs);
-void parse_bsi(bsi_t *bsi,bitstream_t *bs);
-void parse_auxdata(syncinfo_t *syncinfo,bitstream_t *bs);
-

@@ -1,7 +1,5 @@
 /* 
- *    uncouple.h
- *
- *	Aaron Holtzman - May 1999
+ *  bit_allocate.h
  *
  *	Copyright (C) Aaron Holtzman - May 1999
  *
@@ -23,4 +21,4 @@
  *
  */
 
-void uncouple(bsi_t *bsi,audblk_t *audblk,stream_coeffs_t *coeffs);
+void bit_allocate(uint_16 fscod, bsi_t *bsi, audblk_t *audblk);

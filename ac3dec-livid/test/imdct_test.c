@@ -1,5 +1,5 @@
 /* 
- *  bitstream_test.c
+ *  imdct_test.c
  *
  *	Aaron Holtzman - May 1999
  *
@@ -8,12 +8,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "ac3.h"
-#include "bitstream.h"
-#include "decode.h"
+#include "ac3_internal.h"
 #include "imdct.h"
 
 static stream_samples_t samples;
-static stream_coeffs_t coeffs;
 static bsi_t bsi;
 static audblk_t audblk;
 
@@ -21,18 +19,19 @@ int main(void)
 {
 	int i;
 
-	coeffs.fbw[0][20] = 0.4;
-	coeffs.fbw[0][40] = 0.4;
-	coeffs.fbw[0][30] = 1.0;
+	samples[0][20] = 0.4;
+	samples[0][40] = 0.4;
+	samples[0][30] = 1.0;
 
 
 	imdct_init();
 	bsi.nfchans = 1;
 
-	imdct(&bsi,&audblk,&coeffs,&samples);
+	imdct(&bsi,&audblk,samples);
 
-	for(i=0;i<512;i++)
-		printf("%f\n",samples.channel[0][i]);
+
+	for(i=0;i<256;i++)
+		printf("%1.8f\n",samples[0][i]);
 	
 	return 0;
 
