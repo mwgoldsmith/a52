@@ -49,14 +49,12 @@ int main (int argc, char ** argv)
 	    double delta;
 
 	    delta = buf2[i] - buf1[i];
-	    if (j) {
-		err += delta;
-		square += delta * delta;
-		if (delta > max)
-		    max = delta;
-		if (-delta > max)
-		    max = -delta;
-	    }
+	    err += delta;
+	    square += delta * delta;
+	    if (delta > max)
+		max = delta;
+	    if (-delta > max)
+		max = -delta;
 	}
 	total += 512;
     }
