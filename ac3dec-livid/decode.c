@@ -89,12 +89,12 @@ int main(int argc,char *argv[])
 			 * absolute exponents */
 			exponent_unpack(&bsi,&audblk,&stream_coeffs); 
 		decode_sanity_check();
-		fprintf(stderr,"ba - %lld ns ",gethrtime() - start);
+		//fprintf(stderr,"ba - %lld ns ",gethrtime() - start);
 			/* Figure out how many bits per mantissa */
 			bit_allocate(syncinfo.fscod,&bsi,&audblk);
 		decode_sanity_check();
 
-		fprintf(stderr,"mant - %lld ns ",gethrtime() - start);
+		//fprintf(stderr,"mant - %lld ns ",gethrtime() - start);
 			/* Extract the mantissas from the data stream */
 			mantissa_unpack(&bsi,&audblk,bs);
 		decode_sanity_check();
@@ -113,19 +113,19 @@ int main(int argc,char *argv[])
 			downmix(&bsi,&audblk,&stream_coeffs); 
 #endif
 
-		fprintf(stderr,"imdct - %lld ns ",gethrtime() - start);
+		//fprintf(stderr,"imdct - %lld ns ",gethrtime() - start);
 			/* Convert the frequency data into time samples */
 			imdct(&bsi,&audblk,&stream_coeffs,&stream_samples);
 		decode_sanity_check();
 
-		fprintf(stderr,"output - %lld ns ",gethrtime() - start);
+		//fprintf(stderr,"output - %lld ns ",gethrtime() - start);
 			/* Send the samples to the output device */
 			output_play(&stream_samples);
-		fprintf(stderr,"end - %lld ns\n",gethrtime() - start);
 
 			//FIXME remove
 			//fprintf(stderr,"%ld bits for this audblk\n",
 			//		bs->total_bits_read - bits_per_audblk );
+		fprintf(stderr,"%lld ns\n",gethrtime() - start);
 
 		}
 		parse_auxdata(bs);
@@ -168,7 +168,7 @@ void decode_find_sync(bitstream_t *bs)
 		i++;
 	}
 	dprintf("(sync) %ld bits skipped to synchronize\n",i);
-	dprintf("(sync) begin frame %ld\n",frame_count);
+	fprintf(stderr,"(sync) begin frame %ld\n",frame_count);
 	frame_count++;
 
 	bs->total_bits_read = 16;

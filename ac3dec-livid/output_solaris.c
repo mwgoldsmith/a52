@@ -31,7 +31,6 @@ static char dev[] = "/dev/audio";
 static audio_info_t info;
 static int fd;
 static sint_16 out_buf[1024];
-static sint_16 sin_buf[1024];
 
 /*
  * open the audio device for writing to
@@ -113,9 +112,9 @@ void output_play(stream_samples_t *samples)
 		max_right = right_sample > max_right ? right_sample : max_right;
 
 		//FIXME gain too high
-		left_pcm = left_sample * 600000.0;
+		left_pcm = left_sample * 60000.0;
 		out_buf[i * 2 ] = left_pcm;
-		right_pcm = right_sample * 600000.0;
+		right_pcm = right_sample * 60000.0;
 		out_buf[i * 2 + 1] = right_pcm;
 
 		//fprintf(stderr,"lsample = %1.6e rsample = %1.6e\n",left_sample,right_sample);
