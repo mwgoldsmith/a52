@@ -283,6 +283,11 @@ void bit_allocate(int fscod, audblk_t * audblk, ac3_ba_t * ba, uint16_t start,
 	j = i;
     }
 
+    fastleak = 3072 - fastleak;
+    slowleak = 3072 - slowleak;
+    dbknee = 3072 - dbknee;
+    snroffset = 3072 - snroffset;
+    floor = 3072 - floor;
     do {
 	int startband, endband;
 
@@ -306,28 +311,26 @@ void bit_allocate(int fscod, audblk_t * audblk, ac3_ba_t * ba, uint16_t start,
 		break;
 	    }
 	}
-	psd = 3072 - psd;
-	// psd max:3361
-	fastleak -= fdecay;
-	if (fastleak < psd - fgain)
-	    fastleak = psd - fgain;
-	slowleak -= sdecay;
-	if (slowleak < psd - sgain)
-	    slowleak = psd - sgain;
-	mask = (fastleak > slowleak) ? fastleak : slowleak;
-	if (psd < dbknee)
-	    mask += (dbknee - psd) >> 2;
-	if (mask < hth[i])
-	    mask = hth[i];
+	// psd min:-289
+	fastleak += fdecay;
+	if (fastleak > psd + fgain)
+	    fastleak = psd + fgain;
+	slowleak += sdecay;
+	if (slowleak > psd + sgain)
+	    slowleak = psd + sgain;
+	mask = (fastleak < slowleak) ? fastleak : slowleak;
+	if (psd > dbknee)
+	    mask -= (psd - dbknee) >> 2;
+	if (mask > 3072 - hth[i])
+	    mask = 3072 - hth[i];
 	if (deltba != NULL)
-	    mask += deltba[i] << 7;
-	mask -= snroffset;
-	mask = (mask < 0) ? 0 : (mask & 0x1fe0);
-	mask += floor;
+	    mask -= deltba[i] << 7;
+	mask -= snroffset - 31;
+	mask = (mask > 0) ? 0 : (mask >> 5);
+	mask += floor >> 5;
 	j = startband;
 	do {
-	    psd = 3072 - 128 * exp[j];
-	    bap[j++] = baptab[min (63, max (0, (psd - mask) >> 5))];
+	    bap[j++] = baptab[min (63, max (0, mask - 4 * exp[j]))];
 	    // psd-mask max:5019=sgain-deltba+snroffset+31(and)
 	    // psd-mask min:-4705=0-maxpsd+fgain-deltba+snroffset
 	} while (j < endband);
