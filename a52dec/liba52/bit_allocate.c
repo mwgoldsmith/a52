@@ -231,7 +231,7 @@ void a52_bit_allocate (a52_state_t * state, ba_t * ba, int bndstart,
 	int startband, endband;
 
 	startband = j;
-	endband = ((bndtab-20)[i] < end) ? (bndtab-20)[i] : end;
+	endband = (bndtab[i-20] < end) ? bndtab[i-20] : end;
 	psd = 128 * exp[j++];
 	while (j < endband) {
 	    int next, delta;
