@@ -23,14 +23,13 @@ static uint_32 bit_mask[] = {
 	0xFFFFFFF8, 0xFFFFFFFC, 0xFFFFFFFE,0xFFFFFFFF};
 
 /* Fetches 1-32 bits from the file opened in bitstream_open */
-void 
-bitstream_get(bitstream_t *bs,uint_32 *dest,uint_32 num_bits)
+uint_32
+bitstream_get(bitstream_t *bs,uint_32 num_bits)
 {
 	uint_32 result;
 
 	if (num_bits < bs->bits_left)
 	{
-		//printf("A");
 		result = (bs->current_word & bit_mask[num_bits]) >> (32 - num_bits);
 		//printf("case 1 current_word = %lx result = %lx\n",bs->current_word,result);
 		bs->current_word <<= num_bits;
@@ -38,7 +37,6 @@ bitstream_get(bitstream_t *bs,uint_32 *dest,uint_32 num_bits)
 	}
 	else
 	{
-		//printf("B");
 		/* The bit request overlaps two words */
 		result = (bs->current_word & bit_mask[bs->bits_left]) >> 
 			(32 - bs->bits_left);
@@ -49,7 +47,7 @@ bitstream_get(bitstream_t *bs,uint_32 *dest,uint_32 num_bits)
 		bs->current_word <<= num_bits;
 		bs->bits_left = 32 - num_bits;
 	}
-	*dest = result;
+	return result;
 }
 
 /* Opens a bitstream for use in bitstream_get */

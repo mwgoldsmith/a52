@@ -38,7 +38,7 @@ int main(void)
 			num_bits = abs(i - (BIT_SIZE));
 		else
 			num_bits = rand() % 32;
-		bitstream_get(bs,&data,num_bits);
+		data = bitstream_get(bs,num_bits);
 		print_bits(data,num_bits);
 		i += num_bits;
 	}

@@ -18,9 +18,9 @@ typedef unsigned char  uint_8;
 typedef struct syncinfo_s
 {
 	/* Sync word == 0x0B77 */
-	uint_16   syncword;	
+	/* uint_16   syncword; */
 	/* crc for the first 5/8 of the sync block */
-	uint_16   crc1;
+	/* uint_16   crc1; */
 	/* Stream Sampling Rate (kHz) 0 = 48, 1 = 44.1, 2 = 32, 3 = reserved */
 	uint_32		fscod;	
 	/* Frame size code */
@@ -35,12 +35,19 @@ typedef struct bsi_s
 	uint_16 bsmod;
 	/* Audio coding mode */
 	uint_16 acmod;
+	/* Number of channels (excluding LFE) */
+	/* This data isn't actually in the AC3 stream, but derived from
+	 * acmod */
+	uint_16 nfchans;
+	/* If we're using the centre channel then */
 		/* centre mix level */
 		uint_16 cmixlev;
+	/* If we're using the surround channel then */
 		/* surround mix level */
 		uint_16 surmixlev;
+	/* If we're in 2/0 mode then */
 		/* Dolby surround mix level - NOT USED - */
-		uint_16 dsurmixlev;
+		uint_16 dsurmod;
 	/* Low frequency effects on */
 	uint_16 lfeon;
 	/* Dialogue Normalization level */
@@ -116,6 +123,7 @@ typedef struct audblk_s
 			uint_16 cplbegf;
 			/* coupling end frequency code */
 			uint_16 cplendf;
+			
 
 
 
