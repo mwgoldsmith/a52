@@ -1,0 +1,44 @@
+Introduction to the libac3 API
+
+
+I - initializing the library
+
+void ac3_init(void);
+
+
+II - basic information about the ac3 bitstream
+
+int ac3_syncinfo (uint8_t * buf, int * flags,
+		  int * sample_rate, int * bit_rate);
+
+The ac3 bitstream is composed of several ac3 frames concatenated one
+after each other. An ac3 frams is the smallest unit that can be
+independantly decoded in the stream.
+
+Before calling this function, you should read 7 bytes into buf.  Then
+this function analyses these bytes and sees if these look like the
+start of a valid ac3 frame. If this can not possibly be a valid frame,
+then the function returns 0. In that case you should try to
+re-synchronize with the ac3 stream - one way to try this would be to
+advance buf by one byte until its contents looks like a valid frame,
+but there might be better application-specific ways to synchronize.
+
+If buf looks like the start of a valid frame, then this function will
+fill flags, sample_rate and bit_rate, and return the total size of the
+coded frame in bytes. This size is guaranteed to be between 128 and
+3840 bytes. sample_rate will be the sampling frequency in Hz, bit_rate
+is for the compressed stream and is in bits per second, and flags is a
+description of the coded channels: the AC3_LFE bit is set if there is
+an LFE channel coded in this stream, and by masking flags with
+AC3_CHANNEL_MASK you will get a value that describes the
+full-bandwidth channels, either 0-7 as described in "acmod" in the ac3
+standard, or AC3_DOLBY for a stereo stream when the encoder has
+specified that the stream was encoded in dolby-stereo.
+
+It is recommended to call this function for each frame, for several
+reasons: this function detects errors that the other functions will
+not double-check, consecutive frames might have different lengths, and
+it helps you re-sync with the stream if you get de-synchronized.
+
+
+III - 

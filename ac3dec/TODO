@@ -1,5 +1,7 @@
-* clean includes, put in include directory
+* put includes in include directory
 * allow LFE channel output
+* get rid of globals in bitstream parsing
+* finish API documentation
 
 * finish ac3_internal.h cleanup
 	* use sensible data types
@@ -9,14 +11,11 @@
 	* maybe use a single w[] array with only positive values
 	* use split-radix algorithm
 * move samples/delay array to the right structures
-* use sample_t instead of float
 * clean up coeff_get_cpl
 * cplfleak/cplsleak: move 2304-x in bit_allocate.c ?
-* scale_factors[]: use float initialisation not int
 
 * see if we can get rid of cplcoe in the phsflginu test
 
-* update imdct code
 * update bitstream/parse code
 
 * implement dynamic range control

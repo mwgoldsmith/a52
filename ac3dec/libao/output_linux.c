@@ -105,8 +105,9 @@ void output_play(int16_t* output_samples, uint32_t num_bytes)
 {
 //	if(fd < 0)
 //		return;
-
+#if 1
 	write(fd,output_samples,1024 * 6);
+#endif
 }
 
 
