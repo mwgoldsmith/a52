@@ -88,24 +88,6 @@ typedef struct bsi_s
 		uint16_t surmixlev;
 	/* Low frequency effects on */
 	uint16_t lfeon;
-	/* Copyright bit */
-	uint16_t copyrightb;
-	/* Original bit */
-	uint16_t origbs;
-	/* Timecode 1 exists */
-	uint16_t timecod1e;
-		/* Timecode 1 */
-		uint16_t timecod1;
-	/* Timecode 2 exists */
-	uint16_t timecod2e;
-		/* Timecode 2 */
-		uint16_t timecod2;
-	/* Additional bit stream info exists */
-	uint16_t addbsie;
-		/* Additional bit stream length - 1 (in bytes) */
-		uint16_t addbsil;
-		/* Additional bit stream information (max 64 bytes) */
-		uint8_t	addbsi[64];
 
 	/* Information not in the AC-3 bitstream, but derived */
 	/* Number of channels (excluding LFE)

@@ -102,7 +102,7 @@ int parse_bsi(bsi_t *bsi, uint8_t * buf)
     /* Is the low frequency effects channel on? */
     bsi->lfeon = bitstream_get(1);
 
-    chaninfo = (bsi->acmod) ? 1 : 2;
+    chaninfo = (bsi->acmod) ? 0 : 1;
     do {
 	bitstream_get(5);	// dialnorm
 	if (bitstream_get(1))	// compre
@@ -111,35 +111,22 @@ int parse_bsi(bsi_t *bsi, uint8_t * buf)
 	    bitstream_get(8);	// langcod
 	if (bitstream_get(1))	// audprodie
 	    bitstream_get(7);	// mixlevel + roomtyp
-    } while (--chaninfo);
+    } while (chaninfo--);
 
-    /* Get the copyright bit */
-    bsi->copyrightb = bitstream_get(1);
+    bitstream_get(2);		// copyrightb + origbs
 
-    /* Get the original bit */
-    bsi->origbs = bitstream_get(1);
-	
-    /* Does timecode one exist? */
-    bsi->timecod1e = bitstream_get(1);
-    if(bsi->timecod1e)
-	bsi->timecod1 = bitstream_get(14);
+    if (bitstream_get(1))	// timecod1e
+	bitstream_get(14);	// timecod1
+    if (bitstream_get(1))	// timecod2e
+	bitstream_get(14);	// timecod2
 
-    /* Does timecode two exist? */
-    bsi->timecod2e = bitstream_get(1);
-    if(bsi->timecod2e)
-	bsi->timecod2 = bitstream_get(14);
+    if (bitstream_get(1)) {	// addbsie
+	int addbsil;
 
-    /* Does addition info exist? */
-    bsi->addbsie = bitstream_get(1);
-    if(bsi->addbsie) {
-	int i;
-
-	/* Get how much info is there */
-	bsi->addbsil = bitstream_get(6);
-
-	/* Get the additional info */
-	for(i=0;i<(bsi->addbsil + 1);i++)
-	    bsi->addbsi[i] = bitstream_get(8);
+	addbsil = bitstream_get(6);
+	do {
+	    bitstream_get(8);	// addbsi
+	} while (addbsil--);
     }
 
     stats_print_bsi(bsi);
