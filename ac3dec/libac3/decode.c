@@ -106,13 +106,8 @@ ac3_decode_frame(uint8_t * buf)
 	//Initialize freq/time sample storage
 	memset(samples,0,sizeof(float) * 256 * (state.nfchans + state.lfeon));
 
-	// Extract most of the audblk info from the bitstream
-	// (minus the mantissas 
 	if (parse_audblk (&state, &audblk))
 	    goto error;
-
-	// Figure out how many bits per mantissa 
-	//bit_allocate(&state,&audblk);
 
 	// Extract the mantissas from the stream and
 	// generate floating point frequency coefficients
