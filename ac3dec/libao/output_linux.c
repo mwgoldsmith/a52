@@ -57,6 +57,13 @@ int output_open(int bits, int rate, int channels)
 {
   int tmp;
   
+#if 1
+    fd = open("output.pcm",O_WRONLY|O_CREAT|O_TRUNC,0600);
+    if (fd < 0)
+	printf ("open failed\n");
+    return (fd >= 0);
+#endif
+
   /*
    * Open the device driver
    */
