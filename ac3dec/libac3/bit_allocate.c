@@ -29,15 +29,13 @@
 
 
 
-static int16_t calc_lowcomp(int16_t a,int16_t b0,int16_t b1,int16_t bin);
 static inline uint16_t min(int16_t a,int16_t b);
 static inline uint16_t max(int16_t a,int16_t b);
 
 static void ba_compute_mask(int16_t start, int16_t end, uint16_t fscod,
 			    uint16_t deltbae, uint16_t deltnseg,
 			    uint16_t deltoffst[], uint16_t deltba[],
-			    uint16_t deltlen[], int16_t excite[],
-			    int16_t mask[]);
+			    uint16_t deltlen[], int16_t mask[]);
 static void ba_compute_bap(int16_t start, int16_t end, int16_t snroffset,
 			   int8_t exp[], int16_t mask[], int16_t bap[]);
 
@@ -150,28 +148,28 @@ static int16_t sgain;
 static int16_t dbknee;
 static int16_t floor;
 static int16_t bndpsd[256];
-static int16_t excite[256];
 static int16_t mask[256];
 
-static inline uint16_t max(int16_t a,int16_t b)
+static inline uint16_t max (int16_t a, int16_t b)
 {
     return (a > b ? a : b);
 }
 	
-static inline uint16_t min(int16_t a,int16_t b)
+static inline uint16_t min (int16_t a, int16_t b)
 {
     return (a < b ? a : b);
 }
 
 void bit_allocate(int fscod, audblk_t * audblk, ac3_ba_t * ba, uint16_t start,
 		  uint16_t end, int16_t fastleak, int16_t slowleak,
-		  uint8_t * exp, uint16_t * bap, int is_lfe)
+		  uint8_t * exp, uint16_t * bap)
 {
     int16_t fgain;
     uint16_t snroffset;
     int i, j;
     int bndstrt;
     int lowcomp;
+    int excite;
 
     /* Do some setup before we do the bit alloc */
     sdecay = slowdec[audblk->sdcycod];
@@ -223,7 +221,10 @@ void bit_allocate(int fscod, audblk_t * audblk, ac3_ba_t * ba, uint16_t start,
 		else if (lowcomp && (bndpsd[i+1] < bndpsd[i]))
 		    lowcomp -= 64;
 	    }
-	    excite[i++] = bndpsd[i] - fgain - lowcomp;
+	    excite = bndpsd[i] - fgain - lowcomp;
+	    if (bndpsd[i] < dbknee)
+		excite += (dbknee - bndpsd[i]) >> 2;
+	    mask[i++] = max (excite, hth[fscod][i]);
 	} while ((i < 3) || ((i < 7) && (bndpsd[i] < bndpsd[i-1])));
 	fastleak = bndpsd[i-1] - fgain;
 	slowleak = bndpsd[i-1] - sgain;
@@ -241,8 +242,11 @@ void bit_allocate(int fscod, audblk_t * audblk, ac3_ba_t * ba, uint16_t start,
 	    slowleak -= sdecay;
 	    if (slowleak < bndpsd[i] - sgain)
 		slowleak = bndpsd[i] - sgain;
-	    excite[i++] = ((fastleak - lowcomp > slowleak) ?
-			   fastleak - lowcomp : slowleak);
+	    excite = ((fastleak - lowcomp > slowleak) ?
+		      fastleak - lowcomp : slowleak);
+	    if (bndpsd[i] < dbknee)
+		excite += (dbknee - bndpsd[i]) >> 2;
+	    mask[i++] = max (excite, hth[fscod][i]);
 	}
 	if (i > j)	// lfe channel
 	    goto done_excite;
@@ -258,8 +262,11 @@ void bit_allocate(int fscod, audblk_t * audblk, ac3_ba_t * ba, uint16_t start,
 	    slowleak -= sdecay;
 	    if (slowleak < bndpsd[i] - sgain)
 		slowleak = bndpsd[i] - sgain;
-	    excite[i++] = ((fastleak - lowcomp > slowleak) ?
-			   fastleak - lowcomp : slowleak);
+	    excite = ((fastleak - lowcomp > slowleak) ?
+		      fastleak - lowcomp : slowleak);
+	    if (bndpsd[i] < dbknee)
+		excite += (dbknee - bndpsd[i]) >> 2;
+	    mask[i++] = max (excite, hth[fscod][i]);
 	} while (i < 20);
 
 	while (lowcomp > 128) {		// two iterations maximum
@@ -270,8 +277,11 @@ void bit_allocate(int fscod, audblk_t * audblk, ac3_ba_t * ba, uint16_t start,
 	    slowleak -= sdecay;
 	    if (slowleak < bndpsd[i] - sgain)
 		slowleak = bndpsd[i] - sgain;
-	    excite[i++] = ((fastleak - lowcomp > slowleak) ?
-			   fastleak - lowcomp : slowleak);
+	    excite = ((fastleak - lowcomp > slowleak) ?
+		      fastleak - lowcomp : slowleak);
+	    if (bndpsd[i] < dbknee)
+		excite += (dbknee - bndpsd[i]) >> 2;
+	    mask[i++] = max (excite, hth[fscod][i]);
 	}
     }
 
@@ -282,13 +292,16 @@ void bit_allocate(int fscod, audblk_t * audblk, ac3_ba_t * ba, uint16_t start,
 	slowleak -= sdecay;
 	if (slowleak < bndpsd[i] - sgain)
 	    slowleak = bndpsd[i] - sgain;
-	excite[i++] = (fastleak > slowleak) ? fastleak : slowleak;
+	excite = (fastleak > slowleak) ? fastleak : slowleak;
+	if (bndpsd[i] < dbknee)
+	    excite += (dbknee - bndpsd[i]) >> 2;
+	mask[i++] = max (excite, hth[fscod][i]);
     } while (i <= j);
 
 done_excite:
 
     ba_compute_mask(start, end, fscod, ba->deltbae, ba->deltnseg,
-		    ba->deltoffst, ba->deltba, ba->deltlen, excite, mask);
+		    ba->deltoffst, ba->deltba, ba->deltlen, mask);
     ba_compute_bap(start, end, snroffset, exp, mask, bap);
 }
 
@@ -296,10 +309,9 @@ done_excite:
 static void ba_compute_mask(int16_t start, int16_t end, uint16_t fscod,
 			    uint16_t deltbae, uint16_t deltnseg,
 			    uint16_t deltoffst[], uint16_t deltba[],
-			    uint16_t deltlen[], int16_t excite[],
-			    int16_t mask[])
+			    uint16_t deltlen[], int16_t mask[])
 {
-    int bin,k;
+    int k;
     int16_t bndstrt;
     int16_t bndend;
     int16_t delta;
@@ -307,14 +319,6 @@ static void ba_compute_mask(int16_t start, int16_t end, uint16_t fscod,
     bndstrt = masktab[start]; 
     bndend = masktab[end - 1] + 1; 
 
-    /* Compute the masking curve */
-
-    for (bin = bndstrt; bin < bndend; bin++) { 
-	if (bndpsd[bin] < dbknee) 
-	    excite[bin] += ((dbknee - bndpsd[bin]) >> 2); 
-	mask[bin] = max(excite[bin], hth[fscod][bin]);
-    }
-	
     /* Perform delta bit modulation if necessary */
     if ((deltbae == DELTA_BIT_REUSE) || (deltbae == DELTA_BIT_NEW)) { 
 	int16_t band = 0; 
@@ -365,22 +369,3 @@ static void ba_compute_bap(int16_t start, int16_t end, int16_t snroffset,
 	j++; 
     } while (end > lastbin);
 }
-
-static int16_t calc_lowcomp(int16_t a,int16_t b0,int16_t b1,int16_t bin) 
-{
-    if (bin < 7) { 
-	if ((b0 + 256) == b1)
-	    a = 384; 
-	else if (b0 > b1) 
-	    a = max(0, a - 64); 
-    } else if (bin < 20) { 
-	if ((b0 + 256) == b1) 
-	    a = 320; 
-	else if (b0 > b1) 
-	    a = max(0, a - 64) ; 
-    } else  
-	a = max(0, a - 128); 
-	
-    return(a);
-}
-

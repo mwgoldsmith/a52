@@ -389,15 +389,15 @@ int parse_audblk (ac3_state_t * state, audblk_t * audblk)
 			      audblk->cplstrtmant, audblk->cplendmant,
 			      (audblk->cplfleak << 8) + 768,
 			      (audblk->cplsleak << 8) + 768,
-			      audblk->cpl_exp, audblk->cpl_bap, 0);
+			      audblk->cpl_exp, audblk->cpl_bap);
 	    for (i = 0; i < state->nfchans; i++)
 		bit_allocate (state->fscod, audblk, audblk->ba + i, 0,
 			      audblk->endmant[i], 0, 0,
-			      audblk->fbw_exp[i], audblk->fbw_bap[i], 0);
+			      audblk->fbw_exp[i], audblk->fbw_bap[i]);
 	    if (state->lfeon) {
 		audblk->lfeba.deltbae = DELTA_BIT_NONE;
 		bit_allocate (state->fscod, audblk, &audblk->lfeba, 0, 7, 0, 0,
-			      audblk->lfe_exp, audblk->lfe_bap, 1);
+			      audblk->lfe_exp, audblk->lfe_bap);
 	    }
 	}
     }
