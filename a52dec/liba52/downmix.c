@@ -154,6 +154,8 @@ int a52_downmix_init (int input, int flags, sample_t * level,
 int a52_downmix_coeff (sample_t * coeff, int acmod, int output, sample_t level,
 		       sample_t clev, sample_t slev)
 {
+    sample_t level_3db = level * LEVEL_3DB;
+
     switch (CONVERT (acmod, output & A52_CHANNEL_MASK)) {
 
     case CONVERT (A52_CHANNEL, A52_CHANNEL):
@@ -173,43 +175,43 @@ int a52_downmix_coeff (sample_t * coeff, int acmod, int output, sample_t level,
 	return 3;
 
     case CONVERT (A52_STEREO, A52_MONO):
-	coeff[0] = coeff[1] = level * LEVEL_3DB;
+	coeff[0] = coeff[1] = level_3db;
 	return 3;
 
     case CONVERT (A52_3F, A52_MONO):
-	coeff[0] = coeff[2] = level * LEVEL_3DB;
-	coeff[1] = level * clev * LEVEL_PLUS3DB;
+	coeff[0] = coeff[2] = level_3db;
+	coeff[1] = level_3db * clev * LEVEL_PLUS6DB;
 	return 7;
 
     case CONVERT (A52_2F1R, A52_MONO):
-	coeff[0] = coeff[1] = level * LEVEL_3DB;
-	coeff[2] = level * slev * LEVEL_3DB;
+	coeff[0] = coeff[1] = level_3db;
+	coeff[2] = level_3db * slev;
 	return 7;
 
     case CONVERT (A52_2F2R, A52_MONO):
-	coeff[0] = coeff[1] = level * LEVEL_3DB;
-	coeff[2] = coeff[3] = level * slev * LEVEL_3DB;
+	coeff[0] = coeff[1] = level_3db;
+	coeff[2] = coeff[3] = level_3db * slev;
 	return 15;
 
     case CONVERT (A52_3F1R, A52_MONO):
-	coeff[0] = coeff[2] = level * LEVEL_3DB;
-	coeff[1] = level * clev * LEVEL_PLUS3DB;
-	coeff[3] = level * slev * LEVEL_3DB;
+	coeff[0] = coeff[2] = level_3db;
+	coeff[1] = level_3db * clev * LEVEL_PLUS6DB;
+	coeff[3] = level_3db * slev;
 	return 15;
 
     case CONVERT (A52_3F2R, A52_MONO):
-	coeff[0] = coeff[2] = level * LEVEL_3DB;
-	coeff[1] = level * clev * LEVEL_PLUS3DB;
-	coeff[3] = coeff[4] = level * slev * LEVEL_3DB;
+	coeff[0] = coeff[2] = level_3db;
+	coeff[1] = level_3db * clev * LEVEL_PLUS6DB;
+	coeff[3] = coeff[4] = level_3db * slev;
 	return 31;
 
     case CONVERT (A52_MONO, A52_DOLBY):
-	coeff[0] = level * LEVEL_3DB;
+	coeff[0] = level_3db;
 	return 0;
 
     case CONVERT (A52_3F, A52_DOLBY):
 	coeff[0] = coeff[2] = coeff[3] = coeff[4] = level;
-	coeff[1] = level * LEVEL_3DB;
+	coeff[1] = level_3db;
 	return 7;
 
     case CONVERT (A52_3F, A52_STEREO):
@@ -221,28 +223,28 @@ int a52_downmix_coeff (sample_t * coeff, int acmod, int output, sample_t level,
 
     case CONVERT (A52_2F1R, A52_DOLBY):
 	coeff[0] = coeff[1] = level;
-	coeff[2] = level * LEVEL_3DB;
+	coeff[2] = level_3db;
 	return 7;
 
     case CONVERT (A52_2F1R, A52_STEREO):
 	coeff[0] = coeff[1] = level;
-	coeff[2] = level * slev * LEVEL_3DB;
+	coeff[2] = level_3db * slev;
 	return 7;
 
     case CONVERT (A52_3F1R, A52_DOLBY):
 	coeff[0] = coeff[2] = level;
-	coeff[1] = coeff[3] = level * LEVEL_3DB;
+	coeff[1] = coeff[3] = level_3db;
 	return 15;
 
     case CONVERT (A52_3F1R, A52_STEREO):
 	coeff[0] = coeff[2] = level;
 	coeff[1] = level * clev;
-	coeff[3] = level * slev * LEVEL_3DB;
+	coeff[3] = level_3db * slev;
 	return 15;
 
     case CONVERT (A52_2F2R, A52_DOLBY):
 	coeff[0] = coeff[1] = level;
-	coeff[2] = coeff[3] = level * LEVEL_3DB;
+	coeff[2] = coeff[3] = level_3db;
 	return 15;
 
     case CONVERT (A52_2F2R, A52_STEREO):
@@ -252,13 +254,13 @@ int a52_downmix_coeff (sample_t * coeff, int acmod, int output, sample_t level,
 
     case CONVERT (A52_3F2R, A52_DOLBY):
 	coeff[0] = coeff[2] = level;
-	coeff[1] = coeff[3] = coeff[4] = level * LEVEL_3DB;
+	coeff[1] = coeff[3] = coeff[4] = level_3db;
 	return 31;
 
     case CONVERT (A52_3F2R, A52_2F1R):
 	coeff[0] = coeff[2] = level;
 	coeff[1] = level * clev;
-	coeff[3] = coeff[4] = level * LEVEL_3DB;
+	coeff[3] = coeff[4] = level_3db;
 	return 31;
 
     case CONVERT (A52_3F2R, A52_STEREO):
@@ -269,7 +271,7 @@ int a52_downmix_coeff (sample_t * coeff, int acmod, int output, sample_t level,
 
     case CONVERT (A52_3F1R, A52_3F):
 	coeff[0] = coeff[1] = coeff[2] = level;
-	coeff[3] = level * slev * LEVEL_3DB;
+	coeff[3] = level_3db * slev;
 	return 13;
 
     case CONVERT (A52_3F2R, A52_3F):
@@ -279,28 +281,28 @@ int a52_downmix_coeff (sample_t * coeff, int acmod, int output, sample_t level,
 
     case CONVERT (A52_2F2R, A52_2F1R):
 	coeff[0] = coeff[1] = level;
-	coeff[2] = coeff[3] = level * LEVEL_3DB;
+	coeff[2] = coeff[3] = level_3db;
 	return 12;
 
     case CONVERT (A52_3F2R, A52_3F1R):
 	coeff[0] = coeff[1] = coeff[2] = level;
-	coeff[3] = coeff[4] = level * LEVEL_3DB;
+	coeff[3] = coeff[4] = level_3db;
 	return 24;
 
     case CONVERT (A52_2F1R, A52_2F2R):
 	coeff[0] = coeff[1] = level;
-	coeff[2] = level * LEVEL_3DB;
+	coeff[2] = level_3db;
 	return 0;
 
     case CONVERT (A52_3F1R, A52_2F2R):
 	coeff[0] = coeff[2] = level;
 	coeff[1] = level * clev;
-	coeff[3] = level * LEVEL_3DB;
+	coeff[3] = level_3db;
 	return 7;
 
     case CONVERT (A52_3F1R, A52_3F2R):
 	coeff[0] = coeff[1] = coeff[2] = level;
-	coeff[3] = level * LEVEL_3DB;
+	coeff[3] = level_3db;
 	return 0;
 
     case CONVERT (A52_CHANNEL, A52_CHANNEL1):
