@@ -27,8 +27,6 @@
 #include "ac3_internal.h"
 
 #include "bitstream.h"
-#include "stats.h"
-#include "debug.h"
 #include "parse.h"
 #include "bit_allocate.h"
 #include "dither.h"
@@ -129,7 +127,6 @@ int parse_bsi (ac3_state_t * state, uint8_t * buf)
 	} while (addbsil--);
     }
 
-    stats_print_bsi(state);
     return 0;
 }
 
@@ -808,8 +805,6 @@ int parse_audblk (ac3_state_t * state, audblk_t * audblk)
 
     if (state->acmod == 2)
 	rematrix (audblk, samples);
-
-    stats_print_audblk (state, audblk);
 
     imdct (state, audblk, samples);
 

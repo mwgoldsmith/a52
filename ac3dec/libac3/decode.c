@@ -34,17 +34,12 @@
 #include "imdct.h"
 #include "bit_allocate.h"
 #include "parse.h"
-#include "stats.h"
-#include "debug.h"
 
 //our global config structure
 uint32_t error_flag = 0;
 
 static audblk_t audblk;
 static ac3_state_t state;
-static uint32_t frame_count = 0;
-static uint32_t done_banner;
-static ac3_frame_t frame;
 
 //the floating point samples for one audblk
 stream_samples_t samples;
@@ -57,8 +52,6 @@ void
 ac3_init(void)
 {
     imdct_init();
-
-    frame.audio_data = s16_samples;
 }
 
 int ac3_frame_length(uint8_t * buf)
@@ -90,24 +83,20 @@ static void float_to_int (float * f, int16_t * s16)
     }
 }
 
-ac3_frame_t*
+ac3_frame_t *
 ac3_decode_frame(uint8_t * buf)
 {
+    static ac3_frame_t frame;
     uint32_t i;
     int dummy;
 
     if (!parse_syncinfo (buf, &frame.sampling_rate, &dummy))
 	goto error;
 
-    dprintf("(decode) begin frame %d\n",frame_count++);
+    frame.audio_data = s16_samples;
 
     if (parse_bsi (&state, buf))
 	goto error;
-
-    if (!done_banner) {
-	stats_print_banner (&state);
-	done_banner = 1;
-    }
 
     for (i = 0; i < 6; i++) {
 	if (parse_audblk (&state, &audblk))
