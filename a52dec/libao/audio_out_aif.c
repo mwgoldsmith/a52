@@ -43,7 +43,7 @@ typedef struct aif_instance_s {
 static uint8_t aif_header[] = {
     'F', 'O', 'R', 'M', 0xff, 0xff, 0xff, 0xfe, 'A', 'I', 'F', 'F',
     'C', 'O', 'M', 'M', 0, 0, 0, 18,
-    0, 2, 0x3f, 0xff, 0xff, 0xf4, 0, 16, 0x40, 0x0e, -1, -1, 0, 0, 0, 0, 0, 0,
+    0, 2, 0x3f, 0xff, 0xff, 0xf4, 0, 16, 0x40, 0x0e, 0, 0, 0, 0, 0, 0, 0, 0,
     'S', 'S', 'N', 'D', 0xff, 0xff, 0xff, 0xd8, 0, 0, 0, 0, 0, 0, 0, 0
 };
 
@@ -124,7 +124,7 @@ static ao_instance_t * aif_open (int flags)
 {
     aif_instance_t * instance;
 
-    instance = malloc (sizeof (aif_instance_t));
+    instance = (aif_instance_t *) malloc (sizeof (aif_instance_t));
     if (instance == NULL)
 	return NULL;
 

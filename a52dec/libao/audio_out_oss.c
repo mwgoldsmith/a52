@@ -141,7 +141,7 @@ static ao_instance_t * oss_open (int flags)
     oss_instance_t * instance;
     int format;
 
-    instance = malloc (sizeof (oss_instance_t));
+    instance = (oss_instance_t *) malloc (sizeof (oss_instance_t));
     if (instance == NULL)
 	return NULL;
 

@@ -32,7 +32,7 @@
 #include "bitstream.h"
 #include "tables.h"
 
-#ifdef HAVE_MEMALIGN
+#if defined(HAVE_MEMALIGN) && !defined(__cplusplus)
 /* some systems have memalign() but no declaration for it */
 void * memalign (size_t align, size_t size);
 #else
@@ -56,11 +56,11 @@ a52_state_t * a52_init (uint32_t mm_accel)
     a52_state_t * state;
     int i;
 
-    state = malloc (sizeof (a52_state_t));
+    state = (a52_state_t *) malloc (sizeof (a52_state_t));
     if (state == NULL)
 	return NULL;
 
-    state->samples = memalign (16, 256 * 12 * sizeof (sample_t));
+    state->samples = (sample_t *) memalign (16, 256 * 12 * sizeof (sample_t));
     if (state->samples == NULL) {
 	free (state);
 	return NULL;
@@ -693,11 +693,11 @@ int a52_block (a52_state_t * state)
     }
 
     if (bitstream_get (state, 1)) {	/* baie */
-	do_bit_alloc = -1;
+	do_bit_alloc = 127;
 	state->bai = bitstream_get (state, 11);
     }
     if (bitstream_get (state, 1)) {	/* snroffste */
-	do_bit_alloc = -1;
+	do_bit_alloc = 127;
 	state->csnroffst = bitstream_get (state, 6);
 	if (state->chincpl)	/* cplinu */
 	    state->cplba.bai = bitstream_get (state, 7);
@@ -713,7 +713,7 @@ int a52_block (a52_state_t * state)
     }
 
     if (bitstream_get (state, 1)) {	/* deltbaie */
-	do_bit_alloc = -1;
+	do_bit_alloc = 127;
 	if (state->chincpl)	/* cplinu */
 	    state->cplba.deltbae = bitstream_get (state, 2);
 	for (i = 0; i < nfchans; i++)

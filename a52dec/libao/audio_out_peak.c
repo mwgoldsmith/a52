@@ -52,7 +52,7 @@ static ao_instance_t * peak_open (int flags)
 {
     peak_instance_t * instance;
 
-    instance = malloc (sizeof (peak_instance_t));
+    instance = (peak_instance_t *) malloc (sizeof (peak_instance_t));
     if (instance == NULL)
 	return NULL;
 

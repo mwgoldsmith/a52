@@ -43,7 +43,7 @@ typedef struct wav_instance_s {
 static uint8_t wav_header[] = {
     'R', 'I', 'F', 'F', 0xfc, 0xff, 0xff, 0xff, 'W', 'A', 'V', 'E',
     'f', 'm', 't', ' ', 16, 0, 0, 0,
-    1, 0, 2, 0, -1, -1, -1, -1, -1, -1, -1, -1, 4, 0, 16, 0,
+    1, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 16, 0,
     'd', 'a', 't', 'a', 0xd8, 0xff, 0xff, 0xff
 };
 
@@ -118,7 +118,7 @@ static ao_instance_t * wav_open (int flags)
 {
     wav_instance_t * instance;
 
-    instance = malloc (sizeof (wav_instance_t));
+    instance = (wav_instance_t *) malloc (sizeof (wav_instance_t));
     if (instance == NULL)
 	return NULL;
 
