@@ -70,18 +70,20 @@ int a52_downmix_init (int input, int flags, sample_t * level,
 	((input == A52_DOLBY) || ((input == A52_3F) && (clev == LEVEL_3DB))))
 	output = A52_DOLBY;
 
-    if (flags & A52_ADJUST_LEVEL)
+    if (flags & A52_ADJUST_LEVEL) {
+	sample_t adjust;
+
 	switch (CONVERT (input & 7, output)) {
 
 	case CONVERT (A52_3F, A52_MONO):
-	    *level *= LEVEL_3DB / (1 + clev);
+	    adjust = LEVEL_3DB / (1 + clev);
 	    break;
 
 	case CONVERT (A52_STEREO, A52_MONO):
 	case CONVERT (A52_2F2R, A52_2F1R):
 	case CONVERT (A52_3F2R, A52_3F1R):
 	level_3db:
-	    *level *= LEVEL_3DB;
+	    adjust = LEVEL_3DB;
 	    break;
 
 	case CONVERT (A52_3F2R, A52_2F1R):
@@ -92,61 +94,67 @@ int a52_downmix_init (int input, int flags, sample_t * level,
 	case CONVERT (A52_3F1R, A52_2F1R):
 	case CONVERT (A52_3F1R, A52_2F2R):
 	case CONVERT (A52_3F2R, A52_2F2R):
-	    *level /= 1 + clev;
+	    adjust = 1 / (1 + clev);
 	    break;
 
 	case CONVERT (A52_2F1R, A52_MONO):
-	    *level *= LEVEL_PLUS3DB / (2 + slev);
+	    adjust = LEVEL_PLUS3DB / (2 + slev);
 	    break;
 
 	case CONVERT (A52_2F1R, A52_STEREO):
 	case CONVERT (A52_3F1R, A52_3F):
-	    *level /= 1 + slev * LEVEL_3DB;
+	    adjust = 1 / (1 + slev * LEVEL_3DB);
 	    break;
 
 	case CONVERT (A52_3F1R, A52_MONO):
-	    *level *= LEVEL_3DB / (1 + clev + 0.5 * slev);
+	    adjust = LEVEL_3DB / (1 + clev + 0.5 * slev);
 	    break;
 
 	case CONVERT (A52_3F1R, A52_STEREO):
-	    *level /= 1 + clev + slev * LEVEL_3DB;
+	    adjust = 1 / (1 + clev + slev * LEVEL_3DB);
 	    break;
 
 	case CONVERT (A52_2F2R, A52_MONO):
-	    *level *= LEVEL_3DB / (1 + slev);
+	    adjust = LEVEL_3DB / (1 + slev);
 	    break;
 
 	case CONVERT (A52_2F2R, A52_STEREO):
 	case CONVERT (A52_3F2R, A52_3F):
-	    *level /= 1 + slev;
+	    adjust = 1 / (1 + slev);
 	    break;
 
 	case CONVERT (A52_3F2R, A52_MONO):
-	    *level *= LEVEL_3DB / (1 + clev + slev);
+	    adjust = LEVEL_3DB / (1 + clev + slev);
 	    break;
 
 	case CONVERT (A52_3F2R, A52_STEREO):
-	    *level /= 1 + clev + slev;
+	    adjust = 1 / (1 + clev + slev);
 	    break;
 
 	case CONVERT (A52_MONO, A52_DOLBY):
-	    *level *= LEVEL_PLUS3DB;
+	    adjust = LEVEL_PLUS3DB;
 	    break;
 
 	case CONVERT (A52_3F, A52_DOLBY):
 	case CONVERT (A52_2F1R, A52_DOLBY):
-	    *level *= 1 / (1 + LEVEL_3DB);
+	     adjust = 1 / (1 + LEVEL_3DB);
 	    break;
 
 	case CONVERT (A52_3F1R, A52_DOLBY):
 	case CONVERT (A52_2F2R, A52_DOLBY):
-	    *level *= 1 / (1 + 2 * LEVEL_3DB);
+	    adjust = 1 / (1 + 2 * LEVEL_3DB);
 	    break;
 
 	case CONVERT (A52_3F2R, A52_DOLBY):
-	    *level *= 1 / (1 + 3 * LEVEL_3DB);
+	    adjust = 1 / (1 + 3 * LEVEL_3DB);
 	    break;
+
+	default:
+	    return output;
 	}
+
+	*level *= adjust;
+    }
 
     return output;
 }
