@@ -2,64 +2,15 @@
 ## Process this file with automake to produce Makefile.in
 ##
 
-CFLAGS = -Wall -Werror -O2 -g -I../libao -idirafter ../compatibility
+INCLUDES += -I$(top_srcdir)/include
 
-lib_LTLIBRARIES = libac3.la
+libdir = $(PLUGIN_DIR)
 
-include_HEADERS = ac3.h
+## Libs
+lib_LTLIBRARIES = dec_ac3.la
 
-libac3_la_LDFLAGS = -version-info 1:6:1 -export-symbols libac3.sym -lm
+dec_ac3 = @MM_CFLAGS@
+dec_ac3_la_LDFLAGS = -avoid-version -module Wl,-soname,dec_ac3.so -lm @MM_LIBS@
+dec_ac3_la_SOURCES = dec_ac3.c bitstream.c decode.c coeff.c exponent.c stats.c bit_allocate.c  parse.c crc.c debug.c rematrix.c dither.c sanity_check.c srfft.c cpu_accel.c srfft_kni_c.c srfft_kni.S downmix.c downmix_kni.S downmix_i386.S imdct512_kni.S imdct_kni.c imdct_c.c imdct.c downmix_c.c
 
-libac3_la_SOURCES =\
-	bit_allocate.c\
-	bitstream.c\
-	coeff.c\
-	cpu_accel.c\
-	crc.c\
-	debug.c\
-	decode.c\
-	dither.c\
-	downmix.c\
-	downmix_c.c\
-	downmix_i386.S\
-	downmix_kni.S\
-	exponent.c\
-	imdct.c\
-	imdct_c.c\
-	imdct_kni.c\
-	imdct512_kni.S\
-	parse.c\
-	rematrix.c\
-	sanity_check.c\
-	srfft.c\
-	srfft_kni_c.c\
-	srfft_kni.S\
-	stats.c
-
-
-noinst_HEADERS =\
-	ac3_internal.h\
-	bit_allocate.h\
-	bitstream.h\
-	bswap.h\
-	coeff.h\
-	crc.h\
-	debug.h\
-	dither.h\
-	downmix.h\
-	downmix_c.h\
-	downmix_i386.h\
-	downmix_kni.h\
-	exponent.h\
-	decode.h\
-	imdct.h\
-	imdct_c.h\
-	imdct_kni.h\
-	oms_accel.h\
-	parse.h\
-	rematrix.h\
-	sanity_check.h\
-	srfft.h\
-	srfftp.h\
-	stats.h
-
+noinst_HEADERS = ac3_internal.h bitstream.h imdct.h stats.h coeff.h exponent.h bit_allocate.h parse.h crc.h debug.h rematrix.h downmix.h dither.h sanity_check.h ac3.h srfft.h srfftp.h oms_accel.h imdct_kni.h imdct_c.h downmix_c.h downmix_i386.h downmix_kni.h
