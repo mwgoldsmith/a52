@@ -40,6 +40,7 @@ void a52_bitstream_set_ptr (a52_state_t * state, uint8_t * buf)
     state->bits_left = 0;
     state->current_word = 0;
     bitstream_get (state, align * 8);
+    bitstream_get_2 (state, 0);	/* pretend function is used - keep gcc happy */
 }
 
 static inline void bitstream_fill_current (a52_state_t * state)
