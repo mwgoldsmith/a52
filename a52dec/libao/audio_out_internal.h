@@ -24,6 +24,8 @@
 void float2s16_2 (float * f, int16_t * s16);
 void float2s16_4 (float * f, int16_t * s16);
 void float2s16_5 (float * f, int16_t * s16);
+int channels_multi (int flags);
+void float2s16_multi (float * f, int16_t * s16, int flags);
 void s16_swap (int16_t * s16, int channels);
 
 #ifdef WORDS_BIGENDIAN

@@ -35,6 +35,10 @@ extern ao_open_t ao_oss4_open;
 extern ao_open_t ao_oss6_open;
 extern ao_open_t ao_solaris_open;
 extern ao_open_t ao_solarisdolby_open;
+extern ao_open_t ao_al_open;
+extern ao_open_t ao_aldolby_open;
+extern ao_open_t ao_al4_open;
+extern ao_open_t ao_al6_open;
 extern ao_open_t ao_wav_open;
 extern ao_open_t ao_wavdolby_open;
 extern ao_open_t ao_aif_open;
@@ -54,6 +58,12 @@ static ao_driver_t audio_out_drivers[] = {
 #ifdef LIBAO_SOLARIS
     {"solaris", ao_solaris_open},
     {"solarisdolby", ao_solarisdolby_open},
+#endif
+#ifdef LIBAO_AL
+    {"al", ao_al_open},
+    {"aldolby", ao_aldolby_open},
+    {"al4", ao_al4_open},
+    {"al6", ao_al6_open},
 #endif
     {"wav", ao_wav_open},
     {"wavdolby", ao_wavdolby_open},
