@@ -10,3 +10,5 @@ changes to the PCM output:
                       also introduced bug with thx_2_0 stream
 
 2001/06/22 08:23:37 - fixed bug with thx_2_0 stream (see parse.c)
+
+2001/07/02 08:44:55 - changed float-to-int conversion (+ added saturation)
