@@ -31,8 +31,8 @@
 
 #define CONVERT(acmod,output) (((output) << 3) + (acmod))
 
-int downmix_init (int input, int flags, sample_t * level,
-		  sample_t clev, sample_t slev)
+int a52_downmix_init (int input, int flags, sample_t * level,
+		      sample_t clev, sample_t slev)
 {
     static uint8_t table[11][8] = {
 	{A52_CHANNEL,	A52_DOLBY,	A52_STEREO,	A52_STEREO,
@@ -151,8 +151,8 @@ int downmix_init (int input, int flags, sample_t * level,
     return output;
 }
 
-int downmix_coeff (sample_t * coeff, int acmod, int output, sample_t level,
-		   sample_t clev, sample_t slev)
+int a52_downmix_coeff (sample_t * coeff, int acmod, int output, sample_t level,
+		       sample_t clev, sample_t slev)
 {
     switch (CONVERT (acmod, output & A52_CHANNEL_MASK)) {
 
@@ -447,8 +447,8 @@ static void zero (sample_t * samples)
 	samples[i] = 0;
 }
 
-void downmix (sample_t * samples, int acmod, int output, sample_t bias,
-	      sample_t clev, sample_t slev)
+void a52_downmix (sample_t * samples, int acmod, int output, sample_t bias,
+		  sample_t clev, sample_t slev)
 {
     switch (CONVERT (acmod, output & A52_CHANNEL_MASK)) {
 
@@ -588,7 +588,7 @@ void downmix (sample_t * samples, int acmod, int output, sample_t bias,
     }
 }
 
-void upmix (sample_t * samples, int acmod, int output)
+void a52_upmix (sample_t * samples, int acmod, int output)
 {
     switch (CONVERT (acmod, output & A52_CHANNEL_MASK)) {
 

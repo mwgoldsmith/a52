@@ -121,9 +121,9 @@ do {						\
     mask -= floor;				\
 } while (0)
 
-void bit_allocate (a52_state_t * state, a52_ba_t * ba, int bndstart,
-		   int start, int end, int fastleak, int slowleak,
-		   uint8_t * exp, int8_t * bap)
+void a52_bit_allocate (a52_state_t * state, a52_ba_t * ba, int bndstart,
+		       int start, int end, int fastleak, int slowleak,
+		       uint8_t * exp, int8_t * bap)
 {
     static int slowgain[4] = {0x540, 0x4d8, 0x478, 0x410};
     static int dbpbtab[4]  = {0xc00, 0x500, 0x300, 0x100};

@@ -46,25 +46,25 @@
 #	endif
 #endif
 
-extern uint32_t bits_left;
-extern uint32_t current_word;
+extern uint32_t a52_bits_left;
+extern uint32_t a52_current_word;
 
-void bitstream_set_ptr (uint8_t * buf);
-uint32_t bitstream_get_bh(uint32_t num_bits);
-int32_t bitstream_get_bh_2(uint32_t num_bits);
+void a52_bitstream_set_ptr (uint8_t * buf);
+uint32_t a52_bitstream_get_bh(uint32_t num_bits);
+int32_t a52_bitstream_get_bh_2(uint32_t num_bits);
 
 static inline uint32_t 
 bitstream_get(uint32_t num_bits)
 {
     uint32_t result;
 	
-    if(num_bits < bits_left) {
-	result = (current_word << (32 - bits_left)) >> (32 - num_bits);
-	bits_left -= num_bits;
+    if(num_bits < a52_bits_left) {
+	result = (a52_current_word << (32 - a52_bits_left)) >> (32 - num_bits);
+	a52_bits_left -= num_bits;
 	return result;
     }
 
-    return bitstream_get_bh(num_bits);
+    return a52_bitstream_get_bh(num_bits);
 }
 
 static inline int32_t 
@@ -72,11 +72,11 @@ bitstream_get_2(uint32_t num_bits)
 {
     int32_t result;
 	
-    if(num_bits < bits_left) {
-	result = (((int32_t)current_word) << (32 - bits_left)) >> (32 - num_bits);
-	bits_left -= num_bits;
+    if(num_bits < a52_bits_left) {
+	result = (((int32_t)a52_current_word) << (32 - a52_bits_left)) >> (32 - num_bits);
+	a52_bits_left -= num_bits;
 	return result;
     }
 
-    return bitstream_get_bh_2(num_bits);
+    return a52_bitstream_get_bh_2(num_bits);
 }

@@ -35,10 +35,10 @@
 #include "a52_internal.h"
 #include "attributes.h"
 
-extern sample_t imdct_window[];
+extern sample_t a52_imdct_window[];
 
 void
-imdct_do_512_mlib(sample_t data[], sample_t delay[], sample_t bias)
+a52_imdct_do_512_mlib(sample_t data[], sample_t delay[], sample_t bias)
 {
 	sample_t *buf_real;
 	sample_t *buf_imag;
@@ -55,7 +55,7 @@ imdct_do_512_mlib(sample_t data[], sample_t delay[], sample_t bias)
 	buf_imag = tmp + 128;
 	data_ptr = data;
 	delay_ptr = delay;
-	window_ptr = imdct_window;
+	window_ptr = a52_imdct_window;
 
 	/* Window and convert to real valued signal */
 	for(i=0; i< 64; i++) 
@@ -87,7 +87,7 @@ imdct_do_512_mlib(sample_t data[], sample_t delay[], sample_t bias)
 }
 
 void
-imdct_do_256_mlib(sample_t data[], sample_t delay[], sample_t bias)
+a52_imdct_do_256_mlib(sample_t data[], sample_t delay[], sample_t bias)
 {
 	sample_t *buf1_real, *buf1_imag;
 	sample_t *buf2_real, *buf2_imag;
@@ -106,7 +106,7 @@ imdct_do_256_mlib(sample_t data[], sample_t delay[], sample_t bias)
 	buf2_imag = tmp + 128;
 	data_ptr = data;
 	delay_ptr = delay;
-	window_ptr = imdct_window;
+	window_ptr = a52_imdct_window;
 
 	/* Window and convert to real valued signal */
 	for(i=0; i< 64; i++) 

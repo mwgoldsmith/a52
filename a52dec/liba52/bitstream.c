@@ -33,16 +33,16 @@
 
 static uint32_t * buffer_start;
 
-uint32_t bits_left;
-uint32_t current_word;
+uint32_t a52_bits_left;
+uint32_t a52_current_word;
 
-void bitstream_set_ptr (uint8_t * buf)
+void a52_bitstream_set_ptr (uint8_t * buf)
 {
     int align;
 
     align = (int)buf & 3;
     buffer_start = (uint32_t *) (buf - align);
-    bits_left = 0;
+    a52_bits_left = 0;
     bitstream_get (align * 8);
 }
 
@@ -52,7 +52,7 @@ bitstream_fill_current()
     uint32_t tmp;
 
     tmp = *(buffer_start++);
-    current_word = swab32 (tmp);
+    a52_current_word = swab32 (tmp);
 }
 
 /*
@@ -65,37 +65,39 @@ bitstream_fill_current()
  */
 
 uint32_t
-bitstream_get_bh(uint32_t num_bits)
+a52_bitstream_get_bh(uint32_t num_bits)
 {
     uint32_t result;
 
-    num_bits -= bits_left;
-    result = (current_word << (32 - bits_left)) >> (32 - bits_left);
+    num_bits -= a52_bits_left;
+    result = ((a52_current_word << (32 - a52_bits_left)) >>
+	      (32 - a52_bits_left));
 
     bitstream_fill_current();
 
     if(num_bits != 0)
-	result = (result << num_bits) | (current_word >> (32 - num_bits));
-	
-    bits_left = 32 - num_bits;
+	result = (result << num_bits) | (a52_current_word >> (32 - num_bits));
+
+    a52_bits_left = 32 - num_bits;
 
     return result;
 }
 
 int32_t
-bitstream_get_bh_2(uint32_t num_bits)
+a52_bitstream_get_bh_2(uint32_t num_bits)
 {
     int32_t result;
 
-    num_bits -= bits_left;
-    result = (((int32_t)current_word) << (32 - bits_left)) >> (32 - bits_left);
+    num_bits -= a52_bits_left;
+    result = ((((int32_t)a52_current_word) << (32 - a52_bits_left)) >>
+	      (32 - a52_bits_left));
 
     bitstream_fill_current();
 
     if(num_bits != 0)
-	result = (result << num_bits) | (current_word >> (32 - num_bits));
+	result = (result << num_bits) | (a52_current_word >> (32 - num_bits));
 	
-    bits_left = 32 - num_bits;
+    a52_bits_left = 32 - num_bits;
 
     return result;
 }
