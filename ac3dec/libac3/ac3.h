@@ -104,4 +104,4 @@ int ac3_syncinfo (uint8_t * buf, int * flags,
 		  int * sample_rate, int * bit_rate);
 int ac3_frame (ac3_state_t * state, uint8_t * buf, int * flags,
 	       sample_t * level, sample_t bias);
-int ac3_block (ac3_state_t * state);
+int ac3_block (ac3_state_t * state, sample_t samples[][256]);

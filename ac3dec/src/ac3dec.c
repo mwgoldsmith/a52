@@ -49,7 +49,7 @@ static uint32_t total_elapsed;
 static uint32_t last_count = 0;
 static uint32_t demux_ps = 0;
 
-stream_samples_t samples;
+sample_t samples[6][256];
 
 static void print_fps (int final) 
 {
@@ -234,7 +234,7 @@ int ac3_decode_data (uint8_t * start, uint8_t * end)
 		    float zor[512];
 		    int j;
 #endif
-		    if (ac3_block (&state))
+		    if (ac3_block (&state, samples))
 			goto error;
 #if 0
 		    for (j = 0; j < 512; j++)

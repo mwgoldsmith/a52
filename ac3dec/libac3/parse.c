@@ -31,7 +31,6 @@
 #include "bitstream.h"
 #include "tables.h"
 
-extern stream_samples_t samples;	// FIXME
 static sample_t delay[6][256];
 
 void ac3_init (void)
@@ -359,7 +358,7 @@ static void coeff_get (sample_t * coeff, uint8_t * exp, int8_t * bap,
     i++;								\
     continue;
 
-int ac3_block (ac3_state_t * state)
+int ac3_block (ac3_state_t * state, sample_t samples[][256])
 {
     static const uint8_t nfchans_tbl[8] = {2, 1, 2, 3, 3, 4, 4, 5};
     static int rematrix_band[4] = {25, 37, 61, 253};
