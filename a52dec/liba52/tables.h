@@ -46,40 +46,46 @@ static const int8_t exp_3[128] = {
     25,25,25
 };
 
-#define Q0 ((-2 << 15) / 3.0)
-#define Q1 (0)
-#define Q2 ((2 << 15) / 3.0)
+#ifndef LIBA52_FIXED
+#define Q(x) ((quantizer_t)(32768.0 * x))
+#else
+#define Q(x) ((int16_t)(32768.0 * x + ((1.0 * x > 0) ? 0.5 : -0.5)))
+#endif
+
+#define Q0 Q (-2/3)
+#define Q1 Q (0)
+#define Q2 Q (2/3)
 
 static const quantizer_t q_1_0[32] = {
-    Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,
-    Q1,Q1,Q1,Q1,Q1,Q1,Q1,Q1,Q1,
-    Q2,Q2,Q2,Q2,Q2,Q2,Q2,Q2,Q2,
-    0,0,0,0,0
+    Q0, Q0, Q0, Q0, Q0, Q0, Q0, Q0, Q0,
+    Q1, Q1, Q1, Q1, Q1, Q1, Q1, Q1, Q1,
+    Q2, Q2, Q2, Q2, Q2, Q2, Q2, Q2, Q2,
+    0,  0,  0,  0,  0
 };
 
 static const quantizer_t q_1_1[32] = {
-    Q0,Q0,Q0,Q1,Q1,Q1,Q2,Q2,Q2,
-    Q0,Q0,Q0,Q1,Q1,Q1,Q2,Q2,Q2,
-    Q0,Q0,Q0,Q1,Q1,Q1,Q2,Q2,Q2,
-    0,0,0,0,0
+    Q0, Q0, Q0, Q1, Q1, Q1, Q2, Q2, Q2,
+    Q0, Q0, Q0, Q1, Q1, Q1, Q2, Q2, Q2,
+    Q0, Q0, Q0, Q1, Q1, Q1, Q2, Q2, Q2,
+    0,  0,  0,  0,  0
 };
 
 static const quantizer_t q_1_2[32] = {
-    Q0,Q1,Q2,Q0,Q1,Q2,Q0,Q1,Q2,
-    Q0,Q1,Q2,Q0,Q1,Q2,Q0,Q1,Q2,
-    Q0,Q1,Q2,Q0,Q1,Q2,Q0,Q1,Q2,
-    0,0,0,0,0
+    Q0, Q1, Q2, Q0, Q1, Q2, Q0, Q1, Q2,
+    Q0, Q1, Q2, Q0, Q1, Q2, Q0, Q1, Q2,
+    Q0, Q1, Q2, Q0, Q1, Q2, Q0, Q1, Q2,
+    0,  0,  0,  0,  0
 };
 
 #undef Q0
 #undef Q1
 #undef Q2
 
-#define Q0 ((-4 << 15) / 5.0)
-#define Q1 ((-2 << 15) / 5.0)
-#define Q2 (0)
-#define Q3 ((2 << 15) / 5.0)
-#define Q4 ((4 << 15) / 5.0)
+#define Q0 Q (-4/5)
+#define Q1 Q (-2/5)
+#define Q2 Q (0)
+#define Q3 Q (2/5)
+#define Q4 Q (4/5)
 
 static const quantizer_t q_2_0[128] = {
     Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,
@@ -115,21 +121,20 @@ static const quantizer_t q_2_2[128] = {
 #undef Q4
 
 static const quantizer_t q_3[8] = {
-    (-6 << 15)/7.0, (-4 << 15)/7.0, (-2 << 15)/7.0, 0,
-    ( 2 << 15)/7.0, ( 4 << 15)/7.0, ( 6 << 15)/7.0, 0
+    Q (-6/7), Q (-4/7), Q (-2/7), Q (0), Q (2/7), Q (4/7), Q (6/7), 0
 };
 
-#define Q0 ((-10 << 15) / 11.0)
-#define Q1 ((-8 << 15) / 11.0)
-#define Q2 ((-6 << 15) / 11.0)
-#define Q3 ((-4 << 15) / 11.0)
-#define Q4 ((-2 << 15) / 11.0)
-#define Q5 (0)
-#define Q6 ((2 << 15) / 11.0)
-#define Q7 ((4 << 15) / 11.0)
-#define Q8 ((6 << 15) / 11.0)
-#define Q9 ((8 << 15) / 11.0)
-#define QA ((10 << 15) / 11.0)
+#define Q0 Q (-10/11)
+#define Q1 Q (-8/11)
+#define Q2 Q (-6/11)
+#define Q3 Q (-4/11)
+#define Q4 Q (-2/11)
+#define Q5 Q (0)
+#define Q6 Q (2/11)
+#define Q7 Q (4/11)
+#define Q8 Q (6/11)
+#define Q9 Q (8/11)
+#define QA Q (10/11)
 
 static const quantizer_t q_4_0[128] = {
     Q0, Q0, Q0, Q0, Q0, Q0, Q0, Q0, Q0, Q0, Q0,
@@ -174,12 +179,9 @@ static const quantizer_t q_4_1[128] = {
 #undef QA
 
 static const quantizer_t q_5[16] = {
-    (-14 << 15)/15.0,(-12 << 15)/15.0,(-10 << 15)/15.0,
-    ( -8 << 15)/15.0,( -6 << 15)/15.0,( -4 << 15)/15.0,
-    ( -2 << 15)/15.0,   0            ,(  2 << 15)/15.0,
-    (  4 << 15)/15.0,(  6 << 15)/15.0,(  8 << 15)/15.0,
-    ( 10 << 15)/15.0,( 12 << 15)/15.0,( 14 << 15)/15.0,
-    0
+    Q (-14/15), Q (-12/15), Q (-10/15), Q (-8/15), Q (-6/15),
+    Q (-4/15), Q (-2/15), Q (0), Q (2/15), Q (4/15),
+    Q (6/15), Q (8/15), Q (10/15), Q (12/15), Q (14/15), 0
 };
 
 #ifndef LIBA52_FIXED
