@@ -1,6 +1,6 @@
 /*
  *
- *  output_linux.c
+ *  audio_out_linux.c
  *    
  *	Copyright (C) Aaron Holtzman - May 1999
  *
@@ -42,22 +42,15 @@
 #endif
 #include <sys/ioctl.h>
 
-typedef signed short sint_16;
-typedef unsigned int uint_32;
+#include "audio_out.h"
+#include "audio_out_internal.h"
 
-#include "ao.h"
-#include "output.h"
-
-static uint_32 output_open(uint_32 bits, uint_32 rate, uint_32 channels);
-static void output_play(sint_16* output_samples, uint_32 num_bytes);
-static void output_close(void);
-
-//export our ao implementation
-ao_functions_t output_norm = 
+static ao_info_t ao_info =
 {
-	output_open,
-	output_play,
-	output_close
+	"OSS audio driver output ",
+	"oss",
+	"Aaron Holtzman <aholtzma@ess.engr.uvic.ca>",
+	""
 };
 
 static char dev[] = "/dev/dsp";
@@ -67,8 +60,8 @@ static int fd;
 /*
  * open the audio device for writing to
  */
-uint_32
-output_open(uint_32 bits, uint_32 rate, uint_32 channels)
+static uint_32
+ao_open(uint_32 bits, uint_32 rate, uint_32 channels)
 {
   int tmp;
   
@@ -109,7 +102,8 @@ ERR:
 /*
  * play the sample to the already opened file descriptor
  */
-void output_play(sint_16* output_samples, uint_32 num_bytes)
+static void 
+ao_play(sint_16* output_samples, uint_32 num_bytes)
 {
 //	if(fd < 0)
 //		return;
@@ -118,8 +112,18 @@ void output_play(sint_16* output_samples, uint_32 num_bytes)
 }
 
 
-void
-output_close(void)
+static void
+ao_close(void)
 {
 	close(fd);
 }
+
+
+static const ao_info_t*
+ao_get_info(void)
+{
+	return &ao_info;
+}
+
+//export our ao implementation
+LIBAO_EXTERN(norm);

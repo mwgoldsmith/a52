@@ -14,17 +14,6 @@ AC_PROG_GCC_TRADITIONAL
 AC_PROG_RANLIB
 AM_PROG_LIBTOOL
 
-AC_CHECK_LIB(ossaudio, _oss_ioctl, LIBS="$LIBS -lossaudio")
-
-dnl Figure out which OS we're on and what to do about it
-case "$host" in
-*-linux*) rm -f output.c; ln -s output_linux.c output.c;;
-*-openbsd*|*-freebsd*) rm -f output.c; ln -s output_linux.c output.c;;
-*-irix*) rm -f output.c; ln -s output_irix.c output.c;;
-*-solaris*) rm -f output.c; ln -s output_solaris.c output.c;;
-*) echo "$host is not currently supported by ac3dec"; exit 1;;
-esac
-
 dnl Set the appropriate architecture define
 case "$host" in
 i?86-*) AC_DEFINE(__i386__);;
@@ -34,4 +23,7 @@ ppc-*) AC_DEFINE(__ppc__);;
 *) echo "$host is not currently supported by ac3dec"; exit 1;;
 esac
 
-AC_OUTPUT(libac3/Makefile tools/Makefile test/Makefile Makefile ) 
+builtin(include, libao/configure.incl)
+builtin(include, libac3/configure.incl)
+
+AC_OUTPUT(libao/Makefile libac3/Makefile tools/Makefile test/Makefile Makefile ) 

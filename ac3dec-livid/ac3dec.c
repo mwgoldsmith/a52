@@ -31,66 +31,70 @@
 #include <errno.h>
 
 #include "libac3/ac3.h"
-#include "output.h"
-#include "output_wav.h"
+//#include "libao/audio_out.h"
 
 #define BLOCK_SIZE 2048
 uint_8 buf[BLOCK_SIZE];
 
 FILE *in_file;
 
-ao_functions_t ac3_output;
+ao_functions_t *audio_out;
 
 void
-output_close_null(void)
+print_usage(char *argv[])
 {
-}
+	uint_32 i = 0;
 
-uint_32
-output_open_null(uint_32 bits,uint_32 rate,uint_32 channels)
-{
-	//do nothing
-	return 0;
-}
+	fprintf(stderr,"usage:  %s [-o mode] foo.ac3\n"
+				 "\t-o\taudio output mode\n",argv[0]);
 
-void
-output_play_null(sint_16 *foo,uint_32 bar)
-{
-	//do nothing
-}
+	while (audio_out_drivers[i] != NULL)
+	{              
+		const ao_info_t *info;
 
-ao_functions_t output_null =
-{
-	output_open_null,
-	output_play_null,
-	output_close_null
-};
+		info = audio_out_drivers[i++]->get_info();
+
+		fprintf(stderr, "\t\t\t%s\t%s\n", info->short_name,
+		info->name);
+	}
+
+	exit(1);
+}
 
 
 void 
 handle_args(int argc,char *argv[])
 {
 	char c;
+	uint_32 i;
 
-	ac3_output = output_norm;
+	//default to the first driver in the list
+	audio_out = audio_out_drivers[0];
 
-	while((c = getopt(argc,argv,"nw")) != EOF)
+	while((c = getopt(argc,argv,"o:")) != EOF)
 	{
 		switch(c)
 		{
-			case 'n':
-				ac3_output = output_null;
-			break;
+			case 'o':
+			
+				for (i=0; audio_out_drivers[i] != NULL; i++)
+				{
+					const ao_info_t *info = audio_out_drivers[i]->get_info();
 
-			case 'w':
-				ac3_output= output_wav;
+					if (strcmp(info->short_name,optarg) == 0)
+						audio_out = audio_out_drivers[i];
+				}
+
+				if (audio_out_drivers[i] == NULL)
+				{
+					fprintf(stderr,"Invalid audio driver: %s\n", optarg);
+					print_usage(argv);
+				}
+
 			break;
 
 			default:
-				printf("usage:  %s [-n|-w] foo.ac3\n"
-						   "        -n         no audio output (for testing)\n"
-						   "        -w         .wav output (to output.wav)\n",argv[0]);
-				exit(1);
+				print_usage(argv);
 		}
 	}
 
@@ -118,7 +122,7 @@ int main(int argc,char *argv[])
 	ac3_config.num_output_ch = 2;
 	ac3_config.flags = 0;
 
-	ac3_init(&ac3_config, &ac3_output);
+	ac3_init(&ac3_config, audio_out);
 
 	while((bytes_read = fread(buf,1,BLOCK_SIZE,in_file)) == BLOCK_SIZE)
 		ac3_decode_data(buf,buf + BLOCK_SIZE);

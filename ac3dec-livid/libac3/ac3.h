@@ -22,6 +22,7 @@
  *
  */
 
+
 #ifndef AARONS_TYPES
 #define AARONS_TYPES
 typedef unsigned long long uint_64;
@@ -34,6 +35,9 @@ typedef signed int     sint_32;
 typedef signed short   sint_16;
 typedef signed char    sint_8;
 #endif
+
+//FIXME take this out once we pull the audio_out stuff out of libac3
+#include "audio_out.h"
 
 #define AC3_DOLBY_SURR_ENABLE 0x1
 #define AC3_3DNOW_ENABLE      0x2
@@ -51,15 +55,6 @@ typedef struct ac3_config_s
 	//Which channel of a dual mono stream to select
 	uint_16 dual_mono_ch_sel;
 } ac3_config_t;
-
-//FIXME bring this in from ao.h properly
-typedef struct ao_functions_s
-{
-	uint_32 (*open)(uint_32 bits, uint_32 rate, uint_32 channels);
-	void (*play)(sint_16* output_samples, uint_32 num_bytes);
-	void (*close)(void);
-} ao_functions_t;
-
 
 void ac3_init(ac3_config_t *,ao_functions_t*);
 uint_32 ac3_decode_data(uint_8 *data_start,uint_8 *data_end);

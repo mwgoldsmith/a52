@@ -9,3 +9,6 @@ imdct_timing
 uncouple_timing
 .deps
 *.out
+*.lo
+*.o
+.libs

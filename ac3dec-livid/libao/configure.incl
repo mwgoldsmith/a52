@@ -1,0 +1,13 @@
+AC_SUBST(LIBAO_CFLAGS)
+AC_SUBST(LIBAO_CONFIG_LIBS)
+AC_CHECK_LIB(ossaudio, _oss_ioctl, LIBAO_CONFIG_LIBS="$LIBAO_CONFIG_LIBS -lossaudio")
+
+dnl Figure out which OS we're on and what to do about it
+case "$host" in
+*-linux*) LIBAO_CONFIG_LIBS=audio_out_linux.lo;;
+*-openbsd*|*-freebsd*) rm -f audio_out.c; ln -s audio_out_linux.c audio_out.c;;
+*-irix*) rm -f audio_out.c; ln -s audio_out_irix.c audio_out.c;;
+*-solaris*) rm -f audio_out.c; ln -s audio_out_solaris.c audio_out.c;;
+*) echo "$host is not currently supported by libao"; exit 1;;
+esac
+

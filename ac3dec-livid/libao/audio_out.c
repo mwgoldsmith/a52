@@ -1,9 +1,7 @@
 /*
  *
- *  output.h
- *
- *  Based on original code by Angus Mackay (amackay@gus.ml.org)
- *
+ *  audio_out.c 
+ *    
  *	Copyright (C) Aaron Holtzman - May 1999
  *
  *  This file is part of ac3dec, a free Dolby AC-3 stream decoder.
@@ -22,7 +20,24 @@
  *  along with GNU Make; see the file COPYING.  If not, write to
  *  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA. 
  *
+ *  This file is based on output_linux.c by Aaron Holtzman.
+ *  All .wav modifications were done by Jorgen Lundman <lundman@lundman.net>
+ *  Any .wav bugs and errors should be reported to him.
+ *
+ *
  */
 
-//export our libao interface
-extern ao_functions_t output_norm;
+#include <stdlib.h>
+#include "audio_out.h"
+
+extern ao_functions_t audio_out_norm;
+extern ao_functions_t audio_out_wav;
+extern ao_functions_t audio_out_null;
+
+ao_functions_t* audio_out_drivers[] = 
+{
+	&audio_out_norm,
+	&audio_out_wav,
+	&audio_out_null,
+	NULL
+};

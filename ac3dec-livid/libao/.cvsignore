@@ -1,16 +1,10 @@
 .*.sw?
 *~
+*.o
+*.lo
+*.la
 Makefile
 Makefile.in
-decode
-config.cache
-config.guess
-config.h
-config.log
-config.status
-config.sub
-configure
-ac3dec
 install-sh
 missing
 mkinstalldirs
@@ -20,6 +14,3 @@ stamp-h.in
 aclocal.m4
 config.h.in
 .libs
-*.diff
-*.patch
-libtool
