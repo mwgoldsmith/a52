@@ -42,6 +42,9 @@ bitstream_get(bitstream_t *bs,uint_32 num_bits)
 {
 	uint_32 result;
 
+	if(num_bits == 0)
+		return 0;
+
 	if (num_bits < bs->bits_left)
 	{
 		result = (bs->current_word & bit_mask[num_bits]) >> (32 - num_bits);
@@ -61,6 +64,8 @@ bitstream_get(bitstream_t *bs,uint_32 num_bits)
 		bs->current_word <<= num_bits;
 		bs->bits_left -= num_bits;
 	}
+
+	bs->total_bits_read += num_bits;
 	return result;
 }
 

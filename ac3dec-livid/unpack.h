@@ -11,3 +11,5 @@
 
 
 void unpack_exponents( bsi_t *bsi, audblk_t *audblk, stream_coeffs_t *coeffs);
+void unpack_reset(void);
+uint_16 unpack_mantissa(bitstream_t *bs, uint_16 bap);

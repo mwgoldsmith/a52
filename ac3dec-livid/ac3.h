@@ -280,10 +280,10 @@ typedef struct audblk_s
 	uint_16 cplendmant;
 
 	/* Bit allocation pointer results */
-	uint_16 fbw_mant_bits[5][253];
+	uint_16 fbw_bap[5][253];
 	//FIXME figure out exactly how many entries there should be (253-37?) 
-	uint_16 cpl_mant_bits[253];
-	uint_16 lfe_mant_bits[7];
+	uint_16 cpl_bap[253];
+	uint_16 lfe_bap[7];
 
 
 

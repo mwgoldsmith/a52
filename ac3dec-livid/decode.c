@@ -5,7 +5,8 @@
 #include "decode.h"
 #include "bitstream.h"
 #include "imdct.h"
-#include "unpack.h"
+#include "exponent.h"
+#include "mantissa.h"
 #include "stats.h"
 
 static void decode_fill_syncinfo(bitstream_t *bs);
@@ -40,20 +41,15 @@ int main(int argc,char *argv[])
 			 * (minus the mantissas */
 			decode_fill_audblk(bs);
 
-			/* Take audblk info and turn it into floating point
-			 * frequency coefficients for all streams */
-			unpack_exponents(&bsi,&audblk,&stream_coeffs); 
-
+			/* Take the differential exponent data and turn it into
+			 * absolute exponents */
+			exponent_unpack(&bsi,&audblk,&stream_coeffs); 
 #if 0
 			/* Figure out how many bits per mantissa */
 			bit_allocate(&bsi,&audblk);
 
 			/* Extract the mantissas from the data stream */
 			decode_fill_mantissas(bs);
-
-			/* Take mantissa info and turn it into floating point
-			 * frequency coefficients for all streams */
-			unpack_mantissas(&bsi,&audblk,&stream_coeffs); 
 
 			/* Uncouple coupled channels */
 			uncouple(&bsi,&audblk,&stream_coeffs); 
@@ -538,14 +534,17 @@ void decode_find_sync(bitstream_t *bs)
 	}
 }
 
-static decode_fill_mantissas(bitstream_t *bs)
+static void
+decode_fill_mantissas(bitstream_t *bs)
 {
 	uint_16 got_coupling = 0;
+	int i,j;
+
+	for (i=0;i < bsi.nfchans; i++)
+	{
+	}
+
+
 	
 }
 
-static decode_get_mantissa(bitstream_t *bs, uint_16 num_bits)
-{
-	
-
-}
