@@ -15,7 +15,9 @@
 #include "mantissa.h"
 #include "bit_allocate.h"
 #include "uncouple.h"
+#include "parse.h"
 #include "output.h"
+#include "crc.h"
 #include "stats.h"
 
 static void decode_fill_syncinfo(bitstream_t *bs);
@@ -35,6 +37,7 @@ int main(int argc,char *argv[])
 {
 	int i,j=0;
 	bitstream_t *bs;
+	uint_32 bits_per_audblk;
 
 	bs = bitstream_open("foo.ac3");
 	imdct_init();
@@ -52,10 +55,11 @@ int main(int argc,char *argv[])
 		for(i=0; i < 6; i++)
 		{
 			//FIXME remove debugging stuff
-				bs->total_bits_read = 0;
 
 			/* Extract most of the audblk info from the bitstream
 			 * (minus the mantissas */
+			bits_per_audblk = bs->total_bits_read;
+
 			decode_fill_audblk(bs);
 		decode_sanity_check();
 
@@ -95,9 +99,18 @@ int main(int argc,char *argv[])
 			/* Send the samples to the output device */
 			output_play(&stream_samples);
 
+			fprintf(stderr,"%ld bits for this audblk\n",
+					bs->total_bits_read - bits_per_audblk );
+
 			//FIXME remove
-//		printf("      %ld bits (%ld words) read\n",bs->total_bits_read,bs->total_bits_read/16);
 		}
+		parse_auxdata(bs);
+		if(!crc_validate())
+			fprintf(stderr,"(crc) CRC check failed\n");
+		else
+			fprintf(stderr,"(crc) CRC check passed\n");
+
+		fprintf(stderr,"      %ld bits (%ld words) read\n",bs->total_bits_read,bs->total_bits_read/16);
 		decode_sanity_check();
 	}
 
@@ -111,11 +124,8 @@ decode_fill_syncinfo(bitstream_t *bs)
 
 	/* Make sure we sync'ed */
 	decode_find_sync(bs);
-
-	/* FIXME  At this point we should probably go through the data
-	 * in the buffer and verify the CRC. Initially, we're just 
-	 * incrementally reading data from a file, so there's no buffer
-	 * to check. */
+	bs->total_bits_read = 16;
+	crc_init();
 
 	/* Get crc1 - we don't actually use this data though */
 	data = bitstream_get(bs,16);

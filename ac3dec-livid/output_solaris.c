@@ -90,6 +90,9 @@ void output_play(stream_samples_t *samples)
 	float left_sample;
 	float right_sample;
 
+	if(fd < 0)
+		return;
+
 	/* Take the floating point audio data and convert it into
 	 * 16 bit signed LE data */
 
@@ -107,6 +110,11 @@ void output_play(stream_samples_t *samples)
 	//FIXME remove
 	//printf("max_left = %f max_right = %f\n",max_left,max_right);
 
+	if(write(fd, out_buf,1024) != 1024)
+	{
+		fprintf(stderr, "write on %d: %s\n", fd, strerror(errno));
+		exit(1);
+	}
 
 #if 0
   char *p;
@@ -117,12 +125,6 @@ void output_play(stream_samples_t *samples)
   {
     n = (size - i < bufsize) ? (size - i) : bufsize;
 
-		//FIXME turn audio on sometime
-    if(write(fd, &(p[i]), n) != n)
-    {
-      fprintf(stderr, "write on %d: %s\n", fd, strerror(errno));
-      exit(1);
-    }
   }
 #endif
 }

@@ -9,7 +9,9 @@
 #include <stdio.h>
 #include "ac3.h"
 #include "decode.h"
+#include "crc.h"
 #include "bitstream.h"
+
 
 //FIXME this is ugly
 #undef LITTLE_ENDIAN
@@ -66,7 +68,8 @@ bitstream_get(bitstream_t *bs,uint_32 num_bits)
 		bs->current_word <<= num_bits;
 		bs->bits_left -= num_bits;
 	}
-
+	
+	crc_process(result,num_bits);
 	return result;
 }
 
