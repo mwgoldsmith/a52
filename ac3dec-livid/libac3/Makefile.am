@@ -2,7 +2,7 @@
 ## Process this file with automake to produce Makefile.in
 ##
 
-CFLAGS = -Wall -Werror -O2 -g -I../libao -idirafter ../compatibility
+INCLUDES = -Wall -Werror -O2 -g -I../libao -idirafter ../compatibility
 
 lib_LTLIBRARIES = libac3.la
 
