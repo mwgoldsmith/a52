@@ -126,10 +126,10 @@ void bit_allocate(int fscod, audblk_t * audblk, ac3_ba_t * ba,
 		  int bndstart, int start, int end, int fastleak, int slowleak,
 		  uint8_t * exp, int8_t * bap)
 {
-    static int slowgain[] = {0x540, 0x4d8, 0x478, 0x410};
-    static int dbpbtab[]  = {0xc00, 0x500, 0x300, 0x100};
-    static int floortab[] = {0x910, 0x950, 0x990, 0x9d0,
-			     0xa10, 0xa90, 0xb10, 0x1400};
+    static int slowgain[4] = {0x540, 0x4d8, 0x478, 0x410};
+    static int dbpbtab[4]  = {0xc00, 0x500, 0x300, 0x100};
+    static int floortab[8] = {0x910, 0x950, 0x990, 0x9d0,
+			      0xa10, 0xa90, 0xb10, 0x1400};
 
     int i, j;
     int fdecay, fgain, sdecay, sgain, dbknee, floor, snroffset;
