@@ -65,11 +65,11 @@ print_usage(char *argv[])
 void 
 handle_args(int argc,char *argv[])
 {
-	char c;
+	int c;
 	uint_32 i;
 
 
-	while((c = getopt(argc,argv,"o:")) != EOF)
+	while((c = getopt(argc,argv,"o:")) != -1)
 	{
 		switch(c)
 		{
