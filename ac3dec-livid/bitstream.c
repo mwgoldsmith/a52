@@ -13,28 +13,12 @@
 #include "bitstream.h"
 
 
-//FIXME this is ugly
-#undef LITTLE_ENDIAN
-//#define LITTLE_ENDIAN
-
-#ifdef LITTLE_ENDIAN 
+//My vego-matic endian swapping routine
 #define SWAP_ENDIAN32(x)  ((((uint_8*)&x)[0] << 24) |  \
                          (((uint_8*)&x)[1] << 16) |  \
                          (((uint_8*)&x)[2] << 8) |   \
                          ((uint_8*)&x)[3])           
-#else 
-#define SWAP_ENDIAN32(x)  (x)
-#endif
 
-static uint_32 bit_mask[] = { 
-	0x80000000, 0xC0000000, 0xE0000000,0xF0000000,
-	0xF8000000, 0xFC000000, 0xFE000000,0xFF000000,
-	0xFF800000, 0xFFC00000, 0xFFE00000,0xFFF00000,
-	0xFFF80000, 0xFFFC0000, 0xFFFE0000,0xFFFF0000,
-	0xFFFF8000, 0xFFFFC000, 0xFFFFE000,0xFFFFF000,
-	0xFFFFF800, 0xFFFFFC00, 0xFFFFFE00,0xFFFFFF00,
-	0xFFFFFF80, 0xFFFFFFC0, 0xFFFFFFE0,0xFFFFFFF0,
-	0xFFFFFFF8, 0xFFFFFFFC, 0xFFFFFFFE,0xFFFFFFFF};
 
 static void bitstream_load(bitstream_t *bs);
 
@@ -44,34 +28,32 @@ bitstream_get(bitstream_t *bs,uint_32 num_bits)
 {
 	uint_32 result;
 	uint_32 bits_read;
+	uint_32 bits_to_go;
 
 
 	if(num_bits == 0)
 		return 0;
 
-	bits_read = num_bits; 
+	bits_read = num_bits > bs->bits_left ? bs->bits_left : num_bits; 
 
-	if (num_bits < bs->bits_left)
-	{
-		result = (bs->current_word & bit_mask[num_bits]) >> (32 - num_bits);
-		bs->current_word <<= num_bits;
-		bs->bits_left -= num_bits;
-	}
-	else
-	{
-		/* The bit request overlaps two words */
-		result = (bs->current_word & bit_mask[bs->bits_left]) >> 
-			(32 - bs->bits_left);
-		num_bits -= bs->bits_left;
-		result <<= num_bits;
+	result = bs->current_word  >> (32 - bits_read);
+	bs->current_word <<= bits_read;
+	bs->bits_left -= bits_read;
+
+	if(bs->bits_left == 0)
 		bitstream_load(bs);
-		result |= (bs->current_word & bit_mask[num_bits]) >> (32 - num_bits);
-		bs->current_word <<= num_bits;
-		bs->bits_left -= num_bits;
+
+	if (bits_read < num_bits)
+	{
+		bits_to_go = num_bits - bits_read;
+		result <<= bits_to_go;
+		result |= bs->current_word  >> (32 - bits_to_go);
+		bs->current_word <<= bits_to_go;
+		bs->bits_left -= bits_to_go;
 	}
 	
-	bs->total_bits_read += bits_read;
-	crc_process(result,bits_read);
+	bs->total_bits_read += num_bits;
+	crc_process(result,num_bits);
 	return result;
 }
 
@@ -85,22 +67,19 @@ bitstream_load(bitstream_t *bs)
 
 /* Opens a bitstream for use in bitstream_get */
 bitstream_t*
-bitstream_open(char file_name[])
+bitstream_open(FILE *file)
 {
 	bitstream_t *bs;
 	
+	if(!file)
+		return 0;
+
 	bs = malloc(sizeof(bitstream_t));
 	if(!bs)
 		return 0;
 
 	/* Read in the first 32 bit word and initialize the structure */
-	bs->file = fopen(file_name,"r");
-	if(!bs->file)
-	{
-		free(bs);
-		return 0;
-	}
-
+	bs->file = file;
 	bitstream_load(bs);
 
 	return bs;

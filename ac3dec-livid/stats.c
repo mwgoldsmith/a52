@@ -10,6 +10,7 @@
 #include "ac3.h"
 #include "decode.h"
 #include "stats.h"
+#include "debug.h"
 
 /* Misc LUTs that will go elsewhere soon */
 
@@ -72,25 +73,25 @@ struct frmsize_s frmsizecod_tbl[] = {
 
 void stats_printf_syncinfo(syncinfo_t *syncinfo)
 {
-	fprintf(stderr,"(syncinfo) ");
+	dprintf("(syncinfo) ");
 	
 	switch (syncinfo->fscod)
 	{
 		case 2:
-			fprintf(stderr,"32 KHz   ");
+			dprintf("32 KHz   ");
 			break;
 		case 1:
-			fprintf(stderr,"44.1 KHz ");
+			dprintf("44.1 KHz ");
 			break;
 		case 0:
-			fprintf(stderr,"48 KHz   ");
+			dprintf("48 KHz   ");
 			break;
 		default:
-			fprintf(stderr,"Invalid sampling rate ");
+			dprintf("Invalid sampling rate ");
 			break;
 	}
 
-	fprintf(stderr,"%4d kbps %4d words per frame\n",
+	dprintf("%4d kbps %4d words per frame\n",
 			frmsizecod_tbl[syncinfo->frmsizecod].bit_rate,
 			frmsizecod_tbl[syncinfo->frmsizecod].frm_size[syncinfo->fscod]);
 
@@ -98,13 +99,13 @@ void stats_printf_syncinfo(syncinfo_t *syncinfo)
 	
 void stats_printf_bsi(bsi_t *bsi)
 {
-	fprintf(stderr,"(bsi) ");
-	fprintf(stderr," %d.%d Mode ",bsi->nfchans,bsi->lfeon);
+	dprintf("(bsi) ");
+	dprintf(" %d.%d Mode ",bsi->nfchans,bsi->lfeon);
 	if ((bsi->acmod & 0x1) && (bsi->acmod != 0x1))
-		fprintf(stderr," Centre Mix Level %s ",cmixlev_tbl[bsi->cmixlev].desc);
+		dprintf(" Centre Mix Level %s ",cmixlev_tbl[bsi->cmixlev].desc);
 	if (bsi->acmod & 0x4)
-		fprintf(stderr," Sur Mix Level %s ",smixlev_tbl[bsi->cmixlev].desc);
-	fprintf(stderr,"\n");
+		dprintf(" Sur Mix Level %s ",smixlev_tbl[bsi->cmixlev].desc);
+	dprintf("\n");
 
 }
 
@@ -112,13 +113,13 @@ char *exp_strat_tbl[4] = {"R   ","D15 ","D25 ","D45 "};
 
 void stats_printf_audblk(audblk_t *audblk)
 {
-	fprintf(stderr,"(audblk) ");
-	fprintf(stderr,"%s ",audblk->cplinu ? "cpl on " : "cpl off");
-	fprintf(stderr,"%s ",audblk->baie? "bai " : "    ");
-	fprintf(stderr,"%s ",audblk->snroffste? "snroffst " : "         ");
-	fprintf(stderr,"%s ",audblk->deltbaie? "deltba " : "       ");
-	fprintf(stderr,"(%s %s %s %s %s) ",exp_strat_tbl[audblk->chexpstr[0]],
+	dprintf("(audblk) ");
+	dprintf("%s ",audblk->cplinu ? "cpl on " : "cpl off");
+	dprintf("%s ",audblk->baie? "bai " : "    ");
+	dprintf("%s ",audblk->snroffste? "snroffst " : "         ");
+	dprintf("%s ",audblk->deltbaie? "deltba " : "       ");
+	dprintf("(%s %s %s %s %s) ",exp_strat_tbl[audblk->chexpstr[0]],
 		exp_strat_tbl[audblk->chexpstr[1]],exp_strat_tbl[audblk->chexpstr[2]],
 		exp_strat_tbl[audblk->chexpstr[3]],exp_strat_tbl[audblk->chexpstr[4]]);
-	fprintf(stderr,"\n");
+	dprintf("\n");
 }

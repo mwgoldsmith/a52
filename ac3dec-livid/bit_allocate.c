@@ -8,7 +8,7 @@
 #include <stdlib.h>
 #include "ac3.h"
 
-static sint_16 logadd(sint_16 a,sint_16  b);
+static inline sint_16 logadd(sint_16 a,sint_16  b);
 static sint_16 calc_lowcomp(sint_16 a,sint_16 b0,sint_16 b1,sint_16 bin);
 static inline uint_16 min(sint_16 a,sint_16 b);
 static inline uint_16 max(sint_16 a,sint_16 b);
@@ -125,6 +125,34 @@ static sint_16 fdecay;
 static sint_16 sgain;
 static sint_16 dbknee;
 static sint_16 floor;
+
+static inline uint_16
+max(sint_16 a,sint_16 b)
+{
+	return (a > b ? a : b);
+}
+	
+static inline uint_16
+min(sint_16 a,sint_16 b)
+{
+	return (a < b ? a : b);
+}
+
+static inline sint_16 
+logadd(sint_16 a,sint_16  b) 
+{ 
+	sint_16 c;
+	sint_16 address;
+
+	c = a - b; 
+	address = min((abs(c) >> 1), 255); 
+	
+	if (c >= 0) 
+		return(a + latab[address]); 
+	else 
+		return(b + latab[address]); 
+}
+
 
 void bit_allocate(uint_16 fscod, bsi_t *bsi, audblk_t *audblk)
 {
@@ -350,17 +378,6 @@ bit_allocate_channel(uint_16 fscod, sint_16 exps[],sint_16 start,sint_16 end,
 	} while (end > lastbin);
 }
 
-static inline uint_16
-max(sint_16 a,sint_16 b)
-{
-	return (a > b ? a : b);
-}
-	
-static inline uint_16
-min(sint_16 a,sint_16 b)
-{
-	return (a < b ? a : b);
-}
 static sint_16 
 calc_lowcomp(sint_16 a,sint_16 b0,sint_16 b1,sint_16 bin) 
 { 
@@ -383,20 +400,5 @@ calc_lowcomp(sint_16 a,sint_16 b0,sint_16 b1,sint_16 bin)
 		a = max(0, a - 128); 
 	
 	return(a);
-}
-
-static sint_16 
-logadd(sint_16 a,sint_16  b) 
-{ 
-	sint_16 c;
-	sint_16 address;
-
-	c = a - b; 
-	address = min((abs(c) >> 1), 255); 
-	
-	if (c >= 0) 
-		return(a + latab[address]); 
-	else 
-		return(b + latab[address]); 
 }
 

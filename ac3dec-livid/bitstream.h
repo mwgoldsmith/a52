@@ -14,5 +14,5 @@ typedef struct bitstream_s
 } bitstream_t;
 
 uint_32 bitstream_get(bitstream_t *bs,uint_32 num_bits);
-bitstream_t* bitstream_open(char file_name[]);
+bitstream_t* bitstream_open(FILE *file);
 void bitstream_close(bitstream_t *bs);

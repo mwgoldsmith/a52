@@ -12,8 +12,8 @@
 #include "decode.h"
 #include "imdct.h"
 
-void imdct_do_256(float x[],float y[]);
-void imdct_do_512(float x[],float y[]);
+void imdct_do_256(float x[],float y[],float delay[]);
+void imdct_do_512(float x[],float y[],float delay[]);
 
 typedef struct complex_s
 {
@@ -70,6 +70,9 @@ static float xcos1[N/4];
 static float xsin1[N/4];
 static float xcos2[N/8];
 static float xsin2[N/8];
+
+/* Delay buffer for time domain interleaving */
+static float delay[6][256];
 
 /* Windowing function for Modified DCT - Thank you acroread */
 static float window[] = {
@@ -182,17 +185,17 @@ imdct(bsi_t *bsi,audblk_t *audblk,
 	for(i=0; i<bsi->nfchans;i++)
 	{
 		if(audblk->blksw[i])
-			imdct_do_256(coeffs->fbw[i],samples->channel[i]);
+			imdct_do_256(coeffs->fbw[i],samples->channel[i],delay[i]);
 		else
-			imdct_do_512(coeffs->fbw[i],samples->channel[i]);
+			imdct_do_512(coeffs->fbw[i],samples->channel[i],delay[i]);
 	}
 
 	if (bsi->lfeon)
-		imdct_do_512(coeffs->lfe,samples->channel[5]);
+		imdct_do_512(coeffs->lfe,samples->channel[5],delay[5]);
 }
 
 void
-imdct_do_512(float x[],float y[])
+imdct_do_512(float x[],float y[],float delay[])
 {
 	int i,k;
 	int p,q;
@@ -280,11 +283,16 @@ imdct_do_512(float x[],float y[])
 		y[3*N/4+2*i+1] = -buf[N/4-i-1].real * window[N/4-2*i-2];
 	}
 
-	//FIXME insert overlap and add segment here
+	/* Overlap and add */
+	for(i=0; i<N/2; i++) 
+	{ 
+		y[i] = 2 * (y[i] + delay[i]); 
+		delay[i] = y[N/2+i]; 
+	}
 }
 
 void
-imdct_do_256(float x[],float y[])
+imdct_do_256(float x[],float y[],float delay[])
 {
 	int i,k;
 	int p,q;
@@ -410,5 +418,10 @@ imdct_do_256(float x[],float y[])
 		y[3*N/4+2*i+1] = -buf_2[N/8-i-1].real * window[N/4-2*i-2]; 
 	}
 	
-	//FIXME insert overlap and add segment here
+	/* Overlap and add */
+	for(i=0; i<N/2; i++) 
+	{ 
+		y[i] = 2 * (y[i] + delay[i]); 
+		delay[i] = y[N/2+i]; 
+	}
 }

@@ -20,6 +20,20 @@ crc_init(void)
 	state = 0;
 }
 
+static inline void
+crc_process_bit(uint_32 bit)
+{
+	uint_32 xor_val;
+
+	xor_val = (state >> 15) ^ bit;
+
+	state <<= 1;
+	
+	if(xor_val)
+		state = (state ^ 0x8005);
+}
+
+
 void
 crc_process(uint_32 data, uint_32 num_bits)
 {
@@ -32,19 +46,6 @@ crc_process(uint_32 data, uint_32 num_bits)
 		data <<= 1;
 		num_bits--;
 	}
-}
-
-static inline void
-crc_process_bit(uint_32 bit)
-{
-	uint_32 xor_val;
-
-	xor_val = (state >> 15) ^ bit;
-
-	state <<= 1;
-	
-	if(xor_val)
-		state = (state ^ 0x8005);
 }
 
 int

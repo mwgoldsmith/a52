@@ -7,6 +7,8 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <errno.h>
+#include <string.h>
 #include "ac3.h"
 #include "decode.h"
 #include "bitstream.h"
@@ -18,6 +20,8 @@
 #include "parse.h"
 #include "output.h"
 #include "crc.h"
+#include "sys/time.h"
+#include "debug.h"
 
 static void decode_find_sync(bitstream_t *bs);
 
@@ -34,8 +38,25 @@ int main(int argc,char *argv[])
 	int i,j=0;
 	bitstream_t *bs;
 	uint_32 bits_per_audblk;
+	FILE *in_file;
+	hrtime_t start;
 
-	bs = bitstream_open("foo.ac3");
+	/* If we get an argument then use it as a filename... otherwise use
+	 * stdin */
+	if(argc > 1)
+	{
+		in_file = fopen(argv[1],"r");	
+		if(!in_file)
+		{
+			fprintf(stderr,"%s - Couldn't open file %s\n",strerror(errno),argv[1]);
+			exit(1);
+		}
+	}
+	else
+		in_file = stdin;
+
+
+	bs = bitstream_open(in_file);
 	imdct_init();
 	decode_sanity_check_init();
 	output_open(16,48000,2);
@@ -44,7 +65,7 @@ int main(int argc,char *argv[])
 	/* FIXME check for end of stream and exit */
 
 
-	while(j++ < 4000)
+	while(j++ < 500)
 	{
 		decode_find_sync(bs);
 
@@ -55,6 +76,7 @@ int main(int argc,char *argv[])
 		for(i=0; i < 6; i++)
 		{
 			//FIXME remove debugging stuff
+		start = gethrtime();
 
 			/* Extract most of the audblk info from the bitstream
 			 * (minus the mantissas */
@@ -67,10 +89,12 @@ int main(int argc,char *argv[])
 			 * absolute exponents */
 			exponent_unpack(&bsi,&audblk,&stream_coeffs); 
 		decode_sanity_check();
+		fprintf(stderr,"ba - %lld ns ",gethrtime() - start);
 			/* Figure out how many bits per mantissa */
 			bit_allocate(syncinfo.fscod,&bsi,&audblk);
 		decode_sanity_check();
 
+		fprintf(stderr,"mant - %lld ns ",gethrtime() - start);
 			/* Extract the mantissas from the data stream */
 			mantissa_unpack(&bsi,&audblk,bs);
 		decode_sanity_check();
@@ -89,12 +113,15 @@ int main(int argc,char *argv[])
 			downmix(&bsi,&audblk,&stream_coeffs); 
 #endif
 
+		fprintf(stderr,"imdct - %lld ns ",gethrtime() - start);
 			/* Convert the frequency data into time samples */
 			imdct(&bsi,&audblk,&stream_coeffs,&stream_samples);
 		decode_sanity_check();
 
+		fprintf(stderr,"output - %lld ns ",gethrtime() - start);
 			/* Send the samples to the output device */
 			output_play(&stream_samples);
+		fprintf(stderr,"end - %lld ns\n",gethrtime() - start);
 
 			//FIXME remove
 			//fprintf(stderr,"%ld bits for this audblk\n",
@@ -104,12 +131,17 @@ int main(int argc,char *argv[])
 		parse_auxdata(bs);
 
 		if(!crc_validate())
-			fprintf(stderr,"(crc) CRC check failed\n");
+		{
+			dprintf("(crc) CRC check failed\n");
+		}
 		else
-			fprintf(stderr,"(crc) CRC check passed\n");
+		{
+			dprintf("(crc) CRC check passed\n");
+		}
 
-		fprintf(stderr,"      %ld bits (%ld words) read\n",
-				bs->total_bits_read,bs->total_bits_read/16);
+		//FIXME remove
+		//fprintf(stderr,"      %ld bits (%ld words) read\n",
+		//		bs->total_bits_read,bs->total_bits_read/16);
 		decode_sanity_check();
 	}
 
@@ -135,8 +167,8 @@ void decode_find_sync(bitstream_t *bs)
 		sync_word |= bitstream_get(bs,1);
 		i++;
 	}
-	fprintf(stderr,"(sync) %ld bits skipped to synchronize\n",i);
-	fprintf(stderr,"(sync) begin frame %ld\n",frame_count);
+	dprintf("(sync) %ld bits skipped to synchronize\n",i);
+	dprintf("(sync) begin frame %ld\n",frame_count);
 	frame_count++;
 
 	bs->total_bits_read = 16;

@@ -53,18 +53,7 @@ exp_unpack_ch(uint_16 type,uint_16 expstr,uint_16 ngrps,uint_16 initial_exp,
 	/* In the case of a fbw channel then the initial absolute values is 
 	 * also an exponent */
 	if(type != UNPACK_CPL)
-	{
-		switch(expstr)
-		{
-			case EXP_D45:
-				dest[j++] = exp_acc;
-				dest[j++] = exp_acc;
-			case EXP_D25:
-				dest[j++] = exp_acc;
-			case EXP_D15:
-				dest[j++] = exp_acc;
-		}
-	}
+		dest[j++] = exp_acc;
 
 	/* Loop through the groups and fill the dest array appropriately */
 	for(i=0; i< ngrps; i++)

@@ -457,12 +457,14 @@ parse_audblk(bsi_t *bsi,audblk_t *audblk,bitstream_t *bs)
 		uint_16 skip_data;
 
 		skipl = bitstream_get(bs,9);
-		fprintf(stderr,"skipping %d bytes\n",skipl);
+		//FIXME remove
+		//fprintf(stderr,"skipping %d bytes\n",skipl);
 
 		for(i = 0; i < skipl ; i++)
 		{
 			skip_data = bitstream_get(bs,8);
-		fprintf(stderr,"skipped data %2x\n",skip_data);
+			//FIXME remove
+		//fprintf(stderr,"skipped data %2x\n",skip_data);
 		}
 	}
 
@@ -479,7 +481,8 @@ parse_auxdata(bitstream_t *bs)
 
 	//FIXME use proper frame size
 	skip_length = (768 * 16)  - bs->total_bits_read - 17 - 1;
-	printf("Skipping %d auxbits\n",skip_length);
+	//FIXME remove
+	//fprintf(stderr,"(auxdata) skipping %d auxbits\n",skip_length);
 
 	for(i=0; i <  skip_length; i++)
 		//printf("Skipped bit %i\n",(uint_16)bitstream_get(bs,1));
@@ -487,7 +490,8 @@ parse_auxdata(bitstream_t *bs)
 
 	//get the auxdata exists bit
 	auxdatae = bitstream_get(bs,1);	
-	printf("auxdatae = %i\n",auxdatae);
+	//FIXME remove
+	//printf("auxdatae = %i\n",auxdatae);
 
 	//Skip the CRC reserved bit
 	bitstream_get(bs,1);

@@ -28,8 +28,11 @@ int main(void)
 	unsigned long num_bits = 0;
 	unsigned long data;
 	long i = 0;
+	FILE *f;
 
-	bs = bitstream_open("bitstream_test.dat");
+
+	f = fopen("bitstream_test.dat","r");
+	bs = bitstream_open(f);
 
 	while (i < BIT_SIZE)
 	{

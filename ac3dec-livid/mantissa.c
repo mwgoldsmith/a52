@@ -54,8 +54,13 @@ void
 mantissa_unpack(bsi_t *bsi, audblk_t *audblk,bitstream_t *bs)
 {
 	uint_16 i,j;
+	uint_32 start;
 
 	mantissa_reset();
+
+
+	//FIXME remove
+	start = bs->total_bits_read;
 
 	for(i=0; i< bsi->nfchans; i++)
 	{
@@ -86,6 +91,8 @@ mantissa_unpack(bsi_t *bsi, audblk_t *audblk,bitstream_t *bs)
 		//mantissa_reset();
 	}
 
+	//FIXME remove
+	//fprintf(stderr,"(mant) Read %ld mantissa bits\n",bs->total_bits_read - start);
 }
 
 /* Fetch an unpacked, left justified, and properly biased/dithered mantissa value */
@@ -181,10 +188,6 @@ mantissa_get(bitstream_t *bs, uint_16 bap)
 			result <<= 16 - qnttztab[bap];
 	}
 
-
-	//if(!(result & 0x8000))
-	//	printf("\n!! Invalid mantissa !!\n");
-
 	return result;
 }
 
@@ -199,6 +202,7 @@ mantissa_reset(void)
 
 static uint_16 mantissa_get_dither(void)
 {
+//	return rand();
 	return 0;
 }
 
