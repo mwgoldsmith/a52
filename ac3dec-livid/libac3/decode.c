@@ -34,7 +34,7 @@
 
 #ifdef __OMS__
 #include <oms/oms.h>
-#include <oms/plugin/codec_audio.h>
+#include <oms/plugin/output_audio.h>
 #endif
 
 #include "ac3.h"
@@ -170,15 +170,11 @@ void ac3dec_init (void)
 
 
 #ifdef __OMS__
-size_t ac3dec_decode_data (plugin_output_audio_t *output, buf_t *buf, buf_entry_t *buf_entry)
+size_t ac3dec_decode_data (plugin_output_audio_t *output, uint8_t *data_start, uint8_t *data_end)
 #else
 size_t ac3dec_decode_data (ac3_config_t *config, ao_functions_t *ao_functions, uint8_t *data_start, uint8_t *data_end)
 #endif
 {
-#ifdef __OMS__
-	uint8_t *data_start = buf_entry->data;
-	uint8_t *data_end = data_start+buf_entry->data_len;
-#endif
 	uint32_t i;
 
 	while (decode_buffer_syncframe (&syncinfo, &data_start, data_end)) {
@@ -240,9 +236,8 @@ size_t ac3dec_decode_data (ac3_config_t *config, ao_functions_t *ao_functions, u
 			// and convert floating point to int16_t
 			// downmix(&bsi,samples,&s16_samples[i * 2 * 256]);
 
-			sanity_check(&syncinfo,&bsi,&audblk);
-			if(error_flag)
-				goto error;
+			if (sanity_check(&syncinfo,&bsi,&audblk) < 0)
+				sanity_check_init (&syncinfo,&bsi,&audblk);
 
 			continue;
 		}

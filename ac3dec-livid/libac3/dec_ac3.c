@@ -37,22 +37,22 @@
 #include <sys/time.h>
 
 #include <oms/oms.h>
-#include <oms/plugin/codec_audio.h>
+#include <oms/plugin/codec.h>
 
 #include "ac3.h"
 
-static int _ac3dec_open		(plugin_t *plugin, void *foo);
-static int _ac3dec_close	(plugin_t *plugin);
-static int _ac3dec_read		(plugin_t *plugin, buf_t *buf, buf_entry_t *buf_entry);
+static int _ac3dec_open		(void *this, void *foo);
+static int _ac3dec_close	(void *this);
+static int _ac3dec_read		(void *this, buf_t *buf, buf_entry_t *buf_entry);
 
-static plugin_codec_audio_t codec_ac3dec = {
+static plugin_codec_t codec_ac3dec = {
 	open:		_ac3dec_open,
 	close:		_ac3dec_close,
 	read:		_ac3dec_read,
 };
 
 
-static int _ac3dec_open (plugin_t *plugin, void *foo)
+static int _ac3dec_open (void *this, void *foo)
 {
 	ac3dec_init ();
 
@@ -60,15 +60,18 @@ static int _ac3dec_open (plugin_t *plugin, void *foo)
 }
 
 
-static int _ac3dec_close (plugin_t *plugin)
+static int _ac3dec_close (void *this)
 {
 	return 0;
 }
 
 
-static int _ac3dec_read (plugin_t *plugin, buf_t *buf, buf_entry_t *buf_entry)
+static int _ac3dec_read (void *this, buf_t *buf, buf_entry_t *buf_entry)
 {
-	return ac3dec_decode_data (codec_ac3dec.output, buf, buf_entry);
+	uint8_t *data_start = buf_entry->data;
+	uint8_t *data_end = data_start+buf_entry->data_len;
+
+	return ac3dec_decode_data (codec_ac3dec.output, data_start, data_end);
 }
 
 /*****************************************/

@@ -27,7 +27,7 @@
 
 #ifdef __OMS__
 #include <oms/oms.h>
-#include <oms/plugin/codec_audio.h>
+#include <oms/plugin/codec.h>
 #include <oms/plugin/output_audio.h>
 #else
 #include "audio_out.h"
@@ -50,7 +50,7 @@ typedef struct ac3_config_s {
 void ac3dec_init (void);
 
 #ifdef __OMS__
-size_t ac3dec_decode_data (plugin_output_audio_t *output, buf_t *buf, buf_entry_t *buf_entry);
+size_t ac3dec_decode_data (plugin_output_audio_t *output, uint8_t *data_start, uint8_t *data_end);
 #else
 size_t ac3dec_decode_data (ac3_config_t *config, ao_functions_t *ao_functions, uint8_t *data_start, uint8_t *data_end);
 #endif
