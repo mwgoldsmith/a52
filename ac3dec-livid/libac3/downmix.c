@@ -27,7 +27,6 @@
 #include <math.h>
 #include "ac3.h"
 #include "ac3_internal.h"
-#include "oms_accel.h"
 
 #include "debug.h"
 #include "downmix.h"
@@ -47,6 +46,7 @@ void (*stream_sample_1ch_to_s16)(int16_t *s16_samples, float *center);
 
 void downmix_init()
 {
+#ifdef __i386__
 	uint32_t accel = oms_cpu_accel ();
 
 // other dowmixing should go here too
@@ -60,7 +60,9 @@ void downmix_init()
 		stream_sample_2ch_to_s16 = stream_sample_2ch_to_s16_kni;
 		stream_sample_1ch_to_s16 = stream_sample_1ch_to_s16_kni;
 	} else if (accel & OMS_ACCEL_X86_3DNOW) {
-	} else {
+	} else
+#endif
+	{
 		downmix_3f_2r_to_2ch = downmix_3f_2r_to_2ch_c;
 		downmix_2f_2r_to_2ch = downmix_2f_2r_to_2ch_c;
 		downmix_3f_1r_to_2ch = downmix_3f_1r_to_2ch_c;
