@@ -62,7 +62,9 @@ AC_DEFUN([AC_C_ALWAYS_INLINE],
 dnl AC_C_ATTRIBUTE_ALIGNED
 dnl define ATTRIBUTE_ALIGNED_MAX to the maximum alignment if this is supported
 AC_DEFUN([AC_C_ATTRIBUTE_ALIGNED],
-    [AC_CACHE_CHECK([__attribute__ ((aligned ())) support],
+    [SAV_CFLAGS=$CFLAGS;
+    if test x"$GCC" = xyes; then CFLAGS="$CFLAGS -Werror"; fi
+    AC_CACHE_CHECK([__attribute__ ((aligned ())) support],
 	[ac_cv_c_attribute_aligned],
 	[ac_cv_c_attribute_aligned=0
 	for ac_cv_c_attr_align_try in 2 4 8 16 32 64; do
@@ -73,7 +75,8 @@ AC_DEFUN([AC_C_ATTRIBUTE_ALIGNED],
     if test x"$ac_cv_c_attribute_aligned" != x"0"; then
 	AC_DEFINE_UNQUOTED([ATTRIBUTE_ALIGNED_MAX],
 	    [$ac_cv_c_attribute_aligned],[maximum supported data alignment])
-    fi])
+    fi
+    CFLAGS=$SAV_CFLAGS])
 
 dnl AC_TRY_CFLAGS (CFLAGS, [ACTION-IF-WORKS], [ACTION-IF-FAILS])
 dnl check if $CC supports a given set of cflags
@@ -95,14 +98,15 @@ dnl check for nonbuggy libtool -prefer-non-pic
 AC_DEFUN([AC_LIBTOOL_NON_PIC],
     [AC_MSG_CHECKING([if libtool supports -prefer-non-pic flag])
     mkdir ac_test_libtool; cd ac_test_libtool; ac_cv_libtool_non_pic=no
-    echo "int g (int i); int f (int i) {return g(i);}" >f.c
-    echo "int g (int i) {return i;}" >g.c
+    echo "int g (int i); int f (int i) {return g (i);}" >f.c
+    echo "int (* hook) (int) = 0; int g (int i) {if (hook) i = hook (i); return i + 1;}" >g.c
     ../libtool --mode=compile $CC $CFLAGS -prefer-non-pic \
 		-c f.c >/dev/null 2>&1 && \
 	../libtool --mode=compile $CC $CFLAGS -prefer-non-pic \
 		-c g.c >/dev/null 2>&1 && \
 	../libtool --mode=link $CC $CFLAGS -prefer-non-pic -o libfoo.la \
-		f.lo g.lo >/dev/null 2>&1 && ac_cv_libtool_non_pic=yes
+		-rpath / f.lo g.lo >/dev/null 2>&1 &&
+	ac_cv_libtool_non_pic=yes
     cd ..; rm -fr ac_test_libtool; AC_MSG_RESULT([$ac_cv_libtool_non_pic])
     if test x"$ac_cv_libtool_non_pic" = x"yes"; then
 	ifelse([$1],[],[:],[$1])
