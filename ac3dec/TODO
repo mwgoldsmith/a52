@@ -1,5 +1,5 @@
-* check that dither level is correct
 * investigate rematrix.c : <= instead of < ??????
+* code output sample clipping
 
 * see if we can get rid of cplcoe in the phsflginu test
 

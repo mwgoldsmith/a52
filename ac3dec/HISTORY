@@ -1,0 +1,12 @@
+changes to the PCM output:
+
+2001/05/14 05:48:59 - aaron's 0.6.1 was cutting before the end
+
+2001/06/04 01:42:47 - slightly adjusted some values (volume, downmix adjustemtn, clev/slev tables)
+2001/06/04 05:48:31 - added adjust_level to the downmix
+
+2001/06/12
+2001/06/13          - changed the order of the dither() calls
+                      also introduced bug with thx_2_0 stream
+
+2001/06/22 08:23:37 - fixed bug with thx_2_0 stream (see parse.c)
