@@ -34,7 +34,7 @@
 #include "audio_out.h"
 #include "mm_accel.h"
 
-#define BUFFER_SIZE 262144
+#define BUFFER_SIZE 4096
 static uint8_t buffer[BUFFER_SIZE];
 static FILE * in_file;
 static int demux_track = 0;
