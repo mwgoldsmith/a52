@@ -24,6 +24,7 @@
 void float2s16_2 (float * f, int16_t * s16);
 void float2s16_4 (float * f, int16_t * s16);
 void float2s16_5 (float * f, int16_t * s16);
+void s16_swap (int16_t * s16, int channels);
 
 #ifdef WORDS_BIGENDIAN
 #define s16_LE(s16,channels) s16_swap (s16, channels)
