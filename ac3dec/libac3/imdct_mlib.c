@@ -35,7 +35,7 @@
 extern sample_t imdct_window[];
 
 void
-imdct_do_512_mlib(sample_t data[], sample_t delay[])
+imdct_do_512_mlib(sample_t data[], sample_t delay[], sample_t bias)
 {
 	sample_t *buf_real;
 	sample_t *buf_imag;
@@ -57,14 +57,14 @@ imdct_do_512_mlib(sample_t data[], sample_t delay[])
 	/* Window and convert to real valued signal */
 	for(i=0; i< 64; i++) 
 	{ 
-		*data_ptr++ = 2.0f * (-buf_imag[64+i]   * *window_ptr++ + *delay_ptr++); 
-		*data_ptr++ = 2.0f * ( buf_real[64-i-1] * *window_ptr++ + *delay_ptr++); 
+		*data_ptr++ = -buf_imag[64+i]   * *window_ptr++ + *delay_ptr++ + bias; 
+		*data_ptr++ =  buf_real[64-i-1] * *window_ptr++ + *delay_ptr++ + bias; 
 	}
 
 	for(i=0; i< 64; i++) 
 	{ 
-		*data_ptr++ = 2.0f * (-buf_real[i]       * *window_ptr++ + *delay_ptr++); 
-		*data_ptr++ = 2.0f * ( buf_imag[128-i-1] * *window_ptr++ + *delay_ptr++); 
+		*data_ptr++ = -buf_real[i]       * *window_ptr++ + *delay_ptr++ + bias; 
+		*data_ptr++ =  buf_imag[128-i-1] * *window_ptr++ + *delay_ptr++ + bias; 
 	}
 	
 	/* The trailing edge of the window goes into the delay line */
@@ -84,7 +84,7 @@ imdct_do_512_mlib(sample_t data[], sample_t delay[])
 }
 
 void
-imdct_do_256_mlib(sample_t data[], sample_t delay[])
+imdct_do_256_mlib(sample_t data[], sample_t delay[], sample_t bias)
 {
 	sample_t *buf1_real, *buf1_imag;
 	sample_t *buf2_real, *buf2_imag;
@@ -108,14 +108,14 @@ imdct_do_256_mlib(sample_t data[], sample_t delay[])
 	/* Window and convert to real valued signal */
 	for(i=0; i< 64; i++) 
 	{
-		*data_ptr++ = 2.0f * (-buf1_imag[i]      * *window_ptr++ + *delay_ptr++);
-		*data_ptr++ = 2.0f * ( buf1_real[64-i-1] * *window_ptr++ + *delay_ptr++);
+		*data_ptr++ = -buf1_imag[i]      * *window_ptr++ + *delay_ptr++ + bias;
+		*data_ptr++ =  buf1_real[64-i-1] * *window_ptr++ + *delay_ptr++ + bias;
 	}
 
 	for(i=0; i< 64; i++) 
 	{
-		*data_ptr++ = 2.0f * (-buf1_real[i]      * *window_ptr++ + *delay_ptr++);
-		*data_ptr++ = 2.0f * ( buf1_imag[64-i-1] * *window_ptr++ + *delay_ptr++);
+		*data_ptr++ = -buf1_real[i]      * *window_ptr++ + *delay_ptr++ + bias;
+		*data_ptr++ =  buf1_imag[64-i-1] * *window_ptr++ + *delay_ptr++ + bias;
 	}
 	
 	delay_ptr = delay;
