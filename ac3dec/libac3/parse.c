@@ -32,6 +32,7 @@
 #include "parse.h"
 #include "bit_allocate.h"
 #include "dither.h"
+#include "rematrix.h"
 
 extern stream_samples_t samples;	// FIXME
 
@@ -776,6 +777,9 @@ int parse_audblk (ac3_state_t * state, audblk_t * audblk)
     if (state->lfeon)
 	coeff_get (samples[5], audblk->lfe_exp, audblk->lfe_bap, 0, 0, 7);
 
-    stats_print_audblk(state,audblk);
+    if (state->acmod == 2)
+	rematrix (audblk, samples);
+
+    stats_print_audblk (state, audblk);
     return 0;
 }

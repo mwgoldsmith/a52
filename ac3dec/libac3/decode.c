@@ -35,7 +35,6 @@
 #include "bit_allocate.h"
 #include "parse.h"
 #include "stats.h"
-#include "rematrix.h"
 #include "downmix.h"
 #include "debug.h"
 
@@ -105,9 +104,6 @@ ac3_decode_frame(uint8_t * buf)
 
 	if (parse_audblk (&state, &audblk))
 	    goto error;
-
-	if(state.acmod == 0x2)
-	    rematrix(&audblk,samples);
 
 	// Convert the frequency samples into time samples 
 	imdct(&state,&audblk,samples);
