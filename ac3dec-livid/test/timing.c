@@ -8,7 +8,6 @@
 #include <stdio.h>
 #include <sys/time.h>
 
-#define HAVE_HRTIME
 #ifdef HAVE_HRTIME
 hrtime_t (*get_time)(void);
 
