@@ -108,25 +108,37 @@ static inline void ifft4 (complex_t * buf)
     buf[3].imag = tmp6 - tmp8;
 }
 
+/* basic radix-2 ifft butterfly */
+
+#define BUTTERFLY_0(t0,t1,W0,W1,d0,d1) do {	\
+    t0 = W1 * d1 + W0 * d0;			\
+    t1 = W0 * d1 - W1 * d0;			\
+} while (0)
+
+/* radix-2 ifft butterfly with bias */
+
+#define BUTTERFLY_B(t0,t1,W0,W1,d0,d1) do {	\
+    t0 = d1 * W1 + d0 * W0 + bias;		\
+    t1 = d1 * W0 - d0 * W1 + bias;		\
+} while (0)
+
 /* the basic split-radix ifft butterfly */
 
-#define BUTTERFLY(a0,a1,a2,a3,wr,wi) do {	\
-    tmp5 = a2.real * wr + a2.imag * wi;		\
-    tmp6 = a2.imag * wr - a2.real * wi;		\
-    tmp7 = a3.real * wr - a3.imag * wi;		\
-    tmp8 = a3.imag * wr + a3.real * wi;		\
-    tmp1 = tmp5 + tmp7;				\
-    tmp2 = tmp6 + tmp8;				\
-    tmp3 = tmp6 - tmp8;				\
-    tmp4 = tmp7 - tmp5;				\
-    a2.real = a0.real - tmp1;			\
-    a2.imag = a0.imag - tmp2;			\
-    a3.real = a1.real - tmp3;			\
-    a3.imag = a1.imag - tmp4;			\
-    a0.real += tmp1;				\
-    a0.imag += tmp2;				\
-    a1.real += tmp3;				\
-    a1.imag += tmp4;				\
+#define BUTTERFLY(a0,a1,a2,a3,wr,wi) do {		\
+    BUTTERFLY_0 (tmp5, tmp6, wr, wi, a2.real, a2.imag);	\
+    BUTTERFLY_0 (tmp8, tmp7, wr, wi, a3.imag, a3.real);	\
+    tmp1 = tmp5 + tmp7;					\
+    tmp2 = tmp6 + tmp8;					\
+    tmp3 = tmp6 - tmp8;					\
+    tmp4 = tmp7 - tmp5;					\
+    a2.real = a0.real - tmp1;				\
+    a2.imag = a0.imag - tmp2;				\
+    a3.real = a1.real - tmp3;				\
+    a3.imag = a1.imag - tmp4;				\
+    a0.real += tmp1;					\
+    a0.imag += tmp2;					\
+    a1.real += tmp3;					\
+    a1.imag += tmp4;					\
 } while (0)
 
 /* split-radix ifft butterfly, specialized for wr=1 wi=0 */
@@ -253,9 +265,7 @@ void a52_imdct_512 (sample_t * data, sample_t * delay, sample_t bias)
 	k = fftorder[i];
 	t_r = pre1[i].real;
 	t_i = pre1[i].imag;
-
-	buf[i].real = t_i * data[255-k] + t_r * data[k];
-	buf[i].imag = t_r * data[255-k] - t_i * data[k];
+	BUTTERFLY_0 (buf[i].real, buf[i].imag, t_r, t_i, data[k], data[255-k]);
     }
 
     ifft128 (buf);
@@ -266,27 +276,22 @@ void a52_imdct_512 (sample_t * data, sample_t * delay, sample_t bias)
 	/* y[n] = z[n] * (xcos1[n] + j * xsin1[n]) ; */
 	t_r = post1[i].real;
 	t_i = post1[i].imag;
-
-	a_r = t_r * buf[i].real     + t_i * buf[i].imag;
-	a_i = t_i * buf[i].real     - t_r * buf[i].imag;
-	b_r = t_i * buf[127-i].real + t_r * buf[127-i].imag;
-	b_i = t_r * buf[127-i].real - t_i * buf[127-i].imag;
+	BUTTERFLY_0 (a_r, a_i, t_i, t_r, buf[i].imag, buf[i].real);
+	BUTTERFLY_0 (b_r, b_i, t_r, t_i, buf[127-i].imag, buf[127-i].real);
 
 	w_1 = window[2*i];
 	w_2 = window[255-2*i];
-	data[2*i]     = delay[2*i] * w_2 - a_r * w_1 + bias;
-	data[255-2*i] = delay[2*i] * w_1 + a_r * w_2 + bias;
+	BUTTERFLY_B (data[255-2*i], data[2*i], w_2, w_1, a_r, delay[2*i]);
 	delay[2*i] = a_i;
 
 	w_1 = window[2*i+1];
 	w_2 = window[254-2*i];
-	data[2*i+1]   = delay[2*i+1] * w_2 + b_r * w_1 + bias;
-	data[254-2*i] = delay[2*i+1] * w_1 - b_r * w_2 + bias;
+	BUTTERFLY_B (data[2*i+1], data[254-2*i], w_1, w_2, b_r, delay[2*i+1]);
 	delay[2*i+1] = b_i;
     }
 }
 
-void a52_imdct_256(sample_t * data, sample_t * delay, sample_t bias)
+void a52_imdct_256 (sample_t * data, sample_t * delay, sample_t bias)
 {
     int i, k;
     sample_t t_r, t_i, a_r, a_i, b_r, b_i, c_r, c_i, d_r, d_i, w_1, w_2;
@@ -298,12 +303,8 @@ void a52_imdct_256(sample_t * data, sample_t * delay, sample_t bias)
 	k = fftorder[i];
 	t_r = pre2[i].real;
 	t_i = pre2[i].imag;
-
-	buf1[i].real = t_i * data[254-k] + t_r * data[k];
-	buf1[i].imag = t_r * data[254-k] - t_i * data[k];
-
-	buf2[i].real = t_i * data[255-k] + t_r * data[k+1];
-	buf2[i].imag = t_r * data[255-k] - t_i * data[k+1];
+	BUTTERFLY_0 (buf1[i].real, buf1[i].imag, t_r, t_i, data[k], data[254-k]);
+	BUTTERFLY_0 (buf2[i].real, buf2[i].imag, t_r, t_i, data[k+1], data[255-k]);
     }
 
     ifft64 (buf1);
@@ -315,39 +316,29 @@ void a52_imdct_256(sample_t * data, sample_t * delay, sample_t bias)
 	/* y1[n] = z1[n] * (xcos2[n] + j * xs in2[n]) ; */ 
 	t_r = post2[i].real;
 	t_i = post2[i].imag;
-
-	a_r = t_r * buf1[i].real    + t_i * buf1[i].imag;
-	a_i = t_i * buf1[i].real    - t_r * buf1[i].imag;
-	b_r = t_i * buf1[63-i].real + t_r * buf1[63-i].imag;
-	b_i = t_r * buf1[63-i].real - t_i * buf1[63-i].imag;
-
-	c_r = t_r * buf2[i].real    + t_i * buf2[i].imag;
-	c_i = t_i * buf2[i].real    - t_r * buf2[i].imag;
-	d_r = t_i * buf2[63-i].real + t_r * buf2[63-i].imag;
-	d_i = t_r * buf2[63-i].real - t_i * buf2[63-i].imag;
+	BUTTERFLY_0 (a_r, a_i, t_i, t_r, buf1[i].imag, buf1[i].real);
+	BUTTERFLY_0 (b_r, b_i, t_r, t_i, buf1[63-i].imag, buf1[63-i].real);
+	BUTTERFLY_0 (c_r, c_i, t_i, t_r, buf2[i].imag, buf2[i].real);
+	BUTTERFLY_0 (d_r, d_i, t_r, t_i, buf2[63-i].imag, buf2[63-i].real);
 
 	w_1 = window[2*i];
 	w_2 = window[255-2*i];
-	data[2*i]     = delay[2*i] * w_2 - a_r * w_1 + bias;
-	data[255-2*i] = delay[2*i] * w_1 + a_r * w_2 + bias;
+	BUTTERFLY_B (data[255-2*i], data[2*i], w_2, w_1, a_r, delay[2*i]);
 	delay[2*i] = c_i;
 
 	w_1 = window[128+2*i];
 	w_2 = window[127-2*i];
-	data[128+2*i] = delay[127-2*i] * w_2 + a_i * w_1 + bias;
-	data[127-2*i] = delay[127-2*i] * w_1 - a_i * w_2 + bias;
+	BUTTERFLY_B (data[128+2*i], data[127-2*i], w_1, w_2, a_i, delay[127-2*i]);
 	delay[127-2*i] = c_r;
 
 	w_1 = window[2*i+1];
 	w_2 = window[254-2*i];
-	data[2*i+1]   = delay[2*i+1] * w_2 - b_i * w_1 + bias;
-	data[254-2*i] = delay[2*i+1] * w_1 + b_i * w_2 + bias;
+	BUTTERFLY_B (data[254-2*i], data[2*i+1], w_2, w_1, b_i, delay[2*i+1]);
 	delay[2*i+1] = d_r;
 
 	w_1 = window[129+2*i];
 	w_2 = window[126-2*i];
-	data[129+2*i] = delay[126-2*i] * w_2 + b_r * w_1 + bias;
-	data[126-2*i] = delay[126-2*i] * w_1 - b_r * w_2 + bias;
+	BUTTERFLY_B (data[129+2*i], data[126-2*i], w_1, w_2, b_r, delay[126-2*i]);
 	delay[126-2*i] = d_i;
     }
 }
@@ -367,16 +358,17 @@ void a52_imdct_init (uint32_t mm_accel)
 {
     int i, k;
     double sum;
+    double local_imdct_window[256];
 
     /* compute imdct window - kaiser-bessel derived window, alpha = 5.0 */
     sum = 0;
     for (i = 0; i < 256; i++) {
 	sum += besselI0 (i * (256 - i) * (5 * M_PI / 256) * (5 * M_PI / 256));
-	a52_imdct_window[i] = sum;
+	local_imdct_window[i] = sum;
     }
     sum++;
     for (i = 0; i < 256; i++)
-	a52_imdct_window[i] = sqrt (a52_imdct_window[i] / sum);
+	a52_imdct_window[i] = sqrt (local_imdct_window[i] / sum);
 
     for (i = 0; i < 3; i++)
 	roots16[i] = cos ((M_PI / 8) * (i + 1));
