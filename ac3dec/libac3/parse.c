@@ -34,8 +34,6 @@
 extern stream_samples_t samples;	// FIXME
 static float delay[6][256];
 
-static const uint8_t nfchans[8] = {2, 1, 2, 3, 3, 4, 4, 5};
-
 void ac3_init (void)
 {
     imdct_init ();
@@ -43,14 +41,17 @@ void ac3_init (void)
 
 static uint8_t halfrate[12] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3};
 
-int ac3_syncinfo (uint8_t * buf, int * sample_rate, int * bit_rate)
+int ac3_syncinfo (uint8_t * buf, int * flags,
+		  int * sample_rate, int * bit_rate)
 {
     static int rate[] = { 32,  40,  48,  56,  64,  80,  96, 112,
 			 128, 160, 192, 224, 256, 320, 384, 448,
 			 512, 576, 640};
+    static uint8_t lfeon[8] = {0x10, 0x10, 0x04, 0x04, 0x04, 0x01, 0x04, 0x01};
     int frmsizecod;
     int bitrate;
     int half;
+    int acmod;
 
     if ((buf[0] != 0x0b) || (buf[1] != 0x77))	// syncword
 	return 0;
@@ -58,6 +59,11 @@ int ac3_syncinfo (uint8_t * buf, int * sample_rate, int * bit_rate)
     if (buf[5] >= 0x60)		// bsid >= 12
 	return 0;
     half = halfrate[buf[5] >> 3];
+
+    // parse acmod, dsurmod and lfeon
+    acmod = buf[6] >> 5;
+    *flags = ((((buf[6] & 0xf8) == 0x50) ? AC3_DOLBY : acmod) |
+	      (buf[6] & lfeon[acmod]) ? AC3_LFE : 0);
 
     frmsizecod = buf[4] & 63;
     if (frmsizecod >= 38)
@@ -83,34 +89,28 @@ int ac3_syncinfo (uint8_t * buf, int * sample_rate, int * bit_rate)
 int ac3_bsi (ac3_state_t * state, uint8_t * buf)
 {
     int chaninfo;
-#define LEVEL_3DB 0.7071067811865476
-#define LEVEL_45DB 0.5946035575013605
-#define LEVEL_6DB 0.5
     static float clev[4] = {LEVEL_3DB, LEVEL_45DB, LEVEL_6DB, LEVEL_45DB};
     static float slev[4] = {LEVEL_3DB, LEVEL_6DB, 0, LEVEL_6DB};
 
     state->fscod = buf[4] >> 6;
-
     state->halfrate = halfrate[buf[5] >> 3];
-
     state->acmod = buf[6] >> 5;
-    state->nfchans = nfchans[state->acmod];
 
     bitstream_set_ptr (buf + 6);
     bitstream_get (3);	// skip acmod we already parsed
 
-    if ((state->acmod & 0x1) && (state->acmod != 0x1))
+    if ((state->acmod & 1) && (state->acmod != 1))
 	state->clev = clev[bitstream_get (2)];	// cmixlev
 
-    if (state->acmod & 0x4)
+    if (state->acmod & 4)
 	state->slev = slev[bitstream_get (2)];	// surmixlev
 
-    if (state->acmod == 0x2)
+    if (state->acmod == 2)
 	bitstream_get (2);	// dsurmod
 
     state->lfeon = bitstream_get (1);
 
-    chaninfo = (state->acmod) ? 0 : 1;
+    chaninfo = !(state->acmod);
     do {
 	bitstream_get (5);	// dialnorm
 	if (bitstream_get (1))	// compre
@@ -218,15 +218,15 @@ static int parse_deltba (int8_t * deltba)
     return 0;
 }
 
-static inline int zero_snr_offsets (ac3_state_t * state, audblk_t * audblk)
+static inline int zero_snr_offsets (int nfchans, int lfeon, audblk_t * audblk)
 {
     int i;
 
     if ((audblk->csnroffst) ||
 	(audblk->cplinu && audblk->cplba.fsnroffst) ||
-	(state->lfeon && audblk->lfeba.fsnroffst))
+	(lfeon && audblk->lfeba.fsnroffst))
 	return 0;
-    for (i = 0; i < state->nfchans; i++)
+    for (i = 0; i < nfchans; i++)
 	if (audblk->ba[i].fsnroffst)
 	    return 0;
     return 1;
@@ -320,7 +320,7 @@ static inline int16_t dither_gen(void)
 	
     lfsr_state = (uint16_t) state;
 
-    return ((state * (int32_t) (0.707106 * 256.0))>>8);
+    return ((state * (int) (LEVEL_3DB * 256)) >> 8);
 }
 
 static void coeff_get (float * coeff, uint8_t * exp, int8_t * bap,
@@ -339,7 +339,7 @@ static void coeff_get (float * coeff, uint8_t * exp, int8_t * bap,
 
 #define COUPLING_DITHER(val)						\
     cplcoeff = val;							\
-    for (ch = 0; ch < state->nfchans; ch++)				\
+    for (ch = 0; ch < nfchans; ch++)					\
 	if (audblk->chincpl[ch]) {					\
 	    if (dithflag[ch])						\
 		samples[ch][i] =					\
@@ -350,52 +350,24 @@ static void coeff_get (float * coeff, uint8_t * exp, int8_t * bap,
     i++;								\
     continue;
 
-static void coeff_get_cpl (ac3_state_t * state, audblk_t * audblk,
-			   uint8_t * dithflag, stream_samples_t samples)
-{
-    int i, i_end, bnd, sub_bnd, ch;
-    float cplcoeff;
-
-#define bap audblk->cpl_bap
-#define exp audblk->cpl_exp
-
-    sub_bnd = bnd = 0;
-    i = audblk->cplstrtmant;
-    while (i < audblk->cplendmant) {
-	i_end = i + 12;
-	while (audblk->cplbndstrc[sub_bnd++])
-	    i_end += 12;
-
-	while (i < i_end) {
-	    GET_COEFF (COUPLING_COEFF, COUPLING_DITHER);
-	    for (ch = 0; ch < state->nfchans; ch++)
-		if (audblk->chincpl[ch])
-		    samples[ch][i] = audblk->cplco[ch][bnd] * cplcoeff;
-	    i++;
-	}
-
-	bnd++;
-    }
-
-#undef bap
-#undef exp
-}
-
-int ac3_audblk (ac3_state_t * state, audblk_t * audblk, int output_flags, 
+int ac3_audblk (ac3_state_t * state, audblk_t * audblk, int * flags, 
 		float * output_level, float output_bias)
 {
+    static const uint8_t nfchans_tbl[8] = {2, 1, 2, 3, 3, 4, 4, 5};
     static int rematrix_band[4] = {25, 37, 61, 253};
-    int i, chaninfo;
+    int i, nfchans, chaninfo;
     uint8_t cplexpstr, chexpstr[5], lfeexpstr, do_bit_alloc, done_cpl;
     uint8_t blksw[5], dithflag[5];
 
-    for (i = 0; i < state->nfchans; i++)
+    nfchans = nfchans_tbl[state->acmod];
+
+    for (i = 0; i < nfchans; i++)
 	blksw[i] = bitstream_get (1);
 
-    for (i = 0; i < state->nfchans; i++)
+    for (i = 0; i < nfchans; i++)
 	dithflag[i] = bitstream_get (1);
 
-    chaninfo = (state->acmod) ? 0 : 1;
+    chaninfo = !(state->acmod);
     do {
 	if (bitstream_get (1))	// dynrnge
 	    bitstream_get (8);	// dynrng
@@ -410,7 +382,7 @@ int ac3_audblk (ac3_state_t * state, audblk_t * audblk, int output_flags,
 	    int cplendf;
 	    int ncplsubnd;
 
-	    for (i = 0; i < state->nfchans; i++)
+	    for (i = 0; i < nfchans; i++)
 		audblk->chincpl[i] = bitstream_get (1);
 	    switch (state->acmod) {
 	    case 0: case 1:
@@ -440,7 +412,7 @@ int ac3_audblk (ac3_state_t * state, audblk_t * audblk, int output_flags,
 	int j, cplcoe;
 
 	cplcoe = 0;
-	for (i = 0; i < state->nfchans; i++)
+	for (i = 0; i < nfchans; i++)
 	    if (audblk->chincpl[i])
 		if (bitstream_get (1)) {	// cplcoe
 		    int mstrcplco, cplcoexp, cplcomant;
@@ -458,13 +430,13 @@ int ac3_audblk (ac3_state_t * state, audblk_t * audblk, int output_flags,
 			    cplcomant * scale_factor[cplcoexp + mstrcplco];
 		    }
 		}
-	if ((state->acmod == 0x2) && audblk->phsflginu && cplcoe)
+	if ((state->acmod == 2) && audblk->phsflginu && cplcoe)
 	    for (j = 0; j < audblk->ncplbnd; j++)
 		if (bitstream_get (1))	// phsflg
 		    audblk->cplco[1][j] = -audblk->cplco[1][j];
     }
 
-    if ((state->acmod == 0x2) && (bitstream_get (1))) {	// rematstr
+    if ((state->acmod == 2) && (bitstream_get (1))) {	// rematstr
 	int end;
 
 	end = (audblk->cplinu) ? audblk->cplstrtmant : 73;
@@ -478,12 +450,12 @@ int ac3_audblk (ac3_state_t * state, audblk_t * audblk, int output_flags,
     lfeexpstr = EXP_REUSE;
     if (audblk->cplinu)
 	cplexpstr = bitstream_get (2);
-    for (i = 0; i < state->nfchans; i++)
+    for (i = 0; i < nfchans; i++)
 	chexpstr[i] = bitstream_get (2);
     if (state->lfeon) 
 	lfeexpstr = bitstream_get (1);
 
-    for (i = 0; i < state->nfchans; i++)
+    for (i = 0; i < nfchans; i++)
 	if (chexpstr[i] != EXP_REUSE) {
 	    if (audblk->cplinu && audblk->chincpl[i])
 		audblk->endmant[i] = audblk->cplstrtmant;
@@ -510,7 +482,7 @@ int ac3_audblk (ac3_state_t * state, audblk_t * audblk, int output_flags,
 			     audblk->cpl_exp + audblk->cplstrtmant))
 	    return 1;
     }
-    for (i = 0; i < state->nfchans; i++)
+    for (i = 0; i < nfchans; i++)
 	if (chexpstr[i] != EXP_REUSE) {
 	    int grp_size, nchgrps;
 
@@ -546,7 +518,7 @@ int ac3_audblk (ac3_state_t * state, audblk_t * audblk, int output_flags,
 	    audblk->cplba.fsnroffst = bitstream_get (4);
 	    audblk->cplba.fgaincod = bitstream_get (3);
 	}
-	for (i = 0; i < state->nfchans; i++) {
+	for (i = 0; i < nfchans; i++) {
 	    audblk->ba[i].fsnroffst = bitstream_get (4);
 	    audblk->ba[i].fgaincod = bitstream_get (3);
 	}
@@ -565,19 +537,19 @@ int ac3_audblk (ac3_state_t * state, audblk_t * audblk, int output_flags,
 	do_bit_alloc = 1;
 	if (audblk->cplinu)
 	    audblk->cplba.deltbae = bitstream_get (2);
-	for (i = 0; i < state->nfchans; i++)
+	for (i = 0; i < nfchans; i++)
 	    audblk->ba[i].deltbae = bitstream_get (2);
 	if (audblk->cplinu && (audblk->cplba.deltbae == DELTA_BIT_NEW) &&
 	    parse_deltba (audblk->cplba.deltba))
 	    return 1;
-	for (i = 0; i < state->nfchans; i++)
+	for (i = 0; i < nfchans; i++)
 	    if ((audblk->ba[i].deltbae == DELTA_BIT_NEW) &&
 		parse_deltba (audblk->ba[i].deltba))
 		return 1;
     }
 
     if (do_bit_alloc) {
-	if (zero_snr_offsets (state, audblk)) {
+	if (zero_snr_offsets (nfchans, state->lfeon, audblk)) {
 	    memset (audblk->cpl_bap, 0, sizeof (audblk->cpl_bap));
 	    memset (audblk->fbw_bap, 0, sizeof (audblk->fbw_bap));
 	    memset (audblk->lfe_bap, 0, sizeof (audblk->lfe_bap));
@@ -588,7 +560,7 @@ int ac3_audblk (ac3_state_t * state, audblk_t * audblk, int output_flags,
 			      audblk->cplstrtmant, audblk->cplendmant,
 			      audblk->cplfleak, audblk->cplsleak,
 			      audblk->cpl_exp, audblk->cpl_bap);
-	    for (i = 0; i < state->nfchans; i++)
+	    for (i = 0; i < nfchans; i++)
 		bit_allocate (state->fscod, state->halfrate, audblk,
 			      audblk->ba + i, 0, 0, audblk->endmant[i], 0, 0,
 			      audblk->fbw_exp[i], audblk->fbw_bap[i]);
@@ -610,7 +582,7 @@ int ac3_audblk (ac3_state_t * state, audblk_t * audblk, int output_flags,
     q_1_pointer = q_2_pointer = q_4_pointer = -1;
     done_cpl = 0;
 
-    for (i = 0; i < state->nfchans; i++) {
+    for (i = 0; i < nfchans; i++) {
 	int j;
 
 	coeff_get (samples[i], audblk->fbw_exp[i], audblk->fbw_bap[i],
@@ -618,8 +590,34 @@ int ac3_audblk (ac3_state_t * state, audblk_t * audblk, int output_flags,
 
 	if (audblk->cplinu && audblk->chincpl[i]) {
 	    if (!done_cpl) {
-		coeff_get_cpl (state, audblk, dithflag, samples);
+		int i, i_end, bnd, sub_bnd, ch;
+		float cplcoeff;
+
 		done_cpl = 1;
+
+#define bap audblk->cpl_bap
+#define exp audblk->cpl_exp
+
+		sub_bnd = bnd = 0;
+		i = audblk->cplstrtmant;
+		while (i < audblk->cplendmant) {
+		    i_end = i + 12;
+		    while (audblk->cplbndstrc[sub_bnd++])
+			i_end += 12;
+
+		    while (i < i_end) {
+			GET_COEFF (COUPLING_COEFF, COUPLING_DITHER);
+			for (ch = 0; ch < nfchans; ch++)
+			    if (audblk->chincpl[ch])
+				samples[ch][i] =
+				    audblk->cplco[ch][bnd] * cplcoeff;
+			i++;
+		    }
+		    bnd++;
+		}
+
+#undef bap
+#undef exp
 	    }
 	    j = audblk->cplendmant;
 	} else
@@ -663,7 +661,7 @@ int ac3_audblk (ac3_state_t * state, audblk_t * audblk, int output_flags,
 #endif
     }
 
-    for (i = 0; i < state->nfchans; i++)
+    for (i = 0; i < nfchans; i++)
 	if (blksw[i])
             imdct_256 (samples[i], delay[i]);
         else 
@@ -674,8 +672,8 @@ int ac3_audblk (ac3_state_t * state, audblk_t * audblk, int output_flags,
 	imdct_512 (samples[5], delay[5]);
 #endif
 
-    downmix (*samples, state->acmod, output_flags, output_level, output_bias,
-	     state->clev, state->slev);
+    *flags = downmix (*samples, state->acmod, *flags, output_level,
+		      output_bias, state->clev, state->slev);
 
     return 0;
 }

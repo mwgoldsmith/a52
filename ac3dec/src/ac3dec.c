@@ -205,6 +205,7 @@ int ac3_decode_data (uint8_t * start, uint8_t * end)
     int num_frames = 0;
     int sample_rate;
     int bit_rate;
+    int flags;
 
     while (start < end) {
 	*bufptr++ = *start++;
@@ -212,7 +213,7 @@ int ac3_decode_data (uint8_t * start, uint8_t * end)
 	    if (bufpos == buf + 7) {
 		int length;
 
-		length = ac3_syncinfo (buf, &sample_rate, &bit_rate);
+		length = ac3_syncinfo (buf, &flags, &sample_rate, &bit_rate);
 		if (!length) {
 		    printf ("skip\n");
 		    for (bufptr = buf; bufptr < buf + 6; bufptr++)
@@ -228,7 +229,9 @@ int ac3_decode_data (uint8_t * start, uint8_t * end)
 		    goto error;
 		for (i = 0; i < 6; i++) {
 		    float level = 1;
-		    if (ac3_audblk (&state, &audblk, 34, &level, 384)) 
+
+		    flags = AC3_STEREO | AC3_ADJUST_LEVEL;
+		    if (ac3_audblk (&state, &audblk, &flags, &level, 384))
 			goto error;
 		    float_to_int (*samples, s16_samples + i * 512);
 		}

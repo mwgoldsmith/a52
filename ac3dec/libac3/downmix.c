@@ -34,27 +34,6 @@
 #include "ac3_internal.h"
 
 
-#define LEVEL_PLUS3DB 1.4142135623730951
-#define LEVEL_3DB 0.7071067811865476
-#define LEVEL_6DB 0.5
-
-#define AC3_CHANNEL 0
-#define AC3_MONO 1
-#define AC3_STEREO 2
-#define AC3_3F 3
-#define AC3_2F1R 4
-#define AC3_3F1R 5
-#define AC3_2F2R 6
-#define AC3_3F2R 7
-#define AC3_CHANNEL1 8
-#define AC3_CHANNEL2 9
-#define AC3_DOLBY 10
-
-#define AC3_CHANNEL_MASK 15
-
-#define AC3_LFE 16
-#define AC3_ADJUST_LEVEL 32
-
 static void mix1to1 (float * samples, float level, float bias)
 {
     int i;
@@ -441,7 +420,7 @@ int downmix (float * samples, int acmod, int output_flags,
 	    *output_level = level /= 1 + clev;
 	mix3to2 (samples, level, level * clev, bias);
 	mix1to1 (samples + 768, level, bias);
-	return AC3_2F1R;	// FIXME rear pointer
+	return AC3_2F1R | AC3_REAR_OFFSET;
 
     case CONVERT (AC3_3F1R, AC3_3F1R):
 	mix1to1 (samples, level, bias);
@@ -555,7 +534,7 @@ int downmix (float * samples, int acmod, int output_flags,
 	}
 	mix3to2 (samples, level, level * clev, bias);
 	mix2to1 (samples + 768, level * LEVEL_3DB, bias);
-	return AC3_2F1R;	// FIXME rear pointer
+	return AC3_2F1R | AC3_REAR_OFFSET;
 
     case CONVERT (AC3_3F2R, AC3_3F1R):
 	if (output_flags & AC3_ADJUST_LEVEL)
@@ -572,7 +551,7 @@ int downmix (float * samples, int acmod, int output_flags,
 	mix3to2 (samples, level, level * clev, bias);
 	mix1to1 (samples + 768, level, bias);
 	mix1to1 (samples + 1024, level, bias);
-	return AC3_2F2R;	// FIXME rear pointer
+	return AC3_2F2R | AC3_REAR_OFFSET;
 
     case CONVERT (AC3_3F2R, AC3_3F2R):
 	mix1to1 (samples, level, bias);

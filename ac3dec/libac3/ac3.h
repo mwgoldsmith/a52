@@ -29,8 +29,6 @@ typedef struct ac3_state_s {
     float clev;		// centre channel mix level
     float slev;		// surround channels mix level
     uint8_t lfeon;	// coded lfe channel
-    // derived information
-    int nfchans;	// number of channels, derived from acmod
 } ac3_state_t;
 
 typedef struct ac3_ba_s {
@@ -81,8 +79,26 @@ typedef struct audblk_s {
     int8_t lfe_bap[7];
 } audblk_t;
 
+#define AC3_CHANNEL 0
+#define AC3_MONO 1
+#define AC3_STEREO 2
+#define AC3_3F 3
+#define AC3_2F1R 4
+#define AC3_3F1R 5
+#define AC3_2F2R 6
+#define AC3_3F2R 7
+#define AC3_CHANNEL1 8
+#define AC3_CHANNEL2 9
+#define AC3_DOLBY 10
+#define AC3_CHANNEL_MASK 15
+
+#define AC3_LFE 16
+#define AC3_ADJUST_LEVEL 32
+#define AC3_REAR_OFFSET 64
+
 void ac3_init(void);
-int ac3_syncinfo (uint8_t * buf, int * sample_rate, int * bit_rate);
+int ac3_syncinfo (uint8_t * buf, int * flags,
+		  int * sample_rate, int * bit_rate);
 int ac3_bsi (ac3_state_t * state, uint8_t * buf);
-int ac3_audblk (ac3_state_t * state, audblk_t * audblk, int output_flags,
+int ac3_audblk (ac3_state_t * state, audblk_t * audblk, int * flags,
 		float * output_level, float output_bias);

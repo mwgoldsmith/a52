@@ -21,6 +21,11 @@
  *
  */
 
+#define LEVEL_PLUS3DB 1.4142135623730951
+#define LEVEL_3DB 0.7071067811865476
+#define LEVEL_45DB 0.5946035575013605
+#define LEVEL_6DB 0.5
+
 /* Exponent strategy constants */
 #define EXP_REUSE (0)
 #define EXP_D15   (1)
