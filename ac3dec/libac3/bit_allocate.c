@@ -27,37 +27,7 @@
 #include "ac3_internal.h"
 #include "bit_allocate.h"
 
-static int16_t bndtab[] = {  0,  1,  2,   3,   4,   5,   6,   7,   8,   9, 
-			     10, 11, 12,  13,  14,  15,  16,  17,  18,  19,
-			     20, 21, 22,  23,  24,  25,  26,  27,  28,  31,
-			     34, 37, 40,  43,  46,  49,  55,  61,  67,  73,
-			     79, 85, 97, 109, 121, 133, 157, 181, 205, 229 };
-
-static int16_t bndsz[]  = { 1,  1,  1,  1,  1,  1,  1,  1,  1,  1,
-			    1,  1,  1,  1,  1,  1,  1,  1,  1,  1,
-			    1,  1,  1,  1,  1,  1,  1,  1,  3,  3,
-			    3,  3,  3,  3,  3,  6,  6,  6,  6,  6,
-			    6, 12, 12, 12, 12, 24, 24, 24, 24, 24 };
-
-static int16_t masktab[] = { 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15,
-			     16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 28, 28, 29,
-			     29, 29, 30, 30, 30, 31, 31, 31, 32, 32, 32, 33, 33, 33, 34, 34,
-			     34, 35, 35, 35, 35, 35, 35, 36, 36, 36, 36, 36, 36, 37, 37, 37,
-			     37, 37, 37, 38, 38, 38, 38, 38, 38, 39, 39, 39, 39, 39, 39, 40,
-			     40, 40, 40, 40, 40, 41, 41, 41, 41, 41, 41, 41, 41, 41, 41, 41,
-			     41, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 43, 43, 43,
-			     43, 43, 43, 43, 43, 43, 43, 43, 43, 44, 44, 44, 44, 44, 44, 44,
-			     44, 44, 44, 44, 44, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45,
-			     45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 46, 46, 46,
-			     46, 46, 46, 46, 46, 46, 46, 46, 46, 46, 46, 46, 46, 46, 46, 46,
-			     46, 46, 46, 46, 46, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47,
-			     47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 48, 48, 48,
-			     48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48,
-			     48, 48, 48, 48, 48, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49,
-			     49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49,  0,  0,  0 };
-
-
-static int16_t hth_[][50] = {
+static int hthtab[3][50] = {
     {0x730, 0x730, 0x7c0, 0x800, 0x820, 0x840, 0x850, 0x850, 0x860, 0x860,
      0x860, 0x860, 0x860, 0x870, 0x870, 0x870, 0x880, 0x880, 0x890, 0x890,
      0x8a0, 0x8a0, 0x8b0, 0x8b0, 0x8c0, 0x8c0, 0x8d0, 0x8e0, 0x8f0, 0x900,
@@ -99,6 +69,10 @@ static int8_t baptab[] = {
      0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
      0,  0,  0,  0					// 148 padding entries
 };
+
+static int bndtab[30] = {21, 22,  23,  24,  25,  26,  27,  28,  31,  34,
+			 37, 40,  43,  46,  49,  55,  61,  67,  73,  79,
+			 85, 97, 109, 121, 133, 157, 181, 205, 229, 253};
 
 static int8_t latab[256] = {
     -64, -63, -62, -61, -60, -59, -58, -57, -56, -55, -54, -53,
@@ -148,8 +122,8 @@ do {						\
     mask -= floor;				\
 } while (0)
 
-void bit_allocate(int fscod, audblk_t * audblk, ac3_ba_t * ba, uint16_t start,
-		  uint16_t end, int16_t fastleak, int16_t slowleak,
+void bit_allocate(int fscod, audblk_t * audblk, ac3_ba_t * ba,
+		  int bndstart, int start, int end, int fastleak, int slowleak,
 		  uint8_t * exp, int8_t * bap)
 {
     static int slowgain[] = {0x540, 0x4d8, 0x478, 0x410};
@@ -161,20 +135,20 @@ void bit_allocate(int fscod, audblk_t * audblk, ac3_ba_t * ba, uint16_t start,
     int fdecay, fgain, sdecay, sgain, dbknee, floor, snroffset;
     int psd, mask;
     int8_t * deltba;
-    uint16_t * hth;
+    int * hth;
 
     fdecay = 63 + 20 * audblk->fdcycod;
     fgain = 128 + 128 * ba->fgaincod;
     sdecay = 15 + 2 * audblk->sdcycod;
     sgain = slowgain[audblk->sgaincod];
     dbknee = dbpbtab[audblk->dbpbcod];
-    hth = hth_[fscod];
+    hth = hthtab[fscod];
     deltba = (ba->deltbae == DELTA_BIT_NONE) ? NULL : ba->deltba;
     floor = floortab[audblk->floorcod];
     snroffset = 960 - 64 * audblk->csnroffst - 4 * ba->fsnroffst + floor;
     floor >>= 5;
 
-    i = masktab[start];
+    i = bndstart;
     j = start;
     if (start == 0) {	// not the coupling channel
 	int lowcomp;
@@ -243,7 +217,7 @@ void bit_allocate(int fscod, audblk_t * audblk, ac3_ba_t * ba, uint16_t start,
 	int startband, endband;
 
 	startband = j;
-	endband = (bndtab[i] + bndsz[i] < end) ? bndtab[i] + bndsz[i] : end;
+	endband = ((bndtab-20)[i] < end) ? (bndtab-20)[i] : end;
 	psd = 128 * exp[j++];
 	while (j < endband) {
 	    int next, delta;
