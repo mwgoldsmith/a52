@@ -26,4 +26,4 @@
  */
 
 int downmix (float * samples, int acmod, int output, 
-             float level, float clev, float slev);
+             float level, int adjust_level, float clev, float slev);

@@ -128,7 +128,7 @@ ac3_decode_frame(uint8_t * buf)
 
 	// Downmix into the requested number of channels
 	// and convert floating point to int16_t
-	downmix (*samples, state.acmod, 2, 0.4142*32767, state.clev, state.slev);
+	downmix (*samples, state.acmod, 2, 32767, 1, state.clev, state.slev);
 	float_to_int (*samples, s16_samples + i * 512);
 
 	sanity_check(&state,&audblk);
