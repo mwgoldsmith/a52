@@ -111,15 +111,15 @@ static inline void ifft4 (complex_t * buf)
 /* basic radix-2 ifft butterfly */
 
 #define BUTTERFLY_0(t0,t1,W0,W1,d0,d1) do {	\
-    t0 = W1 * d1 + W0 * d0;			\
-    t1 = W0 * d1 - W1 * d0;			\
+    t0 = MUL (W1, d1) + MUL (W0, d0);		\
+    t1 = MUL (W0, d1) - MUL (W1, d0);		\
 } while (0)
 
 /* radix-2 ifft butterfly with bias */
 
 #define BUTTERFLY_B(t0,t1,W0,W1,d0,d1) do {	\
-    t0 = d1 * W1 + d0 * W0 + bias;		\
-    t1 = d1 * W0 - d0 * W1 + bias;		\
+    t0 = BIAS (MUL (d1, W1) + MUL (d0, W0));	\
+    t1 = BIAS (MUL (d1, W0) - MUL (d0, W1));	\
 } while (0)
 
 /* the basic split-radix ifft butterfly */
@@ -161,10 +161,10 @@ static inline void ifft4 (complex_t * buf)
 /* split-radix ifft butterfly, specialized for wr=wi */
 
 #define BUTTERFLY_HALF(a0,a1,a2,a3,w) do {	\
-    tmp5 = (a2.real + a2.imag) * w;		\
-    tmp6 = (a2.imag - a2.real) * w;		\
-    tmp7 = (a3.real - a3.imag) * w;		\
-    tmp8 = (a3.imag + a3.real) * w;		\
+    tmp5 = MUL (a2.real + a2.imag, w);		\
+    tmp6 = MUL (a2.imag - a2.real, w);		\
+    tmp7 = MUL (a3.real - a3.imag, w);		\
+    tmp8 = MUL (a3.imag + a3.real, w);		\
     tmp1 = tmp5 + tmp7;				\
     tmp2 = tmp6 + tmp8;				\
     tmp3 = tmp6 - tmp8;				\
@@ -368,46 +368,46 @@ void a52_imdct_init (uint32_t mm_accel)
     }
     sum++;
     for (i = 0; i < 256; i++)
-	a52_imdct_window[i] = sqrt (local_imdct_window[i] / sum);
+	a52_imdct_window[i] = SAMPLE (sqrt (local_imdct_window[i] / sum));
 
     for (i = 0; i < 3; i++)
-	roots16[i] = cos ((M_PI / 8) * (i + 1));
+	roots16[i] = SAMPLE (cos ((M_PI / 8) * (i + 1)));
 
     for (i = 0; i < 7; i++)
-	roots32[i] = cos ((M_PI / 16) * (i + 1));
+	roots32[i] = SAMPLE (cos ((M_PI / 16) * (i + 1)));
 
     for (i = 0; i < 15; i++)
-	roots64[i] = cos ((M_PI / 32) * (i + 1));
+	roots64[i] = SAMPLE (cos ((M_PI / 32) * (i + 1)));
 
     for (i = 0; i < 31; i++)
-	roots128[i] = cos ((M_PI / 64) * (i + 1));
+	roots128[i] = SAMPLE (cos ((M_PI / 64) * (i + 1)));
 
     for (i = 0; i < 64; i++) {
 	k = fftorder[i] / 2 + 64;
-	pre1[i].real = cos ((M_PI / 256) * (k - 0.25));
-	pre1[i].imag = sin ((M_PI / 256) * (k - 0.25));
+	pre1[i].real = SAMPLE (cos ((M_PI / 256) * (k - 0.25)));
+	pre1[i].imag = SAMPLE (sin ((M_PI / 256) * (k - 0.25)));
     }
 
     for (i = 64; i < 128; i++) {
 	k = fftorder[i] / 2 + 64;
-	pre1[i].real = -cos ((M_PI / 256) * (k - 0.25));
-	pre1[i].imag = -sin ((M_PI / 256) * (k - 0.25));
+	pre1[i].real = SAMPLE (-cos ((M_PI / 256) * (k - 0.25)));
+	pre1[i].imag = SAMPLE (-sin ((M_PI / 256) * (k - 0.25)));
     }
 
     for (i = 0; i < 64; i++) {
-	post1[i].real = cos ((M_PI / 256) * (i + 0.5));
-	post1[i].imag = sin ((M_PI / 256) * (i + 0.5));
+	post1[i].real = SAMPLE (cos ((M_PI / 256) * (i + 0.5)));
+	post1[i].imag = SAMPLE (sin ((M_PI / 256) * (i + 0.5)));
     }
 
     for (i = 0; i < 64; i++) {
 	k = fftorder[i] / 4;
-	pre2[i].real = cos ((M_PI / 128) * (k - 0.25));
-	pre2[i].imag = sin ((M_PI / 128) * (k - 0.25));
+	pre2[i].real = SAMPLE (cos ((M_PI / 128) * (k - 0.25)));
+	pre2[i].imag = SAMPLE (sin ((M_PI / 128) * (k - 0.25)));
     }
 
     for (i = 0; i < 32; i++) {
-	post2[i].real = cos ((M_PI / 128) * (i + 0.5));
-	post2[i].imag = sin ((M_PI / 128) * (i + 0.5));
+	post2[i].real = SAMPLE (cos ((M_PI / 128) * (i + 0.5)));
+	post2[i].imag = SAMPLE (sin ((M_PI / 128) * (i + 0.5)));
     }
 
 #ifdef LIBA52_DJBFFT

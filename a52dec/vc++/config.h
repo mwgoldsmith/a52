@@ -57,6 +57,9 @@
 /* a52 sample precision */
 /* #undef LIBA52_DOUBLE */
 
+/* use fixed-point arithmetic */
+/* #undef LIBA52_FIXED */
+
 /* libao al support */
 /* #undef LIBAO_AL */
 

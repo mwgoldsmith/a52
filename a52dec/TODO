@@ -1,3 +1,5 @@
+* look at possible overflow/precision issues in integer port
+
 * redo all bit allocation if previous frame had zero_snr_offsets
 * make dynrng work in dual-channel streams
 

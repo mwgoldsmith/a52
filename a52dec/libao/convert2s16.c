@@ -1,5 +1,5 @@
 /*
- * float2s16.c
+ * convert2s16.c
  * Copyright (C) 2000-2003 Michel Lespinasse <walken@zoy.org>
  * Copyright (C) 1999-2000 Aaron Holtzman <aholtzma@ess.engr.uvic.ca>
  *
@@ -26,19 +26,19 @@
 #include <inttypes.h>
 
 #include "a52.h"
-#include "audio_out.h"
+#include "audio_out_internal.h"
 
 static inline int16_t convert (int32_t i)
 {
-    if (i > 0x43c07fff)
-	return 32767;
-    else if (i < 0x43bf8000)
-	return -32768;
-    else
-	return i - 0x43c00000;
+#ifdef LIBAO_FIXED
+    i >>= 15;
+#else
+    i -= 0x43c00000;
+#endif
+    return (i > 32767) ? 32767 : ((i < -32768) ? -32768 : i);
 }
 
-void float2s16_1 (float * _f, int16_t * s16)
+void convert2s16_1 (convert_t * _f, int16_t * s16)
 {
     int i;
     int32_t * f = (int32_t *) _f;
@@ -48,7 +48,7 @@ void float2s16_1 (float * _f, int16_t * s16)
     }
 }
 
-void float2s16_2 (float * _f, int16_t * s16)
+void convert2s16_2 (convert_t * _f, int16_t * s16)
 {
     int i;
     int32_t * f = (int32_t *) _f;
@@ -59,7 +59,7 @@ void float2s16_2 (float * _f, int16_t * s16)
     }
 }
 
-void float2s16_3 (float * _f, int16_t * s16)
+void convert2s16_3 (convert_t * _f, int16_t * s16)
 {
     int i;
     int32_t * f = (int32_t *) _f;
@@ -71,7 +71,7 @@ void float2s16_3 (float * _f, int16_t * s16)
     }
 }
 
-void float2s16_4 (float * _f, int16_t * s16)
+void convert2s16_4 (convert_t * _f, int16_t * s16)
 {
     int i;
     int32_t * f = (int32_t *) _f;
@@ -84,7 +84,7 @@ void float2s16_4 (float * _f, int16_t * s16)
     }
 }
 
-void float2s16_5 (float * _f, int16_t * s16)
+void convert2s16_5 (convert_t * _f, int16_t * s16)
 {
     int i;
     int32_t * f = (int32_t *) _f;
@@ -110,7 +110,7 @@ int channels_multi (int flags)
 	return 2;
 }
 
-void float2s16_multi (float * _f, int16_t * s16, int flags)
+void convert2s16_multi (convert_t * _f, int16_t * s16, int flags)
 {
     int i;
     int32_t * f = (int32_t *) _f;
@@ -127,7 +127,7 @@ void float2s16_multi (float * _f, int16_t * s16, int flags)
     case A52_CHANNEL:
     case A52_STEREO:
     case A52_DOLBY:
-	float2s16_2 (_f, s16);
+	convert2s16_2 (_f, s16);
 	break;
     case A52_3F:
 	for (i = 0; i < 256; i++) {
@@ -138,10 +138,10 @@ void float2s16_multi (float * _f, int16_t * s16, int flags)
 	}
 	break;
     case A52_2F2R:
-	float2s16_4 (_f, s16);
+	convert2s16_4 (_f, s16);
 	break;
     case A52_3F2R:
-	float2s16_5 (_f, s16);
+	convert2s16_5 (_f, s16);
 	break;
     case A52_MONO | A52_LFE:
     case A52_CHANNEL1 | A52_LFE:
@@ -194,7 +194,7 @@ void float2s16_multi (float * _f, int16_t * s16, int flags)
     }
 }
 
-void float2s16_wav (float * _f, int16_t * s16, int flags)
+void convert2s16_wav (convert_t * _f, int16_t * s16, int flags)
 {
     int i;
     int32_t * f = (int32_t *) _f;
@@ -203,12 +203,12 @@ void float2s16_wav (float * _f, int16_t * s16, int flags)
     case A52_MONO:
     case A52_CHANNEL1:
     case A52_CHANNEL2:
-	float2s16_1 (_f, s16);
+	convert2s16_1 (_f, s16);
 	break;
     case A52_CHANNEL:
     case A52_STEREO:
     case A52_DOLBY:
-	float2s16_2 (_f, s16);
+	convert2s16_2 (_f, s16);
 	break;
     case A52_3F:
 	for (i = 0; i < 256; i++) {
@@ -218,7 +218,7 @@ void float2s16_wav (float * _f, int16_t * s16, int flags)
 	}
 	break;
     case A52_2F1R:
-	float2s16_3 (_f, s16);
+	convert2s16_3 (_f, s16);
 	break;
     case A52_3F1R:
 	for (i = 0; i < 256; i++) {
@@ -229,7 +229,7 @@ void float2s16_wav (float * _f, int16_t * s16, int flags)
 	}
 	break;
     case A52_2F2R:
-	float2s16_4 (_f, s16);
+	convert2s16_4 (_f, s16);
 	break;
     case A52_3F2R:
 	for (i = 0; i < 256; i++) {

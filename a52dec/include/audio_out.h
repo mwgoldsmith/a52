@@ -25,7 +25,7 @@ typedef struct ao_instance_s ao_instance_t;
 
 struct ao_instance_s {
     int (* setup) (ao_instance_t * instance, int sample_rate, int * flags,
-		   sample_t * level, sample_t * bias);
+		   level_t * level, sample_t * bias);
     int (* play) (ao_instance_t * instance, int flags, sample_t * samples);
     void (* close) (ao_instance_t * instance);
 };
@@ -46,7 +46,7 @@ static inline ao_instance_t * ao_open (ao_open_t * open)
 }
 
 static inline int ao_setup (ao_instance_t * instance, int sample_rate,
-			    int * flags, sample_t * level, sample_t * bias)
+			    int * flags, level_t * level, sample_t * bias)
 {
     return instance->setup (instance, sample_rate, flags, level, bias);
 }

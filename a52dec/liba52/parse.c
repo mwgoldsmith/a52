@@ -41,9 +41,9 @@ void * memalign (size_t align, size_t size);
 #endif
 
 typedef struct {
-    sample_t q1[2];
-    sample_t q2[2];
-    sample_t q4;
+    quantizer_t q1[2];
+    quantizer_t q2[2];
+    quantizer_t q4;
     int q1_ptr;
     int q2_ptr;
     int q4_ptr;
@@ -129,10 +129,12 @@ int a52_syncinfo (uint8_t * buf, int * flags,
 }
 
 int a52_frame (a52_state_t * state, uint8_t * buf, int * flags,
-	       sample_t * level, sample_t bias)
+	       level_t * level, sample_t bias)
 {
-    static sample_t clev[4] = {LEVEL_3DB, LEVEL_45DB, LEVEL_6DB, LEVEL_45DB};
-    static sample_t slev[4] = {LEVEL_3DB, LEVEL_6DB, 0, LEVEL_6DB};
+    static level_t clev[4] = { LEVEL (LEVEL_3DB), LEVEL (LEVEL_45DB),
+			       LEVEL (LEVEL_6DB), LEVEL (LEVEL_45DB) };
+    static level_t slev[4] = { LEVEL (LEVEL_3DB), LEVEL (LEVEL_6DB), 
+			       0,                 LEVEL (LEVEL_6DB) };
     int chaninfo;
     int acmod;
 
@@ -164,7 +166,7 @@ int a52_frame (a52_state_t * state, uint8_t * buf, int * flags,
 	state->output |= A52_LFE;
     *flags = state->output;
     /* the 2* compensates for differences in imdct */
-    state->dynrng = state->level = 2 * *level;
+    state->dynrng = state->level = MUL_C (*level, 2);
     state->bias = bias;
     state->dynrnge = 1;
     state->dynrngcall = NULL;
@@ -203,7 +205,7 @@ int a52_frame (a52_state_t * state, uint8_t * buf, int * flags,
 }
 
 void a52_dynrng (a52_state_t * state,
-		 sample_t (* call) (sample_t, void *), void * data)
+		 level_t (* call) (level_t, void *), void * data)
 {
     state->dynrnge = 0;
     if (call) {
@@ -316,17 +318,39 @@ static inline int16_t dither_gen (a52_state_t * state)
     return nstate;
 }
 
+#ifndef LIBA52_FIXED
+#define COEFF(c,t,l,s,e) (c) = (t) * (s)[e]
+#else
+#define COEFF(c,_t,_l,s,e) do {					\
+    quantizer_t t = (_t);					\
+    level_t l = (_l);						\
+    int shift = e - 5;						\
+    sample_t tmp = t * (l >> 16) + ((t * (l & 0xffff)) >> 16);	\
+    if (shift >= 0)						\
+	(c) = tmp >> shift;					\
+    else							\
+	(c) = tmp << -shift;					\
+} while (0)
+#endif
+
 static void coeff_get (a52_state_t * state, sample_t * coeff,
 		       expbap_t * expbap, quantizer_set_t * quant,
-		       sample_t level, int dither, int end)
+		       level_t level, int dither, int end)
 {
     int i;
     uint8_t * exp;
     int8_t * bap;
+
+#ifndef LIBA52_FIXED
     sample_t factor[25];
 
     for (i = 0; i <= 24; i++)
 	factor[i] = scale_factor[i] * level;
+#else
+    level_t level_3db;
+
+    level_3db = MUL_C (level, LEVEL_3DB);
+#endif
 
     exp = expbap->exp;
     bap = expbap->bap;
@@ -338,7 +362,13 @@ static void coeff_get (a52_state_t * state, sample_t * coeff,
 	switch (bapi) {
 	case 0:
 	    if (dither) {
-		coeff[i] = dither_gen (state) * LEVEL_3DB * factor[exp[i]];
+#ifndef LIBA52_FIXED
+		COEFF (coeff[i], dither_gen (state) * LEVEL_3DB, level,
+		       factor, exp[i]);
+#else
+		COEFF (coeff[i], dither_gen (state), level_3db,
+		       factor, exp[i]);
+#endif
 		continue;
 	    } else {
 		coeff[i] = 0;
@@ -347,7 +377,8 @@ static void coeff_get (a52_state_t * state, sample_t * coeff,
 
 	case -1:
 	    if (quant->q1_ptr >= 0) {
-		coeff[i] = quant->q1[quant->q1_ptr--] * factor[exp[i]];
+		COEFF (coeff[i], quant->q1[quant->q1_ptr--], level,
+		       factor, exp[i]);
 		continue;
 	    } else {
 		int code;
@@ -357,13 +388,14 @@ static void coeff_get (a52_state_t * state, sample_t * coeff,
 		quant->q1_ptr = 1;
 		quant->q1[0] = q_1_2[code];
 		quant->q1[1] = q_1_1[code];
-		coeff[i] = q_1_0[code] * factor[exp[i]];
+		COEFF (coeff[i], q_1_0[code], level, factor, exp[i]);
 		continue;
 	    }
 
 	case -2:
 	    if (quant->q2_ptr >= 0) {
-		coeff[i] = quant->q2[quant->q2_ptr--] * factor[exp[i]];
+		COEFF (coeff[i], quant->q2[quant->q2_ptr--], level,
+		       factor, exp[i]);
 		continue;
 	    } else {
 		int code;
@@ -373,18 +405,19 @@ static void coeff_get (a52_state_t * state, sample_t * coeff,
 		quant->q2_ptr = 1;
 		quant->q2[0] = q_2_2[code];
 		quant->q2[1] = q_2_1[code];
-		coeff[i] = q_2_0[code] * factor[exp[i]];
+		COEFF (coeff[i], q_2_0[code], level, factor, exp[i]);
 		continue;
 	    }
 
 	case 3:
-	    coeff[i] = q_3[bitstream_get (state, 3)] * factor[exp[i]];
+	    COEFF (coeff[i], q_3[bitstream_get (state, 3)], level,
+		   factor, exp[i]);
 	    continue;
 
 	case -3:
 	    if (quant->q4_ptr == 0) {
 		quant->q4_ptr = -1;
-		coeff[i] = quant->q4 * factor[exp[i]];
+		COEFF (coeff[i], quant->q4, level, factor, exp[i]);
 		continue;
 	    } else {
 		int code;
@@ -393,29 +426,30 @@ static void coeff_get (a52_state_t * state, sample_t * coeff,
 
 		quant->q4_ptr = 0;
 		quant->q4 = q_4_1[code];
-		coeff[i] = q_4_0[code] * factor[exp[i]];
+		COEFF (coeff[i], q_4_0[code], level, factor, exp[i]);
 		continue;
 	    }
 
 	case 4:
-	    coeff[i] = q_5[bitstream_get (state, 4)] * factor[exp[i]];
+	    COEFF (coeff[i], q_5[bitstream_get (state, 4)], level,
+		   factor, exp[i]);
 	    continue;
 
 	default:
-	    coeff[i] = ((bitstream_get_2 (state, bapi) << (16 - bapi)) *
-			  factor[exp[i]]);
+	    COEFF (coeff[i], bitstream_get_2 (state, bapi) << (16 - bapi),
+		   level, factor, exp[i]);
 	}
     }
 }
 
 static void coeff_get_coupling (a52_state_t * state, int nfchans,
-				sample_t * coeff, sample_t (* samples)[256],
+				level_t * coeff, sample_t (* samples)[256],
 				quantizer_set_t * quant, uint8_t dithflag[5])
 {
     int cplbndstrc, bnd, i, i_end, ch;
     uint8_t * exp;
     int8_t * bap;
-    sample_t cplco[5];
+    level_t cplco[5];
 
     exp = state->cpl_expbap.exp;
     bap = state->cpl_expbap.bap;
@@ -430,23 +464,31 @@ static void coeff_get_coupling (a52_state_t * state, int nfchans,
 	}
 	cplbndstrc >>= 1;
 	for (ch = 0; ch < nfchans; ch++)
-	    cplco[ch] = state->cplco[ch][bnd] * coeff[ch];
+	    cplco[ch] = MUL_L (state->cplco[ch][bnd], coeff[ch]);
 	bnd++;
 
 	while (i < i_end) {
-	    sample_t cplcoeff;
+	    quantizer_t cplcoeff;
 	    int bapi;
 
 	    bapi = bap[i];
 	    switch (bapi) {
 	    case 0:
+#ifndef LIBA52_FIXED
 		cplcoeff = LEVEL_3DB * scale_factor[exp[i]];
+#endif
 		for (ch = 0; ch < nfchans; ch++)
 		    if ((state->chincpl >> ch) & 1) {
 			if (dithflag[ch])
+#ifndef LIBA52_FIXED
 			    samples[ch][i] = (cplcoeff * cplco[ch] *
 					      dither_gen (state));
-			else
+#else
+			    COEFF (samples[ch][i], dither_gen (state),
+				   MUL_C (cplco[ch], LEVEL_3DB),
+				   scale_factor, exp[i]);
+#endif
+			else 
 			    samples[ch][i] = 0;
 		    }
 		i++;
@@ -511,11 +553,17 @@ static void coeff_get_coupling (a52_state_t * state, int nfchans,
 	    default:
 		cplcoeff = bitstream_get_2 (state, bapi) << (16 - bapi);
 	    }
-
+#ifndef LIBA52_FIXED
 	    cplcoeff *= scale_factor[exp[i]];
+#endif
 	    for (ch = 0; ch < nfchans; ch++)
-		if ((state->chincpl >> ch) & 1)
+	       if ((state->chincpl >> ch) & 1)
+#ifndef LIBA52_FIXED
 		    samples[ch][i] = cplcoeff * cplco[ch];
+#else
+		    COEFF (samples[ch][i], cplcoeff, cplco[ch],
+			   scale_factor, exp[i]);
+#endif
 	    i++;
 	}
     }
@@ -528,7 +576,7 @@ int a52_block (a52_state_t * state)
     int i, nfchans, chaninfo;
     uint8_t cplexpstr, chexpstr[5], lfeexpstr, do_bit_alloc, done_cpl;
     uint8_t blksw[5], dithflag[5];
-    sample_t coeff[5];
+    level_t coeff[5];
     int chanbias;
     quantizer_set_t quant;
     sample_t * samples;
@@ -548,13 +596,17 @@ int a52_block (a52_state_t * state)
 
 	    dynrng = bitstream_get_2 (state, 8);
 	    if (state->dynrnge) {
-		sample_t range;
+		level_t range;
 
+#if !defined(LIBA52_FIXED)
 		range = ((((dynrng & 0x1f) | 0x20) << 13) *
 			 scale_factor[3 - (dynrng >> 5)]);
+#else
+		range = ((dynrng & 0x1f) | 0x20) << (21 + (dynrng >> 5));
+#endif
 		if (state->dynrngcall)
 		    range = state->dynrngcall (range, state->dynrngdata);
-		state->dynrng = state->level * range;
+		state->dynrng = MUL_L (state->level, range);
 	    }
 	}
     } while (chaninfo--);
@@ -613,8 +665,13 @@ int a52_block (a52_state_t * state)
 			    cplcomant <<= 14;
 			else
 			    cplcomant = (cplcomant | 0x10) << 13;
+#ifndef LIBA52_FIXED
 			state->cplco[i][j] =
 			    cplcomant * scale_factor[cplcoexp + mstrcplco];
+#else
+			state->cplco[i][j] = (cplcomant << 11) >> (cplcoexp + mstrcplco);
+#endif
+
 		    }
 		}
 	if ((state->acmod == 2) && state->phsflginu && cplcoe)

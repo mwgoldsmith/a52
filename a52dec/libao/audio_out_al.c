@@ -43,7 +43,7 @@ typedef struct al_instance_s {
 } al_instance_t;
 
 static int al_setup (ao_instance_t * _instance, int sample_rate, int * flags,
-		     sample_t * level, sample_t * bias)
+		     level_t * level, sample_t * bias)
 {
     al_instance_t * instance = (al_instance_t *) _instance;
 
@@ -52,8 +52,8 @@ static int al_setup (ao_instance_t * _instance, int sample_rate, int * flags,
     instance->sample_rate = sample_rate;
 
     *flags = instance->flags;
-    *level = 1;
-    *bias = 384;
+    *level = CONVERT_LEVEL;
+    *bias = CONVERT_BIAS;
 
     return 0;
 }
@@ -65,13 +65,13 @@ static int al_play (ao_instance_t * _instance, int flags, sample_t * _samples)
     int chans = -1;
 
 #ifdef LIBA52_DOUBLE
-    float samples[256 * 6];
+    convert_t samples[256 * 6];
     int i;
 
     for (i = 0; i < 256 * 6; i++)
 	samples[i] = _samples[i];
 #else
-    float * samples = _samples;
+    convert_t * samples = _samples;
 #endif
 
     chans = channels_multi (flags);
@@ -116,7 +116,7 @@ static int al_play (ao_instance_t * _instance, int flags, sample_t * _samples)
     } else if (flags != instance->flags)
 	return 1;
 
-    float2s16_multi (samples, int16_samples, flags);
+    convert2s16_multi (samples, int16_samples, flags);
     alWriteFrames (instance->port, int16_samples, 256);
 
     return 0;

@@ -50,21 +50,21 @@ static const int8_t exp_3[128] = {
 #define Q1 (0)
 #define Q2 ((2 << 15) / 3.0)
 
-static const sample_t q_1_0[32] = {
+static const quantizer_t q_1_0[32] = {
     Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,
     Q1,Q1,Q1,Q1,Q1,Q1,Q1,Q1,Q1,
     Q2,Q2,Q2,Q2,Q2,Q2,Q2,Q2,Q2,
     0,0,0,0,0
 };
 
-static const sample_t q_1_1[32] = {
+static const quantizer_t q_1_1[32] = {
     Q0,Q0,Q0,Q1,Q1,Q1,Q2,Q2,Q2,
     Q0,Q0,Q0,Q1,Q1,Q1,Q2,Q2,Q2,
     Q0,Q0,Q0,Q1,Q1,Q1,Q2,Q2,Q2,
     0,0,0,0,0
 };
 
-static const sample_t q_1_2[32] = {
+static const quantizer_t q_1_2[32] = {
     Q0,Q1,Q2,Q0,Q1,Q2,Q0,Q1,Q2,
     Q0,Q1,Q2,Q0,Q1,Q2,Q0,Q1,Q2,
     Q0,Q1,Q2,Q0,Q1,Q2,Q0,Q1,Q2,
@@ -81,7 +81,7 @@ static const sample_t q_1_2[32] = {
 #define Q3 ((2 << 15) / 5.0)
 #define Q4 ((4 << 15) / 5.0)
 
-static const sample_t q_2_0[128] = {
+static const quantizer_t q_2_0[128] = {
     Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,
     Q1,Q1,Q1,Q1,Q1,Q1,Q1,Q1,Q1,Q1,Q1,Q1,Q1,Q1,Q1,Q1,Q1,Q1,Q1,Q1,Q1,Q1,Q1,Q1,Q1,
     Q2,Q2,Q2,Q2,Q2,Q2,Q2,Q2,Q2,Q2,Q2,Q2,Q2,Q2,Q2,Q2,Q2,Q2,Q2,Q2,Q2,Q2,Q2,Q2,Q2,
@@ -90,7 +90,7 @@ static const sample_t q_2_0[128] = {
     0,0,0
 };
 
-static const sample_t q_2_1[128] = {
+static const quantizer_t q_2_1[128] = {
     Q0,Q0,Q0,Q0,Q0,Q1,Q1,Q1,Q1,Q1,Q2,Q2,Q2,Q2,Q2,Q3,Q3,Q3,Q3,Q3,Q4,Q4,Q4,Q4,Q4,
     Q0,Q0,Q0,Q0,Q0,Q1,Q1,Q1,Q1,Q1,Q2,Q2,Q2,Q2,Q2,Q3,Q3,Q3,Q3,Q3,Q4,Q4,Q4,Q4,Q4,
     Q0,Q0,Q0,Q0,Q0,Q1,Q1,Q1,Q1,Q1,Q2,Q2,Q2,Q2,Q2,Q3,Q3,Q3,Q3,Q3,Q4,Q4,Q4,Q4,Q4,
@@ -99,7 +99,7 @@ static const sample_t q_2_1[128] = {
     0,0,0
 };
 
-static const sample_t q_2_2[128] = {
+static const quantizer_t q_2_2[128] = {
     Q0,Q1,Q2,Q3,Q4,Q0,Q1,Q2,Q3,Q4,Q0,Q1,Q2,Q3,Q4,Q0,Q1,Q2,Q3,Q4,Q0,Q1,Q2,Q3,Q4,
     Q0,Q1,Q2,Q3,Q4,Q0,Q1,Q2,Q3,Q4,Q0,Q1,Q2,Q3,Q4,Q0,Q1,Q2,Q3,Q4,Q0,Q1,Q2,Q3,Q4,
     Q0,Q1,Q2,Q3,Q4,Q0,Q1,Q2,Q3,Q4,Q0,Q1,Q2,Q3,Q4,Q0,Q1,Q2,Q3,Q4,Q0,Q1,Q2,Q3,Q4,
@@ -114,7 +114,7 @@ static const sample_t q_2_2[128] = {
 #undef Q3
 #undef Q4
 
-static const sample_t q_3[8] = {
+static const quantizer_t q_3[8] = {
     (-6 << 15)/7.0, (-4 << 15)/7.0, (-2 << 15)/7.0, 0,
     ( 2 << 15)/7.0, ( 4 << 15)/7.0, ( 6 << 15)/7.0, 0
 };
@@ -131,7 +131,7 @@ static const sample_t q_3[8] = {
 #define Q9 ((8 << 15) / 11.0)
 #define QA ((10 << 15) / 11.0)
 
-static const sample_t q_4_0[128] = {
+static const quantizer_t q_4_0[128] = {
     Q0, Q0, Q0, Q0, Q0, Q0, Q0, Q0, Q0, Q0, Q0,
     Q1, Q1, Q1, Q1, Q1, Q1, Q1, Q1, Q1, Q1, Q1,
     Q2, Q2, Q2, Q2, Q2, Q2, Q2, Q2, Q2, Q2, Q2,
@@ -146,7 +146,7 @@ static const sample_t q_4_0[128] = {
     0,  0,  0,  0,  0,  0,  0
 };
 
-static const sample_t q_4_1[128] = {
+static const quantizer_t q_4_1[128] = {
     Q0, Q1, Q2, Q3, Q4, Q5, Q6, Q7, Q8, Q9, QA,
     Q0, Q1, Q2, Q3, Q4, Q5, Q6, Q7, Q8, Q9, QA,
     Q0, Q1, Q2, Q3, Q4, Q5, Q6, Q7, Q8, Q9, QA,
@@ -173,7 +173,7 @@ static const sample_t q_4_1[128] = {
 #undef Q9
 #undef QA
 
-static const sample_t q_5[16] = {
+static const quantizer_t q_5[16] = {
     (-14 << 15)/15.0,(-12 << 15)/15.0,(-10 << 15)/15.0,
     ( -8 << 15)/15.0,( -6 << 15)/15.0,( -4 << 15)/15.0,
     ( -2 << 15)/15.0,   0            ,(  2 << 15)/15.0,
@@ -182,6 +182,7 @@ static const sample_t q_5[16] = {
     0
 };
 
+#ifndef LIBA52_FIXED
 static const sample_t scale_factor[25] = {
     0.000030517578125,
     0.0000152587890625,
@@ -209,6 +210,7 @@ static const sample_t scale_factor[25] = {
     0.00000000000363797880709171295166015625,
     0.000000000001818989403545856475830078125
 };
+#endif
 
 static const uint16_t dither_lut[256] = {
     0x0000, 0xa011, 0xe033, 0x4022, 0x6077, 0xc066, 0x8044, 0x2055,

@@ -27,6 +27,7 @@
 
 #include "a52.h"
 #include "audio_out.h"
+#include "audio_out_internal.h"
 
 typedef struct null_instance_s {
     ao_instance_t ao;
@@ -34,13 +35,13 @@ typedef struct null_instance_s {
 } null_instance_t;
 
 static int null_setup (ao_instance_t * _instance, int sample_rate, int * flags,
-		       sample_t * level, sample_t * bias)
+		       level_t * level, sample_t * bias)
 {
     null_instance_t * instance = (null_instance_t *) _instance;
 
     *flags = instance->channels;
-    *level = 1;
-    *bias = 0;
+    *level = CONVERT_LEVEL;
+    *bias = CONVERT_BIAS;
 
     return 0;
 }

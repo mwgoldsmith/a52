@@ -48,7 +48,7 @@ static uint8_t aif_header[] = {
 };
 
 static int aif_setup (ao_instance_t * _instance, int sample_rate, int * flags,
-		      sample_t * level, sample_t * bias)
+		      level_t * level, sample_t * bias)
 {
     aif_instance_t * instance = (aif_instance_t *) _instance;
 
@@ -57,8 +57,8 @@ static int aif_setup (ao_instance_t * _instance, int sample_rate, int * flags,
     instance->sample_rate = sample_rate;
 
     *flags = instance->flags;
-    *level = 1;
-    *bias = 384;
+    *level = CONVERT_LEVEL;
+    *bias = CONVERT_BIAS;
 
     return 0;
 }
@@ -83,13 +83,13 @@ static int aif_play (ao_instance_t * _instance, int flags, sample_t * _samples)
     int16_t int16_samples[256*2];
 
 #ifdef LIBA52_DOUBLE
-    float samples[256 * 2];
+    convert_t samples[256 * 2];
     int i;
 
     for (i = 0; i < 256 * 2; i++)
 	samples[i] = _samples[i];
 #else
-    float * samples = _samples;
+    convert_t * samples = _samples;
 #endif
 
     if (instance->set_params) {
@@ -98,7 +98,7 @@ static int aif_play (ao_instance_t * _instance, int flags, sample_t * _samples)
 	fwrite (aif_header, sizeof (aif_header), 1, stdout);
     }
 
-    float2s16_2 (samples, int16_samples);
+    convert2s16_2 (samples, int16_samples);
     s16_BE (int16_samples, 2);
     fwrite (int16_samples, 256 * sizeof (int16_t) * 2, 1, stdout);
 

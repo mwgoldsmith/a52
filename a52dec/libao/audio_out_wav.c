@@ -58,7 +58,7 @@ static uint8_t wav6_header[] = {
 };
 
 static int wav_setup (ao_instance_t * _instance, int sample_rate, int * flags,
-		      sample_t * level, sample_t * bias)
+		      level_t * level, sample_t * bias)
 {
     wav_instance_t * instance = (wav_instance_t *) _instance;
 
@@ -68,8 +68,8 @@ static int wav_setup (ao_instance_t * _instance, int sample_rate, int * flags,
 
     if (instance->flags >= 0)
 	*flags = instance->flags;
-    *level = 1;
-    *bias = 384;
+    *level = CONVERT_LEVEL;
+    *bias = CONVERT_BIAS;
 
     return 0;
 }
@@ -119,18 +119,16 @@ static int wav_play (ao_instance_t * _instance, int flags, sample_t * _samples)
     uint32_t speaker_flags;
 
 #ifdef LIBA52_DOUBLE
-    float samples[256 * 6];
+    convert_t samples[256 * 6];
     int i;
+
+    for (i = 0; i < 256 * 6; i++)
+	samples[i] = _samples[i];
 #else
-    float * samples = _samples;
+    convert_t * samples = _samples;
 #endif
 
     chans = wav_channels (flags, &speaker_flags);
-
-#ifdef LIBA52_DOUBLE
-    for (i = 0; i < 256 * chans; i++)
-	samples[i] = _samples[i];
-#endif
 
     if (instance->set_params) {
 	instance->set_params = 0;
@@ -152,7 +150,8 @@ static int wav_play (ao_instance_t * _instance, int flags, sample_t * _samples)
     } else if (speaker_flags != instance->speaker_flags)
 	return 1;
 
-    float2s16_wav (samples, int16_samples, flags);
+    convert2s16_wav (samples, int16_samples, flags);
+
     s16_LE (int16_samples, chans);
     fwrite (int16_samples, 256 * sizeof (int16_t) * chans, 1, stdout);
 

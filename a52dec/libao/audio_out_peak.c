@@ -12,16 +12,16 @@
 typedef struct peak_instance_s {
     ao_instance_t ao;
     int flags;
-    sample_t peak;
+    float peak;
 } peak_instance_t;
 
 static int peak_setup (ao_instance_t * _instance, int sample_rate, int * flags,
-		       sample_t * level, sample_t * bias)
+		       level_t * level, sample_t * bias)
 {
     peak_instance_t * instance = (peak_instance_t *) _instance;
 
     *flags = instance->flags;
-    *level = 1;
+    *level = CONVERT_LEVEL;
     *bias = 0;
 
     return 0;
@@ -33,8 +33,13 @@ static int peak_play (ao_instance_t * _instance, int flags, sample_t * samples)
     int i;
 
     for (i = 0; i < 256 * 2; i++) {
-	if (instance->peak < fabs (samples[i]))
-	    instance->peak = fabs (samples[i]);
+#ifdef LIBA52_FIXED
+	float f = fabs (samples[i] * (1.0 / (1 << 30)));
+#else
+	float f = fabs (samples[i]);
+#endif
+	if (instance->peak < f)
+	    instance->peak = f;
     }
 
     return 0;

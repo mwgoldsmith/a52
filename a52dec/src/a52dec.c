@@ -49,7 +49,7 @@ static int demux_pid = 0;
 static int disable_accel = 0;
 static int disable_dynrng = 0;
 static int disable_adjust = 0;
-static sample_t gain = 1;
+static float gain = 1;
 static ao_open_t * output_open = NULL;
 static ao_instance_t * output;
 static a52_state_t * state;
@@ -272,7 +272,8 @@ void a52_decode_data (uint8_t * start, uint8_t * end)
 		}
 		bufpos = buf + length;
 	    } else {
-		sample_t level, bias;
+		level_t level;
+		sample_t bias;
 		int i;
 
 		if (ao_setup (output, sample_rate, &flags, &level, &bias))
@@ -595,6 +596,11 @@ int main (int argc, char ** argv)
 
     fprintf (stderr, PACKAGE"-"VERSION
 	     " - by Michel Lespinasse <walken@zoy.org> and Aaron Holtzman\n");
+
+#ifdef LIBA52_FIXED
+    fprintf (stderr, "Fixed Point Version by "
+	     "Jeroen Dobbelaere <jeroen.dobbelaere@acunia.com>\n");
+#endif
 
     handle_args (argc, argv);
 

@@ -54,7 +54,7 @@ typedef struct win_instance_s {
 } win_instance_t;
 
 static int win_setup (ao_instance_t * _instance, int sample_rate, int * flags,
-		      sample_t * level, sample_t * bias)
+		      level_t * level, sample_t * bias)
 {
     win_instance_t * instance = (win_instance_t *) _instance;
 
@@ -63,8 +63,8 @@ static int win_setup (ao_instance_t * _instance, int sample_rate, int * flags,
     instance->sample_rate = sample_rate;
 
     *flags = instance->flags;
-    *level = 1;
-    *bias = 384;
+    *level = CONVERT_LEVEL;
+    *bias = CONVERT_BIAS;
 
     return 0;
 }
@@ -76,13 +76,13 @@ static int win_play (ao_instance_t * _instance, int flags, sample_t * _samples)
     MMRESULT result;
 
 #ifdef LIBA52_DOUBLE
-    float samples[256 * 2];
+    convert_t samples[256 * 2];
     int i;
 
     for (i = 0; i < 256 * 2; i++)
 	samples[i] = _samples[i];
 #else
-    float * samples = _samples;
+    convert_t * samples = _samples;
 #endif
 
     flags &= A52_CHANNEL_MASK | A52_LFE;
@@ -146,7 +146,7 @@ static int win_play (ao_instance_t * _instance, int flags, sample_t * _samples)
 	return 1;
     }
 
-    float2s16_2 (samples, instance->int16_samples[current_buffer]);
+    convert2s16_2 (samples, instance->int16_samples[current_buffer]);
 
     result = waveOutWrite (instance->h_waveout,
 			   &instance->waveheader[current_buffer],
