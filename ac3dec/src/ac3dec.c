@@ -172,6 +172,7 @@ static void handle_args (int argc, char * argv[])
 	in_file = stdin;
 }
 
+#if 1
 static inline int16_t blah (int32_t i)
 {
     if (i > 0x43c07fff)
@@ -192,6 +193,28 @@ static inline void float_to_int (float * _f, int16_t * s16)
 	s16[2*i+1] = blah (f[i+256]);
     }
 }
+#else
+static inline int16_t blah (int64_t i)
+{
+    if (i >        0x4248000000007fffLL)
+	return 32767;
+    else if (i <   0x4247ffffffff8000LL)
+	return -32768;
+    else
+	return i - 0x4248000000000000LL;
+}
+
+static inline void float_to_int (sample_t * _f, int16_t * s16) 
+{
+    int i;
+    int64_t * f = (int64_t *) _f;	// XXX assumes IEEE sample_t format
+
+    for (i = 0; i < 256; i++) {
+	s16[2*i] = blah (f[i]);
+	s16[2*i+1] = blah (f[i+256]);
+    }
+}
+#endif
 
 int ac3_decode_data (uint8_t * start, uint8_t * end)
 {
@@ -223,16 +246,22 @@ int ac3_decode_data (uint8_t * start, uint8_t * end)
 	    } else {
 		static int do_init = 1;
 		int i;
-		float level;
+		sample_t level;
 
 		flags = AC3_STEREO | AC3_ADJUST_LEVEL;
 		level = 1;
 		if (ac3_frame (&state, buf, &flags, &level, 384))
 		    goto error;
 		for (i = 0; i < 6; i++) {
+		    float zor[512];
+		    int j;
+
 		    if (ac3_block (&state))
 			goto error;
-		    float_to_int (*samples, s16_samples + i * 512);
+
+		    for (j = 0; j < 512; j++)
+			zor[j] = (*samples)[j];
+		    float_to_int (zor, s16_samples + i * 512);
 		}
 		if (do_init) {
 		    do_init = 0;

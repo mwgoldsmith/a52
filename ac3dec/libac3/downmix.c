@@ -36,7 +36,8 @@
 
 #define CONVERT(acmod,output) (((output) << 3) + (acmod))
 
-int downmix_init (int input, int flags, float * level, float clev, float slev)
+int downmix_init (int input, int flags, sample_t * level,
+		  sample_t clev, sample_t slev)
 {
     static uint8_t table[11][8] = {
 	{AC3_CHANNEL,  AC3_DOLBY,  AC3_STEREO, AC3_STEREO,
@@ -155,7 +156,7 @@ int downmix_init (int input, int flags, float * level, float clev, float slev)
     return output;
 }
 
-static void mix1to1 (float * samples, float level, float bias)
+static void mix1to1 (sample_t * samples, sample_t level, sample_t bias)
 {
     int i;
 
@@ -163,7 +164,8 @@ static void mix1to1 (float * samples, float level, float bias)
 	samples[i] = samples[i] * level + bias;
 }
 
-static void move1to1 (float * src, float * dest, float level, float bias)
+static void move1to1 (sample_t * src, sample_t * dest,
+		      sample_t level, sample_t bias)
 {
     int i;
 
@@ -171,7 +173,7 @@ static void move1to1 (float * src, float * dest, float level, float bias)
 	dest[i] = src[i] * level + bias;
 }
 
-static void mix2to1 (float * samples, float level, float bias)
+static void mix2to1 (sample_t * samples, sample_t level, sample_t bias)
 {
     int i;
 
@@ -179,7 +181,8 @@ static void mix2to1 (float * samples, float level, float bias)
 	samples[i] = (samples[i] + samples[i + 256]) * level + bias;
 }
 
-static void move2to1 (float * src, float * dest, float level, float bias)
+static void move2to1 (sample_t * src, sample_t * dest,
+		      sample_t level, sample_t bias)
 {
     int i;
 
@@ -187,7 +190,8 @@ static void move2to1 (float * src, float * dest, float level, float bias)
 	dest[i] = (src[i] + src[i + 256]) * level + bias;
 }
 
-static void mix3to1 (float * samples, float level, float clev, float bias)
+static void mix3to1 (sample_t * samples, sample_t level, sample_t clev,
+		     sample_t bias)
 {
     int i;
 
@@ -196,7 +200,8 @@ static void mix3to1 (float * samples, float level, float clev, float bias)
 		      samples[i + 256] * clev + bias);
 }
 
-static void mix21to1 (float * samples, float level, float slev, float bias)
+static void mix21to1 (sample_t * samples, sample_t level, sample_t slev,
+		      sample_t bias)
 {
     int i;
 
@@ -205,8 +210,8 @@ static void mix21to1 (float * samples, float level, float slev, float bias)
 		      samples[i + 512] * slev + bias);
 }
 
-static void mix31to1 (float * samples, float level, float clev, float slev,
-		      float bias)
+static void mix31to1 (sample_t * samples, sample_t level,
+		      sample_t clev, sample_t slev, sample_t bias)
 {
     int i;
 
@@ -216,7 +221,8 @@ static void mix31to1 (float * samples, float level, float clev, float slev,
 		      bias);
 }
 
-static void mix22to1 (float * samples, float level, float slev, float bias)
+static void mix22to1 (sample_t * samples, sample_t level, sample_t slev,
+		      sample_t bias)
 {
     int i;
 
@@ -225,8 +231,8 @@ static void mix22to1 (float * samples, float level, float slev, float bias)
 		      (samples[i + 512] + samples[i + 768]) * slev + bias);
 }
 
-static void mix32to1 (float * samples, float level, float clev, float slev,
-		      float bias)
+static void mix32to1 (sample_t * samples, sample_t level,
+		      sample_t clev, sample_t slev, sample_t bias)
 {
     int i;
 
@@ -236,7 +242,8 @@ static void mix32to1 (float * samples, float level, float clev, float slev,
 		      (samples[i + 768] + samples[i + 1024]) * slev + bias);
 }
 
-static void mix1to2 (float * src, float * dest, float level, float bias)
+static void mix1to2 (sample_t * src, sample_t * dest,
+		     sample_t level, sample_t bias)
 {
     int i;
 
@@ -244,10 +251,11 @@ static void mix1to2 (float * src, float * dest, float level, float bias)
 	dest[i] = src[i] = src[i] * level + bias;
 }
 
-static void mix3to2 (float * samples, float level, float clev, float bias)
+static void mix3to2 (sample_t * samples, sample_t level, sample_t clev,
+		     sample_t bias)
 {
     int i;
-    float common;
+    sample_t common;
 
     for (i = 0; i < 256; i++) {
 	common = samples[i + 256] * clev + bias;
@@ -256,11 +264,11 @@ static void mix3to2 (float * samples, float level, float clev, float bias)
     }
 }
 
-static void mix21to2 (float * left, float * right, float level, float slev,
-		      float bias)
+static void mix21to2 (sample_t * left, sample_t * right,
+		      sample_t level, sample_t slev, sample_t bias)
 {
     int i;
-    float common;
+    sample_t common;
 
     for (i = 0; i < 256; i++) {
 	common = right[i + 256] * slev + bias;
@@ -269,8 +277,8 @@ static void mix21to2 (float * left, float * right, float level, float slev,
     }
 }
 
-static void mix11to1 (float * front, float * rear, float level, float slev,
-		      float bias)
+static void mix11to1 (sample_t * front, sample_t * rear,
+		      sample_t level, sample_t slev, sample_t bias)
 {
     int i;
 
@@ -278,11 +286,11 @@ static void mix11to1 (float * front, float * rear, float level, float slev,
 	front[i] = front[i] * level + rear[i] * slev + bias;
 }
 
-static void mix31to2 (float * samples, float level, float clev, float slev,
-		      float bias)
+static void mix31to2 (sample_t * samples, sample_t level,
+		      sample_t clev, sample_t slev, sample_t bias)
 {
     int i;
-    float common;
+    sample_t common;
 
     for (i = 0; i < 256; i++) {
 	common = samples[i + 256] * clev + samples[i + 768] * slev + bias;
@@ -291,11 +299,11 @@ static void mix31to2 (float * samples, float level, float clev, float slev,
     }
 }
 
-static void mix32to2 (float * samples, float level, float clev, float slev,
-		      float bias)
+static void mix32to2 (sample_t * samples, sample_t level,
+		      sample_t clev, sample_t slev, sample_t bias)
 {
     int i;
-    float common;
+    sample_t common;
 
     for (i = 0; i < 256; i++) {
 	common = samples[i + 256] * clev + bias;
@@ -305,10 +313,11 @@ static void mix32to2 (float * samples, float level, float clev, float slev,
     }
 }
 
-static void mix21toS (float * samples, float level, float level3db, float bias)
+static void mix21toS (sample_t * samples,
+		      sample_t level, sample_t level3db, sample_t bias)
 {
     int i;
-    float surround;
+    sample_t surround;
 
     for (i = 0; i < 256; i++) {
 	surround = samples[i + 512] * level3db;
@@ -317,10 +326,11 @@ static void mix21toS (float * samples, float level, float level3db, float bias)
     }
 }
 
-static void mix22toS (float * samples, float level, float level3db, float bias)
+static void mix22toS (sample_t * samples,
+		      sample_t level, sample_t level3db, sample_t bias)
 {
     int i;
-    float surround;
+    sample_t surround;
 
     for (i = 0; i < 256; i++) {
 	surround = (samples[i + 512] + samples[i + 768]) * level3db;
@@ -329,10 +339,11 @@ static void mix22toS (float * samples, float level, float level3db, float bias)
     }
 }
 
-static void mix31toS (float * samples, float level, float level3db, float bias)
+static void mix31toS (sample_t * samples,
+		      sample_t level, sample_t level3db, sample_t bias)
 {
     int i;
-    float common, surround;
+    sample_t common, surround;
 
     for (i = 0; i < 256; i++) {
 	common = samples[i + 256] * level3db + bias;
@@ -342,10 +353,11 @@ static void mix31toS (float * samples, float level, float level3db, float bias)
     }
 }
 
-static void mix32toS (float * samples, float level, float level3db, float bias)
+static void mix32toS (sample_t * samples,
+		      sample_t level, sample_t level3db, sample_t bias)
 {
     int i;
-    float common, surround;
+    sample_t common, surround;
 
     for (i = 0; i < 256; i++) {
 	common = samples[i + 256] * level3db + bias;
@@ -355,8 +367,8 @@ static void mix32toS (float * samples, float level, float level3db, float bias)
     }
 }
 
-void downmix (float * samples, int acmod, int output, float level, float bias,
-	      float clev, float slev)
+void downmix (sample_t * samples, int acmod, int output,
+	      sample_t level, sample_t bias, sample_t clev, sample_t slev)
 {
     switch (CONVERT (acmod, output & AC3_CHANNEL_MASK)) {
 

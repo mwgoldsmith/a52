@@ -32,7 +32,7 @@
 #include "tables.h"
 
 extern stream_samples_t samples;	// FIXME
-static float delay[6][256];
+static sample_t delay[6][256];
 
 void ac3_init (void)
 {
@@ -86,11 +86,11 @@ int ac3_syncinfo (uint8_t * buf, int * flags,
     }
 }
 
-int ac3_frame (ac3_state_t * state, uint8_t * buf, int * flags, float * level,
-	       float bias)
+int ac3_frame (ac3_state_t * state, uint8_t * buf, int * flags,
+	       sample_t * level, sample_t bias)
 {
-    static float clev[4] = {LEVEL_3DB, LEVEL_45DB, LEVEL_6DB, LEVEL_45DB};
-    static float slev[4] = {LEVEL_3DB, LEVEL_6DB, 0, LEVEL_6DB};
+    static sample_t clev[4] = {LEVEL_3DB, LEVEL_45DB, LEVEL_6DB, LEVEL_45DB};
+    static sample_t slev[4] = {LEVEL_3DB, LEVEL_6DB, 0, LEVEL_6DB};
     int chaninfo;
     int acmod;
 
@@ -241,9 +241,9 @@ static inline int zero_snr_offsets (int nfchans, ac3_state_t * state)
     return 1;
 }
 
-static float q_1[2];
-static float q_2[2];
-static float q_4;
+static sample_t q_1[2];
+static sample_t q_2[2];
+static sample_t q_4;
 static int q_1_pointer;
 static int q_2_pointer;
 static int q_4_pointer;
@@ -332,7 +332,7 @@ static inline int16_t dither_gen(void)
     return ((state * (int) (LEVEL_3DB * 256)) >> 8);
 }
 
-static void coeff_get (float * coeff, uint8_t * exp, int8_t * bap,
+static void coeff_get (sample_t * coeff, uint8_t * exp, int8_t * bap,
 		       int dither, int end)
 {
     int i;
@@ -596,7 +596,7 @@ int ac3_block (ac3_state_t * state)
 	if (state->cplinu && state->chincpl[i]) {
 	    if (!done_cpl) {
 		int i, i_end, bnd, sub_bnd, ch;
-		float cplcoeff;
+		sample_t cplcoeff;
 
 		done_cpl = 1;
 
@@ -648,7 +648,7 @@ int ac3_block (ac3_state_t * state)
 	    if (band > end)
 		band = end;
 	    do {
-		float tmp0, tmp1;
+		sample_t tmp0, tmp1;
 
 		tmp0 = samples[0][j];
 		tmp1 = samples[1][j];

@@ -39,16 +39,17 @@
 #define DELTA_BIT_RESERVED (3)
 
 /* samples work structure */
-typedef float stream_samples_t[6][256];
+typedef sample_t stream_samples_t[6][256];
 
 void bit_allocate (ac3_state_t * state, ac3_ba_t * ba, int bndstart,
 		   int start, int end, int fastleak, int slowleak,
 		   uint8_t * exp, int8_t * bap);
 
-int downmix_init (int input, int flags, float * level, float clev, float slev);
-void downmix (float * samples, int acmod, int output, float level, float bias,
-	      float clev, float slev);
+int downmix_init (int input, int flags, sample_t * level,
+		  sample_t clev, sample_t slev);
+void downmix (sample_t * samples, int acmod, int output,
+	      sample_t level, sample_t bias, sample_t clev, sample_t slev);
 
 void imdct_init (void);
-extern void (* imdct_256) (float data[], float delay[]);
-extern void (* imdct_512) (float data[], float delay[]);
+extern void (* imdct_256) (sample_t data[], sample_t delay[]);
+extern void (* imdct_512) (sample_t data[], sample_t delay[]);
