@@ -19,6 +19,12 @@ typedef signed char    sint_8;
 #define EXP_D25   (2)
 #define EXP_D45   (3)
 
+/* Delta bit allocation constants */
+#define DELTA_BIT_REUSE (0)
+#define DELTA_BIT_NEW (1)
+#define DELTA_BIT_NONE (2)
+#define DELTA_BIT_RESERVED (3)
+
 /* The following structures are filled in by their corresponding fill_*
  * functions. See http://www.atsc.org/Standards/A52/a_52.pdf for
  * full details on each field. Indented fields are used to denote
@@ -172,6 +178,81 @@ typedef struct audblk_s
 	/* low frequency exponents */
 	uint_16 lfeexps[3];
 
+	/* Bit allocation info */
+	uint_16 baie;
+		/* Slow decay code */
+		uint_16 sdcycod;
+		/* Fast decay code */
+		uint_16 fdcycod;
+		/* Slow gain code */
+		uint_16 sgaincod;
+		/* dB per bit code */
+		uint_16 dbpbcod;
+		/* masking floor code */
+		uint_16 floorcod;
+
+	/* SNR offset info */
+	uint_16 snroffste;
+		/* coarse SNR offset */
+		uint_16 csnroffst;
+		/* coupling fine SNR offset */
+		uint_16 cplfsnroffst;
+		/* coupling fast gain code */
+		uint_16 cplfgaincod;
+		/* fbw fine SNR offset */
+		uint_16 fsnroffst[5];
+		/* fbw fast gain code */
+		uint_16 fgaincod[5];
+		/* lfe fine SNR offset */
+		uint_16 lfefsnroffst;
+		/* lfe fast gain code */
+		uint_16 lfefgaincod;
+	
+	/* Coupling leak info */
+	uint_16 cplleake;
+		/* coupling fast leak initialization */
+		uint_16 cplfleak;
+		/* coupling slow leak initialization */
+		uint_16 cplsleak;
+	
+	/* delta bit allocation info */
+	uint_16 deltbaie;
+		/* coupling delta bit allocation exists */
+		uint_16 cpldeltbae;
+		/* fbw delta bit allocation exists */
+		uint_16 deltbae[5];
+		/* number of cpl delta bit segments */
+		uint_16 cpldeltnseg;
+			/* coupling delta bit allocation offset */
+			uint_16 cpldeltoffst[8];
+			/* coupling delta bit allocation length */
+			uint_16 cpldeltlen[8];
+			/* coupling delta bit allocation length */
+			uint_16 cpldeltba[8];
+		/* number of delta bit segments */
+		uint_16 deltnseg[5];
+			/* fbw delta bit allocation offset */
+			uint_16 deltoffst[5][8];
+			/* fbw delta bit allocation length */
+			uint_16 deltlen[5][8];
+			/* fbw delta bit allocation length */
+			uint_16 deltba[5][8];
+
+	/* skip length exists */
+	/*uint_16 skiple;*/
+		/* skip length */
+		/*uint_16 skipl;*/
+		/* skip length */
+		/*uint_16 skipl;*/
+
+	/* channel mantissas */
+	uint_16 chmant[5][253];
+
+	/* coupling mantissas */
+	uint_16 cplmant[253];
+
+	/* coupling mantissas */
+	uint_16 lfemant[7];
 
 
 
@@ -197,6 +278,12 @@ typedef struct audblk_s
 	/* Start and end mantissa numbers for the coupling channel */
 	uint_16 cplstrtmant;
 	uint_16 cplendmant;
+
+	/* Bit allocation pointer results */
+	uint_16 fbw_mant_bits[5][253];
+	//FIXME figure out exactly how many entries there should be (253-37?) 
+	uint_16 cpl_mant_bits[253];
+	uint_16 lfe_mant_bits[7];
 
 
 

@@ -5,6 +5,7 @@
  *
  */
 
+#include <stdlib.h>
 #include "ac3.h"
 
 /* Misc LUTs for bit allocation process */
@@ -115,16 +116,19 @@ sint_16 baptab[] = { 0,  1,  1,  1,  1,  1,  2,  2,  3,  3,  3,  4,  4,  5,  5, 
 
 
 
-void bit_allocate()
+void bit_allocate( bsi_t *bsi, audblk_t *audblk)
 {
-	/* for fbw channels */ 
-	for(ch=0; ch<nfchans; ch++) 
+	uint_16 ch;
+
+	/* Do some setup calculations before we do the bit alloc */
+
+	for(ch=0; ch<bsi->nfchans; ch++) 
 	{ 
-		strtmant[ch] = 0; 
+		audblk->strtmant[ch] = 0; 
 		if(chincpl[ch]) 
-			endmant[ch] = 37 + (12 * cplbegf); /* channel is coupled */ 
+			audblk->endmant[ch] = 37 + (12 * audblk->cplbegf); /* channel is coupled */ 
 		else 
-			endmant[ch] = 37 + (3 * (chbwcod + 12)); /* channel is not coupled */ 
+			audblk->endmant[ch] = 37 + (3 * (audblk->chbwcod + 12)); /* channel is not coupled */ 
 	} 
 
 	/* for coupling channel */ 
@@ -132,22 +136,22 @@ void bit_allocate()
 	cplendmant = 37 + (12 * (cplendf + 3)); 
 
 	/* for lfe channel */ 
-	lfestartmant = 0 ; lfeendmant = 7 ;
+	//lfestartmant = 0 ; lfeendmant = 7 ;
 
 	start = strtmant[ch] ; 
 	end = endmant[ch] ; 
 	lowcomp = 0 ; 
 	fgain = fastgain[fgaincod[ch]]; 
-	/* Table 7.11 */ 
+
 	snroffset[ch] = ((csnroffst - 15) << 4 + fsnroffst[ch]) << 2 ;
+	sdecay = slowdec[sdcycod]; 
+	fdecay = fastdec[fdcycod];
+	sgain = slowgain[sgaincod]; 
+	dbknee = dbpbtab[dbpbcod]; 
+	floor = floortab[floorcod]; 
 }
 
 
-sdecay = slowdec[sdcycod]; 
-fdecay = fastdec[fdcycod];
-sgain = slowgain[sgaincod]; 
-dbknee = dbpbtab[dbpbcod]; 
-floor = floortab[floorcod]; 
 
 
 static void 

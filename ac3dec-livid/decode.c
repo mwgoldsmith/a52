@@ -13,15 +13,15 @@ static void decode_fill_bsi(bitstream_t *bs);
 static void decode_fill_audblk(bitstream_t *bs);
 static void decode_find_sync(bitstream_t *bs);
 
-//static stream_coeffs_t stream_coeffs;
-//static stream_samples_t stream_samples;
-//static audblk_t audblk;
+static stream_coeffs_t stream_coeffs;
+static stream_samples_t stream_samples;
+static audblk_t audblk;
 static bsi_t bsi;
 static syncinfo_t syncinfo;
 /* Misc LUTs */
 static	uint_16 nfchans[] = {2,1,2,3,3,4,4,5};
 
-int main(int argc,char argv[])
+int main(int argc,char *argv[])
 {
 	int i;
 	bitstream_t *bs;
@@ -36,7 +36,6 @@ int main(int argc,char argv[])
 		decode_fill_bsi(bs);
 		for(i=0; i < 6; i++)
 		{
-#if 0
 			/* Extract most of the audblk info from the bitstream
 			 * (minus the mantissas */
 			decode_fill_audblk(bs);
@@ -45,6 +44,7 @@ int main(int argc,char argv[])
 			 * frequency coefficients for all streams */
 			unpack_exponents(&bsi,&audblk,&stream_coeffs); 
 
+#if 0
 			/* Figure out how many bits per mantissa */
 			bit_allocate(&bsi,&audblk);
 
@@ -64,12 +64,12 @@ int main(int argc,char argv[])
 			/* Downmix channels appropriately in the frequency domain */
 			downmix(&bsi,&audblk,&stream_coeffs); 
 
+#endif
 			/* Convert the frequency data into time samples */
 			imdct(&stream_coeffs,&stream_samples);
 
 			/* Send the samples to the output device */
 			/*output_samples(&stream_samples);*/
-#endif
 		}
 	}
 
@@ -238,7 +238,6 @@ decode_fill_bsi(bitstream_t *bs)
 void
 decode_fill_audblk(bitstream_t *bs)
 {
-#if 0
 	int i,j;
 
 	for (i=0;i < bsi.nfchans; i++)
@@ -364,7 +363,8 @@ decode_fill_audblk(bitstream_t *bs)
 		if (audblk.cplexpstr == 0)
 			audblk.ncplgrps = 0;	
 		else
-			audblk.ncplgrps = (cplendmat - cplstrmant) / (3 * (3 << (cplstrmant-1)));
+			audblk.ncplgrps = (audblk.cplendmant - audblk.cplstrtmant) / 
+				(3 * (3 << (audblk.cplstrtmant-1)));
 	}
 
 	for(i = 0; i < bsi.nfchans; i++)
@@ -387,10 +387,10 @@ decode_fill_audblk(bitstream_t *bs)
 				audblk.endmant[i] = ((audblk.chbwcod[i] + 12) * 3) + 37;
 			}
 			else
-				audblk.endmant[i] = cplstrmant;
+				audblk.endmant[i] = audblk.cplstrtmant;
 
 			/* Calculate the number of exponent groups to fetch */
-			grp_size =  3 << (audblk.chexpstr - 1);
+			grp_size =  (3 << (uint_16)(audblk.chexpstr - 1));
 			audblk.nchgrps[i] = (audblk.endmant[i] - 1 + (grp_size - 3)) / grp_size;
 		}
 	}
@@ -400,7 +400,7 @@ decode_fill_audblk(bitstream_t *bs)
 	{
 		audblk.cplabsexp = bitstream_get(bs,4);
 		for(i=0;i< audblk.ncplgrps;i++)
-			audblk.cplexps = bitstream_get(bs,7);
+			audblk.cplexps[i] = bitstream_get(bs,7);
 	}
 
 	/* Get the fwb channel exponents */
@@ -423,11 +423,103 @@ decode_fill_audblk(bitstream_t *bs)
 		audblk.lfeexps[2] = bitstream_get(bs,7);
 	}
 
-	/* Finally! Now get the parametric bit allocation parameters */
+	/* Get the parametric bit allocation parameters */
+	audblk.baie = bitstream_get(bs,1);
 
+	if(audblk.baie)
+	{
+		audblk.sdcycod = bitstream_get(bs,2);
+		audblk.fdcycod = bitstream_get(bs,2);
+		audblk.sgaincod = bitstream_get(bs,2);
+		audblk.dbpbcod = bitstream_get(bs,2);
+		audblk.floorcod = bitstream_get(bs,3);
+	}
 
+	/* Get the SNR off set info if it exists */
+	audblk.snroffste = bitstream_get(bs,1);
 
-#endif
+	if(audblk.snroffste)
+	{
+		audblk.csnroffst = bitstream_get(bs,6);
+
+		if(audblk.cplinu)
+		{
+			audblk.cplfsnroffst = bitstream_get(bs,4);
+			audblk.cplfgaincod = bitstream_get(bs,3);
+		}
+
+		for(i = 0;i < bsi.nfchans; i++)
+		{
+			audblk.fsnroffst[i] = bitstream_get(bs,4);
+			audblk.fgaincod[i] = bitstream_get(bs,3);
+		}
+		if(bsi.lfeon)
+		{
+
+			audblk.lfefsnroffst = bitstream_get(bs,4);
+			audblk.lfefgaincod = bitstream_get(bs,3);
+		}
+	}
+
+	/* Get coupling leakage info if it exists */
+	if(audblk.cplinu)
+	{
+		audblk.cplleake = bitstream_get(bs,1);	
+		
+		if(audblk.cplleake)
+		{
+			audblk.cplfleak = bitstream_get(bs,3);
+			audblk.cplsleak = bitstream_get(bs,3);
+		}
+	}
+	
+	/* Get the delta bit alloaction info */
+	audblk.deltbaie = bitstream_get(bs,1);	
+	
+	if(audblk.deltbaie)
+	{
+		if(audblk.cplinu)
+			audblk.cpldeltbae = bitstream_get(bs,2);
+
+		for(i = 0;i < bsi.nfchans; i++)
+			audblk.deltbae[i] = bitstream_get(bs,2);
+
+		if (audblk.cplinu && (audblk.cpldeltbae == DELTA_BIT_NEW))
+		{
+			audblk.cpldeltnseg = bitstream_get(bs,3);
+			for(i = 0;i < audblk.cpldeltnseg + 1; i++)
+			{
+				audblk.cpldeltoffst[i] = bitstream_get(bs,5);
+				audblk.cpldeltlen[i] = bitstream_get(bs,4);
+				audblk.cpldeltba[i] = bitstream_get(bs,3);
+			}
+		}
+
+		for(i = 0;i < bsi.nfchans; i++)
+		{
+			if (audblk.cplinu && (audblk.deltbae[i] == DELTA_BIT_NEW))
+			{
+				audblk.deltnseg[i] = bitstream_get(bs,3);
+				for(j = 0; j < audblk.cpldeltnseg + 1; j++)
+				{
+					audblk.deltoffst[i][j] = bitstream_get(bs,5);
+					audblk.deltlen[i][j] = bitstream_get(bs,4);
+					audblk.deltba[i][j] = bitstream_get(bs,3);
+				}
+			}
+		}
+	}
+
+	/* Check to see if there's any dummy info to get */
+	if(/* skiple = */ bitstream_get(bs,1))
+	{
+		uint_16 skipl;
+
+		skipl = bitstream_get(bs,9);
+		for(i = 0; i < skipl; i++)
+			bitstream_get(bs,8);
+
+	}
 }
 
 static 
@@ -446,3 +538,14 @@ void decode_find_sync(bitstream_t *bs)
 	}
 }
 
+static decode_fill_mantissas(bitstream_t *bs)
+{
+	uint_16 got_coupling = 0;
+	
+}
+
+static decode_get_mantissa(bitstream_t *bs, uint_16 num_bits)
+{
+	
+
+}
