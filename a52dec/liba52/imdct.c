@@ -68,7 +68,7 @@ static sample_t roots128[31];
 static complex_t pre1[128];
 static complex_t post1[64];
 static complex_t pre2[64];
-static complex_t post2[64];
+static complex_t post2[32];
 
 /* Windowing function for Modified DCT - Thank you acroread */
 sample_t a52_imdct_window[] = {
@@ -280,14 +280,16 @@ static void ifft128_c (complex_t * buf)
 void a52_imdct_512 (sample_t * data, sample_t * delay, sample_t bias)
 {
     int i, k;
-    sample_t tmp_a_r, tmp_a_i, tmp_b_r, tmp_b_i;
+    sample_t t_r, t_i, a_r, a_i, b_r, b_i;
     sample_t * window;
 	
     for (i = 0; i < 128; i++) {
 	k = fftorder[i];
-	/* z[i] = (X[255-k] + j * X[k]) * (xcos1[i] + j * xsin1[k/2]) ; */
-	buf[i].real = data[255-k] * pre1[i].imag + data[k] * pre1[i].real;
-	buf[i].imag = data[255-k] * pre1[i].real - data[k] * pre1[i].imag;
+	t_r = pre1[i].real;
+	t_i = pre1[i].imag;
+
+	buf[i].real = t_i * data[255-k] + t_r * data[k];
+	buf[i].imag = t_r * data[255-k] - t_i * data[k];
     }
 
     ifft128 (buf);
@@ -298,94 +300,96 @@ void a52_imdct_512 (sample_t * data, sample_t * delay, sample_t bias)
     /* Window and convert to real valued signal */
     for (i = 0; i < 64; i++) {
 	/* y[n] = z[n] * (xcos1[n] + j * xsin1[n]) ; */
-	tmp_a_r = buf[i].real * post1[i].real + buf[i].imag * post1[i].imag;
-	tmp_a_i = buf[i].real * post1[i].imag - buf[i].imag * post1[i].real;
-	tmp_b_r = buf[127-i].real * post1[i].imag + buf[127-i].imag * post1[i].real;
-	tmp_b_i = buf[127-i].real * post1[i].real - buf[127-i].imag * post1[i].imag;
+	t_r = post1[i].real;
+	t_i = post1[i].imag;
 
-	data[2*i]     = -tmp_a_r * window[2*i]     + delay[2*i]     + bias;
-	data[255-2*i] =  tmp_a_r * window[255-2*i] + delay[255-2*i] + bias;
-	delay[2*i]     = tmp_a_i * window[255-2*i];
-	delay[255-2*i] = tmp_a_i * window[2*i];
+	a_r = t_r * buf[i].real     + t_i * buf[i].imag;
+	a_i = t_i * buf[i].real     - t_r * buf[i].imag;
+	b_r = t_i * buf[127-i].real + t_r * buf[127-i].imag;
+	b_i = t_r * buf[127-i].real - t_i * buf[127-i].imag;
 
-	data[2*i+1]   =  tmp_b_r * window[2*i+1]   + delay[2*i+1]   + bias;
-	data[254-2*i] = -tmp_b_r * window[254-2*i] + delay[254-2*i] + bias;
-	delay[2*i+1]   = tmp_b_i * window[254-2*i];
-	delay[254-2*i] = tmp_b_i * window[2*i+1];
+	data[2*i]     = -a_r * window[2*i]     + delay[2*i]     + bias;
+	data[255-2*i] =  a_r * window[255-2*i] + delay[255-2*i] + bias;
+	delay[2*i]     = a_i * window[255-2*i];
+	delay[255-2*i] = a_i * window[2*i];
+
+	data[2*i+1]   =  b_r * window[2*i+1]   + delay[2*i+1]   + bias;
+	data[254-2*i] = -b_r * window[254-2*i] + delay[254-2*i] + bias;
+	delay[2*i+1]   = b_i * window[254-2*i];
+	delay[254-2*i] = b_i * window[2*i+1];
     }
 }
 
 void a52_imdct_256(sample_t data[],sample_t delay[],sample_t bias)
 {
-    int i, k, p, q;
+    int i, k;
 
-    sample_t tmp_a_i;
-    sample_t tmp_a_r;
+    sample_t t_r, t_i, a_r, a_i, b_r, b_i, c_r, c_i, d_r, d_i;
+    sample_t * window;
+    complex_t * buf1, *buf2;
 
-    sample_t *window;
-
-    complex_t *buf_1, *buf_2;
-
-    buf_1 = &buf[0];
-    buf_2 = &buf[64];
+    buf1 = &buf[0];
+    buf2 = &buf[64];
 
     /* Pre IFFT complex multiply plus IFFT cmplx conjugate */
     for (i = 0; i < 64; i++) {
 	k = fftorder[i];
-	p = 254-k;
-	q = k;
-	k = k / 4;
-	/* z1[i] = (X1[128-2*k-1] + j * X1[2*k]) * (xcos2[k] + j * xsin2[k]); */
-	buf_1[i].real = (data[p] * pre2[k].real) - (data[q] * pre2[k].imag);
-	buf_1[i].imag = -((data[q] * pre2[k].real) + (data[p] * pre2[k].imag));
-	buf_2[i].real = (data[p+1] * pre2[k].real) - (data[q+1] * pre2[k].imag);
-	buf_2[i].imag = -((data[q+1] * pre2[k].real) + (data[p+1] * pre2[k].imag));
+	t_r = pre2[i].real;
+	t_i = pre2[i].imag;
+
+	buf1[i].real = t_i * data[254-k] + t_r * data[k];
+	buf1[i].imag = t_r * data[254-k] - t_i * data[k];
+
+	buf2[i].real = t_i * data[255-k] + t_r * data[k+1];
+	buf2[i].imag = t_r * data[255-k] - t_i * data[k+1];
     }
 
-    ifft64 (buf_1);
-    ifft64 (buf_2);
+    ifft64 (buf1);
+    ifft64 (buf2);
 
-    /* Post IFFT complex multiply */
-    for (i = 0; i < 64; i++) {
-	/* y1[n] = z1[n] * (xcos2[n] + j * xs in2[n]) ; */ 
-	tmp_a_r = buf_1[i].real;
-	tmp_a_i = buf_1[i].imag;
-	buf_1[i].real = (tmp_a_r * post2[i].real) + (tmp_a_i * post2[i].imag);
-	buf_1[i].imag = (tmp_a_r * post2[i].imag) - (tmp_a_i * post2[i].real);
-	/* y2[n] = z2[n] * (xcos2[n] + j * xsin2[n]) ; */ 
-	tmp_a_r = buf_2[i].real;
-	tmp_a_i = buf_2[i].imag;
-	buf_2[i].real = (tmp_a_r * post2[i].real) + (tmp_a_i * post2[i].imag);
-	buf_2[i].imag = (tmp_a_r * post2[i].imag) - (tmp_a_i * post2[i].real);
-    }
-	
     window = a52_imdct_window;
 
+    /* Post IFFT complex multiply */
     /* Window and convert to real valued signal */
-    for (i = 0; i < 64; i++) {
-	data[2*i]   = -buf_1[i].imag    * window[2*i] + delay[2*i] + bias;
-	data[2*i+1] =  buf_1[63-i].real * window[2*i+1] + delay[2*i+1] + bias;
-    }
+    for (i = 0; i < 32; i++) {
+	/* y1[n] = z1[n] * (xcos2[n] + j * xs in2[n]) ; */ 
+	t_r = post2[i].real;
+	t_i = post2[i].imag;
 
-    for (i = 0; i < 64; i++) {
-	data[254-2*i] = -buf_1[63-i].real * window[254-2*i] + delay[254-2*i] + bias;
-	data[255-2*i] =  buf_1[i].imag    * window[255-2*i] + delay[255-2*i] + bias;
-    }
-	
-    for (i = 0; i < 64; i++) {
-	delay[2*i]   = -buf_2[i].real    * window[255-2*i];
-	delay[2*i+1] =  buf_2[63-i].imag * window[254-2*i];
-    }
+	a_r = t_r * buf1[i].real    + t_i * buf1[i].imag;
+	a_i = t_i * buf1[i].real    - t_r * buf1[i].imag;
+	b_r = t_i * buf1[63-i].real + t_r * buf1[63-i].imag;
+	b_i = t_r * buf1[63-i].real - t_i * buf1[63-i].imag;
+	c_r = t_r * buf2[i].real    + t_i * buf2[i].imag;
+	c_i = t_i * buf2[i].real    - t_r * buf2[i].imag;
+	d_r = t_i * buf2[63-i].real + t_r * buf2[63-i].imag;
+	d_i = t_r * buf2[63-i].real - t_i * buf2[63-i].imag;
 
-    for (i = 0; i < 64; i++) {
-	delay[254-2*i] =  buf_2[63-i].imag * window[2*i+1];
-	delay[255-2*i] = -buf_2[i].real    * window[2*i];
+	data[2*i]     = -a_r * window[2*i]     + delay[2*i]     + bias;
+	data[255-2*i] =  a_r * window[255-2*i] + delay[255-2*i] + bias;
+	delay[2*i]     = c_i * window[255-2*i];
+	delay[255-2*i] = c_i * window[2*i];
+
+	data[127-2*i] = -a_i * window[127-2*i] + delay[127-2*i] + bias;
+	data[128+2*i] =  a_i * window[128+2*i] + delay[128+2*i] + bias;
+	delay[127-2*i] = c_r * window[128+2*i];
+	delay[128+2*i] = c_r * window[127-2*i];
+
+	data[2*i+1]   = -b_i * window[2*i+1]   + delay[2*i+1]   + bias;
+	data[254-2*i] =  b_i * window[254-2*i] + delay[254-2*i] + bias;
+	delay[2*i+1]   = d_r * window[254-2*i];
+	delay[254-2*i] = d_r * window[2*i+1];
+
+	data[126-2*i] = -b_r * window[126-2*i] + delay[126-2*i] + bias;
+	data[129+2*i] =  b_r * window[129+2*i] + delay[129+2*i] + bias;
+	delay[126-2*i] = d_i * window[129+2*i];
+	delay[129+2*i] = d_i * window[126-2*i];
     }
 }
 
 void a52_imdct_init (uint32_t mm_accel)
 {
-    int i;
+    int i, k;
 
     for (i = 0; i < 3; i++)
 	roots16[i] = cos ((M_PI / 8) * (i + 1));
@@ -399,20 +403,32 @@ void a52_imdct_init (uint32_t mm_accel)
     for (i = 0; i < 31; i++)
 	roots128[i] = cos ((M_PI / 64) * (i + 1));
 
-    for (i = 0; i < 128; i++) {
-	int k = fftorder[i] / 2;
-	double x = (k & 1) ? -1 : 1;
-	pre1[i].real = x * cos ((M_PI / 256) * (k + 63.75));
-	pre1[i].imag = x * sin ((M_PI / 256) * (k + 63.75));
+    for (i = 0; i < 64; i++) {
+	k = fftorder[i] / 2 + 64;
+	pre1[i].real = cos ((M_PI / 256) * (k - 0.25));
+	pre1[i].imag = sin ((M_PI / 256) * (k - 0.25));
+    }
+
+    for (i = 64; i < 128; i++) {
+	k = fftorder[i] / 2 + 64;
+	pre1[i].real = -cos ((M_PI / 256) * (k - 0.25));
+	pre1[i].imag = -sin ((M_PI / 256) * (k - 0.25));
     }
 
     for (i = 0; i < 64; i++) {
 	post1[i].real = cos ((M_PI / 256) * (i + 0.5));
 	post1[i].imag = sin ((M_PI / 256) * (i + 0.5));
-	pre2[i].real = cos ((M_PI / 128) * (i - 0.25) - 1);
-	pre2[i].imag = sin ((M_PI / 128) * (i - 0.25) - 1);
-	post2[i].real = cos ((M_PI / 128) * (i + 0.5) + 1);
-	post2[i].imag = sin ((M_PI / 128) * (i + 0.5) + 1);
+    }
+
+    for (i = 0; i < 64; i++) {
+	k = fftorder[i] / 4;
+	pre2[i].real = cos ((M_PI / 128) * (k - 0.25));
+	pre2[i].imag = sin ((M_PI / 128) * (k - 0.25));
+    }
+
+    for (i = 0; i < 32; i++) {
+	post2[i].real = cos ((M_PI / 128) * (i + 0.5));
+	post2[i].imag = sin ((M_PI / 128) * (i + 0.5));
     }
 
 #ifdef LIBA52_DJBFFT
