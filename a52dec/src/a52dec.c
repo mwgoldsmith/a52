@@ -230,9 +230,17 @@ void a52_decode_data (uint8_t * start, uint8_t * end)
     static int sample_rate;
     static int flags;
     int bit_rate;
+    int len;
 
-    while (start < end) {
-	*bufptr++ = *start++;
+    while (1) {
+	len = end - start;
+	if (!len)
+	    break;
+	if (len > bufpos - bufptr)
+	    len = bufpos - bufptr;
+	memcpy (bufptr, start, len);
+	bufptr += len;
+	start += len;
 	if (bufptr == bufpos) {
 	    if (bufpos == buf + 7) {
 		int length;
