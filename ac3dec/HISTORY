@@ -16,3 +16,5 @@ changes to the PCM output:
 2001/07/06 06:53:01 - more precise imdct init, more precise q_* coefficients
 
 2001/07/06 08:52:30 - rematrixing fixes
+
+2001/07/26 21:31:39 - do 3dB dither reduction in coeff_get() not dither_gen()
