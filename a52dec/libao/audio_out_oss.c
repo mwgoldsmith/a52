@@ -89,6 +89,7 @@ static inline void float_to_int (float * _f, int16_t * s16, int flags)
 	break;
     case A52_CHANNEL:
     case A52_STEREO:
+    case A52_DOLBY:
 	for (i = 0; i < 256; i++) {
 	    s16[2*i] = convert (f[i]);
 	    s16[2*i+1] = convert (f[i+256]);
@@ -128,6 +129,7 @@ static inline void float_to_int (float * _f, int16_t * s16, int flags)
 	break;
     case A52_CHANNEL | A52_LFE:
     case A52_STEREO | A52_LFE:
+    case A52_DOLBY | A52_LFE:
 	for (i = 0; i < 256; i++) {
 	    s16[6*i] = convert (f[i+256]);
 	    s16[6*i+1] = convert (f[i+512]);
@@ -183,7 +185,7 @@ int oss_play (ao_instance_t * _instance, int flags, sample_t * _samples)
     float * samples = _samples;
 #endif
 
-    flags &= 7 | A52_LFE;
+    flags &= A52_CHANNEL_MASK | A52_LFE;
 
     if (flags & A52_LFE)
 	chans = 6;
@@ -195,6 +197,7 @@ int oss_play (ao_instance_t * _instance, int flags, sample_t * _samples)
 	break;
     case A52_CHANNEL:
     case A52_STEREO:
+    case A52_DOLBY:
 	chans = 2;
 	break;
     default:
