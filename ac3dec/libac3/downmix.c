@@ -150,7 +150,7 @@ int downmix_init (int input, int flags, float * level, float clev, float slev)
 	case CONVERT (AC3_3F2R, AC3_DOLBY):
 	    *level *= 1 / (1 + 3 * LEVEL_3DB);
 	    break;
-    }
+	}
 
     return output;
 }
@@ -528,6 +528,5 @@ void downmix (float * samples, int acmod, int output, float level, float bias,
 	move1to1 (samples + 768, samples + 512, level, bias);
 	move1to1 (samples + 1024, samples + 768, level, bias);
 	break;
-
     }
 }
