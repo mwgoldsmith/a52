@@ -185,9 +185,9 @@ static int _ac3dec_open (plugin_t *plugin, void *foo)
 // 
 	imdct_init ();
 
-#if !defined (__OPTIMIZE__)
+//#if !defined (__OPTIMIZE__)
 	sanity_check_init (&syncinfo, &bsi, &audblk);
-#endif
+//#endif
 
 	return 0;
 }
@@ -263,10 +263,10 @@ static int _ac3dec_read (plugin_codec_audio_t *plugin, buf_t *buf, buf_entry_t *
 			// and convert floating point to int16_t
 			// downmix (&bsi, samples, &s16_samples[i * 2 * 256]);
 
-#if !defined (__OPTIMIZE__)
+//#if !defined (__OPTIMIZE__)
 			if (sanity_check (&syncinfo,&bsi,&audblk))
 				goto error;
-#endif
+//#endif
 
 			continue;
 		}
@@ -284,9 +284,10 @@ static int _ac3dec_read (plugin_codec_audio_t *plugin, buf_t *buf, buf_entry_t *
 
 		codec_ac3dec.output->write (s16_samples, 256 * 6 * 2 * 2);
 
-		continue;
+		//continue;
 error:
-		_decode_mute();
+		error_flag = 0;
+		//_decode_mute();
 	}
 
 	return 0;	

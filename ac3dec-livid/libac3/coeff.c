@@ -295,13 +295,14 @@ void coeff_unpack(bsi_t *bsi, audblk_t *audblk, stream_samples_t samples)
 	}
 }
 
+
 /**
  * Fetch a float from the bitstream
  **/
 
 static float inline coeff_get_float (uint16_t bap, uint16_t dithflag, uint16_t exp)
 {
-	uint16_t dummy;
+	uint16_t dummy = 0;
 
 	//If the bap is 0-5 then we have special cases to take care of
 	switch(bap) {
