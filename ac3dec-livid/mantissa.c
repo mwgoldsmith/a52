@@ -108,7 +108,7 @@ mantissa_get(bitstream_t *bs, uint_16 bap)
 
 				if(group_code > 26)
 					//FIXME do proper block error handling
-					//printf("\n!! Invalid mantissa !!\n");
+					printf("\n!! Invalid mantissa !!\n");
 
 				m_1[0] = group_code / 9; 
 				m_1[1] = (group_code % 9) / 3; 
