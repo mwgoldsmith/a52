@@ -35,9 +35,6 @@
 #include "bit_allocate.h"
 #include "parse.h"
 
-//our global config structure
-uint32_t error_flag = 0;
-
 static audblk_t audblk;
 static ac3_state_t state;
 
@@ -111,6 +108,5 @@ error:
     printf ("error\n");
     memset (s16_samples, 0, sizeof(int16_t) * 256 * 2 * 6);	//mute frame
 
-    error_flag = 0;
     return &frame;
 }

@@ -40,9 +40,6 @@
 /* samples work structure */
 typedef float stream_samples_t[6][256];
 
-/* global error flag */
-extern uint32_t error_flag;
-
 /* Everything you wanted to know about band structure */
 /*
  * The entire frequency domain is represented by 256 real
