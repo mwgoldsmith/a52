@@ -161,7 +161,7 @@ void bit_allocate(int fscod, audblk_t * audblk, ac3_ba_t * ba, uint16_t start,
     floor = floortab[audblk->floorcod];
 
     fgain = (ba->fgaincod + 1) << 7;
-    snroffset = 64 * audblk->csnroffst + 4 * ba->fsnroffst - 960;
+    snroffset = 64 * audblk->csnroffst + 4 * ba->fsnroffst - 960 + floor;
 
     deltba = NULL;
     if ((ba->deltbae == DELTA_BIT_REUSE) || (ba->deltbae == DELTA_BIT_NEW))
@@ -189,7 +189,7 @@ void bit_allocate(int fscod, audblk_t * audblk, ac3_ba_t * ba, uint16_t start,
 		mask = hth[i];
 	    if (deltba != NULL)
 		mask += deltba[i] << 7;
-	    mask -= snroffset + floor;
+	    mask -= snroffset;
 	    mask = (mask < 0) ? 0 : (mask & 0x1fe0);
 	    mask += floor;
 	    mask = min (63, max (0, (psd - mask) >> 5));
@@ -220,7 +220,7 @@ void bit_allocate(int fscod, audblk_t * audblk, ac3_ba_t * ba, uint16_t start,
 		mask = hth[i];
 	    if (deltba != NULL)
 		mask += deltba[i] << 7;
-	    mask -= snroffset + floor;
+	    mask -= snroffset;
 	    mask = (mask < 0) ? 0 : (mask & 0x1fe0);
 	    mask += floor;
 	    mask = min (63, max (0, (psd - mask) >> 5));
@@ -250,7 +250,7 @@ void bit_allocate(int fscod, audblk_t * audblk, ac3_ba_t * ba, uint16_t start,
 		mask = hth[i];
 	    if (deltba != NULL)
 		mask += deltba[i] << 7;
-	    mask -= snroffset + floor;
+	    mask -= snroffset;
 	    mask = (mask < 0) ? 0 : (mask & 0x1fe0);
 	    mask += floor;
 	    mask = min (63, max (0, (psd - mask) >> 5));
@@ -274,7 +274,7 @@ void bit_allocate(int fscod, audblk_t * audblk, ac3_ba_t * ba, uint16_t start,
 		mask = hth[i];
 	    if (deltba != NULL)
 		mask += deltba[i] << 7;
-	    mask -= snroffset + floor;
+	    mask -= snroffset;
 	    mask = (mask < 0) ? 0 : (mask & 0x1fe0);
 	    mask += floor;
 	    mask = min (63, max (0, (psd - mask) >> 5));
@@ -321,7 +321,7 @@ void bit_allocate(int fscod, audblk_t * audblk, ac3_ba_t * ba, uint16_t start,
 	    mask = hth[i];
 	if (deltba != NULL)
 	    mask += deltba[i] << 7;
-	mask -= snroffset + floor;
+	mask -= snroffset;
 	mask = (mask < 0) ? 0 : (mask & 0x1fe0);
 	mask += floor;
 	j = startband;
