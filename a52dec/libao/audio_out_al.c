@@ -79,29 +79,28 @@ int al_play (ao_instance_t * _instance, int flags, sample_t * _samples)
 
     if (instance->set_params) {
 	ALconfig config;
-	ALpv params;
+	ALpv params[2];
 
 	config = alNewConfig ();
 	if (!config) {
 	    fprintf (stderr, "alNewConfig failed\n");
 	    return 1;
 	}
-
 	if (alSetChannels (config, chans)) {
 	    fprintf (stderr, "alSetChannels failed\n");
 	    return 1;
 	}
-
 	if (alSetConfig (instance->port, config)) {
 	    fprintf (stderr, "alSetConfig failed\n");
 	    return 1;
 	}
-
 	alFreeConfig (config);
 
-	params.param = AL_RATE;
-	params.value.ll = alDoubleToFixed (instance->sample_rate);
-	if (alSetParams (instance->port, &params, 1) < 0) {
+	params[0].param = AL_MASTER_CLOCK;
+	params[0].value.i = AL_CRYSTAL_MCLK_TYPE;
+	params[1].param = AL_RATE;
+	params[1].value.ll = alIntToFixed (instance->sample_rate);
+	if (alSetParams (alGetResource (instance->port), params, 2) < 0) {
 	    fprintf (stderr, "alSetParams failed\n");
 	    return 1;
 	}
