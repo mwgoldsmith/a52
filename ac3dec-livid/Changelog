@@ -2,6 +2,7 @@ ac3dec-0.6.2
 -Minor 6-7% speedups in imdct_512
 -added -n for no output option
 -added -w for wav ouput (to output.wav)
+-change library interface to decode a chunk of data per call
 
 ac3dec-0.6.1 Mon Mar 27 20:27:06 EST 2000
 -Fix another 2.0 problem (rematrix was wrong)
