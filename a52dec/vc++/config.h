@@ -1,5 +1,8 @@
 /* vc++/config.h - manually adapted from include/config.h.in */
 
+/* Suppress spurious compiler warnings */
+#pragma warning (disable: 4098 4244 4305 4761)
+
 /* a52dec profiling */
 /* #undef A52DEC_GPROF */
 
