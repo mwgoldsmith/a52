@@ -9,6 +9,16 @@ typedef unsigned long  uint_32;
 typedef unsigned short uint_16;
 typedef unsigned char  uint_8;
 
+typedef signed long    sint_32;
+typedef signed short   sint_16;
+typedef signed char    sint_8;
+
+/* Exponent strategy constants */
+#define EXP_REUSE (0)
+#define EXP_D15   (1)
+#define EXP_D25   (2)
+#define EXP_D45   (3)
+
 /* The following structures are filled in by their corresponding fill_*
  * functions. See http://www.atsc.org/Standards/A52/a_52.pdf for
  * full details on each field. Indented fields are used to denote
@@ -35,10 +45,6 @@ typedef struct bsi_s
 	uint_16 bsmod;
 	/* Audio coding mode */
 	uint_16 acmod;
-	/* Number of channels (excluding LFE) */
-	/* This data isn't actually in the AC3 stream, but derived from
-	 * acmod */
-	uint_16 nfchans;
 	/* If we're using the centre channel then */
 		/* centre mix level */
 		uint_16 cmixlev;
@@ -91,6 +97,11 @@ typedef struct bsi_s
 		uint_16 addbsil;
 		/* Additional bit stream information (max 64 bytes) */
 		uint_8	addbsi[64];
+
+	/* Information not in the AC-3 bitstream, but derived */
+	/* Number of channels (excluding LFE)
+	 * Derived from acmod */
+	uint_16 nfchans;
 } bsi_t;
 
 
@@ -129,10 +140,6 @@ typedef struct audblk_s
 			uint_16 ncplsubnd;
 			/* coupling band structure bits */
 			uint_16 cplbndstrc[18];
-			/* Number of combined coupling sub-bands
-			 * This data isn't actually in the AC3 stream, but derived from
-			 * ncplsubnd and cplbndstrc */
-			uint_16 ncplbnd;
 			/* Do coupling co-ords exist for this channel? */
 			uint_16 cplcoe[5];
 			/* Master coupling co-ordinate */
@@ -156,15 +163,61 @@ typedef struct audblk_s
 	uint_16 chbwcod[5];
 		/* The absolute coupling exponent */
 		uint_16 cplabsexp;
+		/* Coupling channel parameters (D15 mode gives 18 * 12 /3  encoded exponents */
+		uint_16 cplexps[18 * 12 / 3];
+	/* fbw channel exponents */
+	uint_16 exps[5][252 / 3];
+	/* channel gain range */
+	uint_16 gainrng[5];
+	/* low frequency exponents */
+	uint_16 lfeexps[3];
 
 
 
 
-		
+
+	/*  -- Information not in the bitstream, but derived thereof  -- */
+
+
+	/* Number of combined coupling sub-bands
+	 * Derived from ncplsubnd and cplbndstrc */
+	uint_16 ncplbnd;
+
+	/* Number of exponent groups by channel
+	 * Derived from strmant, endmant */
+	uint_16 nchgrps[5];
+
+	/* Number of coupling exponent groups
+	 * Derived from cplbegf, cplendf, cplexpstr */
+	uint_16 ncplgrps;
 			
+	/* End mantissa numbers of fbw channels */
+	uint_16 endmant[5];
+
+	/* Start and end mantissa numbers for the coupling channel */
+	uint_16 cplstrtmant;
+	uint_16 cplendmant;
+
 
 
 
 } audblk_t;
 
 
+/* Everything you wanted to know about band structure */
+/*
+ * The entire frequency domain is represented by 256 real
+ * floating point fourier coefficients. Only the lower 253
+ * coefficients are actually utilized however.
+ *
+ * The 5 full bandwidth channels (fbw) can have their higher
+ * frequencies coupled together. These coupled channels then
+ * share their high frequency components.
+ *
+ * This coupling band is broken up into 18 sub-bands starting
+ * at mantissa number 37. Each sub-band is 12 bins wide.
+ *
+ * There are 50 bit allocation sub-bands which cover the entire
+ * frequency range. The sub-bands are of non-uniform width, and
+ * approximate a 1/6 octave scale.
+ */

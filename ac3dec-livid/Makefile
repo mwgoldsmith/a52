@@ -18,7 +18,7 @@ SHELL = /bin/sh
 
 srcdir = .
 top_srcdir = .
-prefix = /usr/local
+prefix = /home/aholtzma
 exec_prefix = ${prefix}
 
 bindir = ${exec_prefix}/bin
@@ -76,7 +76,7 @@ bin_PROGRAMS = decode
 
 decode_LDFLAGS = -lm
 
-decode_SOURCES = bitstream.c coeffs.c decode.c imdct.c
+decode_SOURCES = bitstream.c coeffs.c decode.c imdct.c unpack.c
 noinst_HEADERS = bitstream.h coeffs.h decode.h imdct.h ac3.h
 
 SUBDIRS = . test
@@ -91,7 +91,7 @@ DEFS = -DHAVE_CONFIG_H -I. -I$(srcdir) -I.
 CPPFLAGS = 
 LDFLAGS = 
 LIBS = 
-decode_OBJECTS =  bitstream.o coeffs.o decode.o imdct.o
+decode_OBJECTS =  bitstream.o coeffs.o decode.o imdct.o unpack.o
 decode_LDADD = $(LDADD)
 decode_DEPENDENCIES = 
 COMPILE = $(CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -109,7 +109,7 @@ DISTFILES = $(DIST_COMMON) $(SOURCES) $(HEADERS) $(TEXINFOS) $(EXTRA_DIST)
 TAR = tar
 GZIP_ENV = --best
 DEP_FILES =  .deps/bitstream.P .deps/coeffs.P .deps/decode.P \
-.deps/imdct.P
+.deps/imdct.P .deps/unpack.P
 SOURCES = $(decode_SOURCES)
 OBJECTS = $(decode_OBJECTS)
 

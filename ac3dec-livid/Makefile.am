@@ -7,7 +7,7 @@ bin_PROGRAMS = decode
 
 decode_LDFLAGS = -lm
 
-decode_SOURCES = bitstream.c coeffs.c decode.c imdct.c
+decode_SOURCES = bitstream.c coeffs.c decode.c imdct.c unpack.c
 noinst_HEADERS = bitstream.h coeffs.h decode.h imdct.h ac3.h
 
 SUBDIRS = . test

@@ -18,3 +18,4 @@ stamp-h
 stamp-h.in
 .deps
 aclocal.m4
+config.h.in

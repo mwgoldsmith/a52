@@ -11,6 +11,7 @@
 #include "decode.h"
 #include "bitstream.h"
 #include "imdct.h"
+#include "unpack.h"
 
 static void decode_fill_syncinfo(bitstream_t *bs);
 static void decode_fill_bsi(bitstream_t *bs);
@@ -37,14 +38,36 @@ int main(int argc,char argv[])
 		decode_fill_bsi(bs);
 		for(i=0; i < 6; i++)
 		{
+			/* Extract most of the audblk info from the bitstream
+			 * (minus the mantissas */
 			decode_fill_audblk(bs);
+
 			/* Take audblk info and turn it into floating point
 			 * frequency coefficients for all streams */
-			/* coeff_fill(&bsi,&audblk,&stream_coeffs); */
-			/* FIXME Perform dynamic range compensation */
+			unpack_exponents(&bsi,&audblk,&stream_coeffs); 
+
+			/* Figure out how many bits per mantissa */
+			bit_allocate(&bsi,&audblk);
+
+			/* Extract the mantissas from the data stream */
+			decode_fill_mantissas(bs);
+
+			/* Take mantissa info and turn it into floating point
+			 * frequency coefficients for all streams */
+			unpack_mantissas(&bsi,&audblk,&stream_coeffs); 
+
+			/* Uncouple coupled channels */
+			uncouple(&bsi,&audblk,&stream_coeffs); 
+
+			/* Perform dynamic range compensation */
+			dynamic_range(&bsi,&audblk,&stream_coeffs); 
+
+			/* Downmix channels appropriately in the frequency domain */
+			downmix(&bsi,&audblk,&stream_coeffs); 
+
 			/* Convert the frequency data into time samples */
 			imdct(&stream_coeffs,&stream_samples);
-			/* FIXME downmix all channels into the left / right */
+
 			/* Send the samples to the output device */
 			/*output_samples(&stream_samples);*/
 		}
@@ -270,6 +293,10 @@ decode_fill_audblk(bitstream_t *bs)
 			audblk.cplendf = bitstream_get(bs,4);
 			audblk.ncplsubnd = (audblk.cplendf + 2) - audblk.cplbegf + 1;
 
+			/* Calculate the start and end bins of the coupling channel */
+			audblk.cplstrtmant = (audblk.cplbegf * 12) + 37 ; 
+			audblk.cplendmant =  ((audblk.cplendf + 3) * 12) + 37;
+
 			/* The number of combined subbands is ncplsubnd minus each combined
 			 * band */
 			audblk.ncplbnd = audblk.ncplsubnd; 
@@ -336,8 +363,12 @@ decode_fill_audblk(bitstream_t *bs)
 
 	if (audblk.cplinu)
 	{
-		/* Get the coupling channel exponents/mantissa */
+		/* Get the coupling channel exponent strategy */
 		audblk.cplexpstr = bitstream_get(bs,2);
+		if (audblk.cplexpstr == 0)
+			audblk.ncplgrps = 0;	
+		else
+			audblk.ncplgrps = (cplendmat - cplstrmant) / (3 * (3 << (cplstrmant-1)));
 	}
 
 	for(i = 0; i < bsi.nfchans; i++)
@@ -347,16 +378,58 @@ decode_fill_audblk(bitstream_t *bs)
 	if(bsi.lfeon) 
 		audblk.lfeexpstr = bitstream_get(bs,1);
 
-	/* Determine the bandwidths of all the independent variables */
+	/* Determine the bandwidths of all the fbw channels */
 	for(i = 0; i < bsi.nfchans; i++) 
 	{ 
-		if((audblk.chexpstr[i] != 0 /* reuse */) && (!audblk.chincpl[i]))
-				audblk.chbwcod[i] = bitstream_get(bs,6);
+		uint_16 grp_size;
+
+		if(audblk.chexpstr[i] != EXP_REUSE) 
+		{ 
+			if (!audblk.chincpl[i]) 
+			{
+				audblk.chbwcod[i] = bitstream_get(bs,6); 
+				audblk.endmant[i] = ((audblk.chbwcod[i] + 12) * 3) + 37;
+			}
+			else
+				audblk.endmant[i] = cplstrmant;
+
+			/* Calculate the number of exponent groups to fetch */
+			grp_size =  3 << (audblk.chexpstr - 1);
+			audblk.nchgrps[i] = (audblk.endmant[i] - 1 + (grp_size - 3)) / grp_size;
+		}
 	}
 
 	/* Get the coupling exponents if they exist */
-	if(audblk.cplinu && (audblk.cplexpstr != 0 /* reuse */))
+	if(audblk.cplinu && (audblk.cplexpstr != EXP_REUSE))
 	{
 		audblk.cplabsexp = bitstream_get(bs,4);
+		for(i=0;i< audblk.ncplgrps;i++)
+			audblk.cplexps = bitstream_get(bs,7);
 	}
+
+	/* Get the fwb channel exponents */
+	for(i=0;i < bsi.nfchans; i++)
+	{
+		if(audblk.chexpstr[i] != EXP_REUSE)
+		{
+			audblk.exps[i][0] = bitstream_get(bs,4);			
+			for(j=1;j<audblk.nchgrps[i];j++)
+				audblk.exps[i][j] = bitstream_get(bs,7);
+			audblk.gainrng[i] = bitstream_get(bs,2);
+		}
+	}
+
+	/* Get the lfe channel exponents */
+	if(bsi.lfeon && (audblk.lfeexpstr != EXP_REUSE))
+	{
+		audblk.lfeexps[0] = bitstream_get(bs,4);
+		audblk.lfeexps[1] = bitstream_get(bs,7);
+		audblk.lfeexps[2] = bitstream_get(bs,7);
+	}
+
+	/* Finally! Now get the parametric bit allocation parameters */
+
+
+
 }
+
