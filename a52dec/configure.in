@@ -58,7 +58,7 @@ if test x"$GCC" = x"yes"; then
 	TRY_CFLAGS="$OPT_CFLAGS -mtune=ultrasparc"
 	AC_TRY_CFLAGS([$TRY_CFLAGS $CFLAGS],[OPT_CFLAGS=$TRY_CFLAGS]);;
     esac
-elif test x"$CC" = x"tcc" -a x"`$CC -version 2>&1 | grep TenDRA`" != x""; then
+elif test x"$CC" = x"tendracc"; then
     dnl TenDRA portability checking compiler
     TENDRA=yes
     OPT_CFLAGS="-Xp -Yansi -f`pwd`/include/tendra.h -DELIDE_CODE"
