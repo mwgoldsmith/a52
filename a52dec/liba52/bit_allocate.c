@@ -121,9 +121,9 @@ do {						\
     mask -= floor;				\
 } while (0)
 
-void a52_bit_allocate (a52_state_t * state, a52_ba_t * ba, int bndstart,
+void a52_bit_allocate (a52_state_t * state, ba_t * ba, int bndstart,
 		       int start, int end, int fastleak, int slowleak,
-		       uint8_t * exp, int8_t * bap)
+		       expbap_t * expbap)
 {
     static int slowgain[4] = {0x540, 0x4d8, 0x478, 0x410};
     static int dbpbtab[4]  = {0xc00, 0x500, 0x300, 0x100};
@@ -131,6 +131,8 @@ void a52_bit_allocate (a52_state_t * state, a52_ba_t * ba, int bndstart,
 			      0xa10, 0xa90, 0xb10, 0x1400};
 
     int i, j;
+    uint8_t * exp;
+    int8_t * bap;
     int fdecay, fgain, sdecay, sgain, dbknee, floor, snroffset;
     int psd, mask;
     int8_t * deltba;
@@ -152,6 +154,9 @@ void a52_bit_allocate (a52_state_t * state, a52_ba_t * ba, int bndstart,
     floor = floortab[state->bai & 7];				/* floorcod */
     snroffset = 960 - 64 * state->csnroffst - 4 * (ba->bai >> 3) + floor;
     floor >>= 5;
+
+    exp = expbap->exp;
+    bap = expbap->bap;
 
     i = bndstart;
     j = start;

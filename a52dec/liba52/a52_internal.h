@@ -21,11 +21,16 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-typedef struct a52_ba_s {
+typedef struct {
     uint8_t bai;		/* fine SNR offset, fast gain */
     uint8_t deltbae;		/* delta bit allocation exists */
     int8_t deltba[50];		/* per-band delta bit allocation */
-} a52_ba_t;
+} ba_t;
+
+typedef struct {
+    uint8_t exp[256];		/* decoded channel exponents */
+    int8_t bap[256];		/* derived channel bit allocation */
+} expbap_t;
 
 struct a52_state_s {
     uint8_t fscod;		/* sample rate */
@@ -62,19 +67,16 @@ struct a52_state_s {
     uint16_t bai;		/* bit allocation information */
 
     uint8_t csnroffst;		/* coarse SNR offset */
-    a52_ba_t cplba;		/* coupling bit allocation parameters */
-    a52_ba_t ba[5];		/* channel bit allocation parameters */
-    a52_ba_t lfeba;		/* lfe bit allocation parameters */
+    ba_t cplba;			/* coupling bit allocation parameters */
+    ba_t ba[5];			/* channel bit allocation parameters */
+    ba_t lfeba;			/* lfe bit allocation parameters */
 
     uint8_t cplfleak;		/* coupling fast leak init */
     uint8_t cplsleak;		/* coupling slow leak init */
 
-    uint8_t cpl_exp[256];	/* decoded coupling channel exponents */
-    int8_t cpl_bap[256];	/* derived coupling bit allocation */
-    uint8_t fbw_exp[5][256];	/* decoded channel exponents */
-    int8_t fbw_bap[5][256];	/* derived channel bit allocation */
-    uint8_t lfe_exp[7];		/* decoded lfe channel exponents */
-    int8_t lfe_bap[7];		/* derived lfe channel bit allocation */
+    expbap_t cpl_expbap;
+    expbap_t fbw_expbap[5];
+    expbap_t lfe_expbap;
 
     sample_t * samples;
     int downmixed;
@@ -96,9 +98,9 @@ struct a52_state_s {
 #define DELTA_BIT_NONE (2)
 #define DELTA_BIT_RESERVED (3)
 
-void a52_bit_allocate (a52_state_t * state, a52_ba_t * ba, int bndstart,
+void a52_bit_allocate (a52_state_t * state, ba_t * ba, int bndstart,
 		       int start, int end, int fastleak, int slowleak,
-		       uint8_t * exp, int8_t * bap);
+		       expbap_t * expbap);
 
 int a52_downmix_init (int input, int flags, sample_t * level,
 		      sample_t clev, sample_t slev);
