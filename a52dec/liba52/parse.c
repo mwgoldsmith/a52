@@ -151,6 +151,9 @@ int a52_frame (a52_state_t * state, uint8_t * buf, int * flags,
     state->bias = bias;
     state->dynrnge = 1;
     state->dynrngcall = NULL;
+    state->cplba.deltbae = DELTA_BIT_NONE;
+    state->ba[0].deltbae = state->ba[1].deltbae = state->ba[2].deltbae =
+	state->ba[3].deltbae = state->ba[4].deltbae = DELTA_BIT_NONE;
 
     chaninfo = !acmod;
     do {
