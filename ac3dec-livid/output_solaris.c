@@ -104,8 +104,8 @@ void output_play(stream_samples_t *samples)
 		max_right = right_sample > max_right ? right_sample : max_right;
 
 		//FIXME gain is high
-		out_buf[i * 2] = left_sample * 65536.0 * 1000.0;
-		out_buf[i * 2 + 1] = right_sample * 65536.0 * 1000.0;
+		out_buf[i * 2] = left_sample * 65536.0 * 100.0;
+		out_buf[i * 2 + 1] = right_sample * 65536.0 * 100.0;
 
 		//fprintf(stderr,"lsample = %1.6e rsample = %1.6e\n",left_sample,right_sample);
 	}

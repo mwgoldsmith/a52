@@ -26,6 +26,7 @@ static stream_samples_t stream_samples;
 static audblk_t audblk;
 static bsi_t bsi;
 static syncinfo_t syncinfo;
+static uint_32 frame_count = 0;
 
 
 int main(int argc,char *argv[])
@@ -135,6 +136,8 @@ void decode_find_sync(bitstream_t *bs)
 		i++;
 	}
 	fprintf(stderr,"(sync) %ld bits skipped to synchronize\n",i);
+	fprintf(stderr,"(sync) begin frame %ld\n",frame_count);
+	frame_count++;
 
 	bs->total_bits_read = 16;
 	crc_init();

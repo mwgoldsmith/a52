@@ -12,6 +12,7 @@
 #include "decode.h"
 #include "exponent.h"
 
+
 static void exp_unpack_ch(uint_16 type,uint_16 expstr,uint_16 ngrps,uint_16 initial_exp, 
 		uint_16 exps[], uint_16 *dest);
 

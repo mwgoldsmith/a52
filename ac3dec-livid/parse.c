@@ -329,7 +329,7 @@ parse_audblk(bsi_t *bsi,audblk_t *audblk,bitstream_t *bs)
 				audblk->endmant[i] = audblk->cplstrtmant;
 
 			/* Calculate the number of exponent groups to fetch */
-			grp_size =  (3 << (audblk->chexpstr[i] - 1));
+			grp_size =  3 * (1 << (audblk->chexpstr[i] - 1));
 			audblk->nchgrps[i] = (audblk->endmant[i] - 1 + (grp_size - 3)) / grp_size;
 		}
 	}
@@ -462,8 +462,8 @@ parse_audblk(bsi_t *bsi,audblk_t *audblk,bitstream_t *bs)
 		for(i = 0; i < skipl ; i++)
 		{
 			skip_data = bitstream_get(bs,8);
+		fprintf(stderr,"skipped data %2x\n",skip_data);
 		}
-
 	}
 
 	stats_printf_audblk(audblk);
@@ -487,7 +487,7 @@ parse_auxdata(bitstream_t *bs)
 
 	//get the auxdata exists bit
 	auxdatae = bitstream_get(bs,1);	
-		printf("auxdatae = %d\n",auxdatae);
+	printf("auxdatae = %i\n",auxdatae);
 
 	//Skip the CRC reserved bit
 	bitstream_get(bs,1);
