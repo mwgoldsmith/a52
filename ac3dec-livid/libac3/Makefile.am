@@ -2,6 +2,7 @@
 ## Process this file with automake to produce Makefile.in
 ##
 
+INCLUDES += -I$(top_srcdir)/include
 libdir = $(PLUGIN_DIR)
 
 SOURCE_KNI = srfft_kni_c.c srfft_kni.S downmix_kni.S imdct512_kni.S imdct_kni.c

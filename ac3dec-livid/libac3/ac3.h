@@ -26,8 +26,6 @@
 #define __AC3_H__
 
 #ifdef __OMS__
-#include <oms/oms.h>
-#include <oms/plugin/codec.h>
 #include <oms/plugin/output_audio.h>
 #else
 #include "audio_out.h"
