@@ -2,6 +2,9 @@
  * Only the floating point rounding mode loads and saves
  * are removed in the stream_sample_to_s16 functions.
  */                                                                            
+
+#ifdef __i386__
+
 	.file	"downmix.c"
 	.version	"01.01"
 gcc2_compiled.:
@@ -86,3 +89,4 @@ stream_sample_1ch_to_s16_i386:
 .Lfe7:
 	.size	 stream_sample_1ch_to_s16_i386,.Lfe7-stream_sample_1ch_to_s16_i386
 	.ident	"GCC: (GNU) 2.95.3 19991030 (prerelease)"
+#endif

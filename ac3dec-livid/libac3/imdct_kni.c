@@ -22,6 +22,8 @@
  *
  */
 
+#ifdef __i386__
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
@@ -97,3 +99,5 @@ static void imdct_do_512_nol_kni (float data[], float delay[])
 	imdct512_post_ifft_twiddle_kni (buf, xcos_sin_sse);
 	imdct512_window_delay_nol_kni (buf, data, window, delay);
 }
+
+#endif

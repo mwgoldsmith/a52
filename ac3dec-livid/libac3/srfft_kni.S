@@ -19,7 +19,9 @@
  *  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  */
-	
+
+#ifdef __i386__
+
 .section	.rodata
 	.align 16
 hsqrt2:	 .float 0f0.707106781188
@@ -284,3 +286,4 @@ fft_asmb_kni:
 		
 	leave
 	ret
+#endif

@@ -42,7 +42,7 @@ int debug_is_on(void)
 #ifndef __GNUC__
 void dprintf(char fmt[],...)
 {
-	int foo = 0;
+	return;
 }
 #endif
 

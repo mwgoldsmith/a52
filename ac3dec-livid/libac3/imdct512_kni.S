@@ -19,6 +19,9 @@
  *  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  */
+
+#ifdef __i386__
+
 .text
 	.align 4
 .global imdct512_pre_ifft_twiddle_kni
@@ -542,3 +545,4 @@ imdct512_window_delay_nol_kni:
 	leave
 	ret
 	.p2align 4,0
+#endif

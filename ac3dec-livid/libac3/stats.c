@@ -31,12 +31,13 @@
 #include "stats.h"
 #include "debug.h"
 
-
+#if !defined (__GNUC__) || defined (DEBUG)
 static const char *service_ids[8] = 
 {
 	"CM","ME","VI","HI",
 	 "D", "C","E", "VO"
 };
+#endif
 
 struct mixlev_s
 {

@@ -28,6 +28,8 @@
  *
  */
 
+#ifdef __i386__
+
 #include <stdio.h>
 
 #include "srfft_kni.h"
@@ -87,3 +89,5 @@ void fft_128p_kni(complex_t *a)
 	/* fft_128(&a[0]); */
 	fft_asmb_kni(16, &a[0], &a[64], &delta128[0], &delta128_3[0]);
 }
+
+#endif

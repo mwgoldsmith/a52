@@ -42,7 +42,7 @@ uint64_t *buffer_start = 0;
 
 static inline uint64_t getdword (void)
 {
-	return bswap_64 (*buffer_start++);
+	return be2me_64 (*buffer_start++);
 }
 
 

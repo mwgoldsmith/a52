@@ -28,11 +28,7 @@ extern uint32_t bits_left;
 extern uint64_t current_word;
 
 void bitstream_init(uint8_t *start);
-void bitstream_byte_align(void);
-inline uint32_t bitstream_show_bh(uint32_t num_bits);
 inline uint32_t bitstream_get_bh(uint32_t num_bits);
-inline void bitstream_flush_bh(uint32_t num_bits);
-
 
 static inline uint32_t bitstream_get (uint32_t num_bits)
 {
@@ -47,12 +43,4 @@ static inline uint32_t bitstream_get (uint32_t num_bits)
 	return bitstream_get_bh (num_bits);
 }
 
-
-static inline void bitstream_flush (uint32_t num_bits)
-{
-	if(num_bits < bits_left)
-		bits_left -= num_bits;
-	else
-		bitstream_flush_bh (num_bits);
-}
 

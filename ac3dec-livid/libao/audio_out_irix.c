@@ -59,8 +59,8 @@ static int nChannels = 2;
 /*
  * open the audio device for writing to
  */
-staic uint_32
-ao_open(uint_32 bits, uint_32 rate, uint_32 channels)
+staic int
+ao_open(uint32_t bits, uint32_t rate, uint32_t channels)
 {
 	ALpv params[2];
 	int  dev = AL_DEFAULT_OUTPUT;
@@ -158,7 +158,7 @@ ao_open(uint_32 bits, uint_32 rate, uint_32 channels)
  */
 
 static void 
-ao_play(sint_16* output_samples, uint_32 num_bytes)
+ao_play(int16_t* output_samples, size_t num_bytes)
 {
 	alWriteFrames(alport, output_samples, 6 * 256); 
 }

@@ -60,8 +60,8 @@ static int fd;
 /*
  * open the audio device for writing to
  */
-static uint_32
-ao_open(uint_32 bits, uint_32 rate, uint_32 channels)
+static int
+ao_open(uint32_t bits, uint32_t rate, uint32_t channels)
 {
 
 	/*
@@ -75,7 +75,6 @@ ao_open(uint_32 bits, uint_32 rate, uint_32 channels)
 				strerror(errno), dev);
 		goto ERR;
 	}
-	fprintf(stderr,"Opened audio device \"%s\"\n",dev);
 
 	/* Setup our parameters */
 	AUDIO_INITINFO(&info);
@@ -83,7 +82,7 @@ ao_open(uint_32 bits, uint_32 rate, uint_32 channels)
 	info.play.sample_rate = rate;
 	info.play.precision = bits;
 	info.play.channels = channels;
-	info.play.buffer_size = 1024;
+	//info.play.buffer_size = 1024;
 	info.play.encoding = AUDIO_ENCODING_LINEAR;
 	//info.play.port = AUDIO_SPEAKER;
 	//info.play.gain = 110;
@@ -94,7 +93,8 @@ ao_open(uint_32 bits, uint_32 rate, uint_32 channels)
 
 	if(ioctl(fd, AUDIO_SETINFO, &info) < 0)
 	{
-		fprintf(stderr, "%s: Writing audio config block\n",strerror(errno));
+		fprintf(stderr, "%s: Writing audio config block\n",
+			strerror(errno));
 		goto ERR;
 	}
 
@@ -109,14 +109,9 @@ ERR:
  * play the sample to the already opened file descriptor
  */
 static void 
-ao_play(sint_16* output_samples, uint_32 num_bytes)
+ao_play(int16_t* output_samples, size_t num_bytes)
 {
-	write(fd,&output_samples[0 * 512],1024);
-	write(fd,&output_samples[1 * 512],1024);
-	write(fd,&output_samples[2 * 512],1024);
-	write(fd,&output_samples[3 * 512],1024);
-	write(fd,&output_samples[4 * 512],1024);
-	write(fd,&output_samples[5 * 512],1024);
+	write(fd,output_samples,1024 * 6);
 }
 
 

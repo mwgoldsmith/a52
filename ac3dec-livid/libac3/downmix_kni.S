@@ -19,6 +19,9 @@
  *  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  */
+
+#ifdef __i386__
+
 .section .rodata
 	.align 4
 sqrt2:	.float 0f0.7071068
@@ -390,3 +393,4 @@ stream_sample_1ch_to_s16_kni:
 	emms
 	leave
 	ret 
+#endif

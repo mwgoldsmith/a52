@@ -1,2 +1,2 @@
-ac3_init
-ac3_decode_data
+ac3dec_init
+ac3dec_decode_data
