@@ -14,3 +14,5 @@ changes to the PCM output:
 2001/07/02 08:44:55 - changed float-to-int conversion (+ added saturation)
 
 2001/07/06 06:53:01 - more precise imdct init, more precise q_* coefficients
+
+2001/07/06 08:52:30 - rematrixing fixes
