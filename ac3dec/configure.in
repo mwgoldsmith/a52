@@ -75,6 +75,7 @@ AC_C_INLINE
 AC_C_BIGENDIAN
 
 dnl Checks for library functions.
+AC_CHECK_FUNCS([memalign])
 AC_TYPE_SIGNAL
 
 builtin([include],[libac3/configure.incl])

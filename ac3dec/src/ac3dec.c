@@ -46,9 +46,7 @@ static int demux_track = 0;
 static int disable_accel = 0;
 static ao_open_t * output_open = NULL;
 static ao_instance_t * output;
-
-sample_t samples[6][256];
-sample_t delay[6*256];
+static sample_t * samples;
 
 static void print_fps (int final) 
 {
@@ -210,12 +208,12 @@ void ac3_decode_data (uint8_t * start, uint8_t * end)
 		if (ao_setup (output, sample_rate, &flags, &level, &bias))
 		    goto error;
 		flags |= AC3_ADJUST_LEVEL;
-		if (ac3_frame (&state, buf, &flags, &level, bias, delay))
+		if (ac3_frame (&state, buf, &flags, &level, bias))
 		    goto error;
 		for (i = 0; i < 6; i++) {
 		    if (ac3_block (&state, samples))
 			goto error;
-		    if (ao_play (output, flags, samples[0]))
+		    if (ao_play (output, flags, samples))
 			goto error;
 		}
 		bufptr = buf;
@@ -365,7 +363,11 @@ int main (int argc,char *argv[])
 	return 1;
     }
 
-    ac3_init (accel);
+    samples = ac3_init (accel);
+    if (samples == NULL) {
+	fprintf (stderr, "AC3 init failed\n");
+	return 1;
+    }
 
     signal (SIGINT, signal_handler);
 

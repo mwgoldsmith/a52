@@ -36,8 +36,6 @@ typedef struct ac3_ba_s {
 } ac3_ba_t;
 
 typedef struct ac3_state_s {
-    sample_t * delay;		// delay samples for imdct
-
     uint8_t fscod;		// sample rate
     uint8_t halfrate;		// halfrate factor
     uint8_t acmod;		// coded channels
@@ -105,9 +103,9 @@ typedef struct ac3_state_s {
 #define AC3_LFE 16
 #define AC3_ADJUST_LEVEL 32
 
-void ac3_init (uint32_t mm_accel);
+sample_t * ac3_init (uint32_t mm_accel);
 int ac3_syncinfo (uint8_t * buf, int * flags,
 		  int * sample_rate, int * bit_rate);
 int ac3_frame (ac3_state_t * state, uint8_t * buf, int * flags,
-	       sample_t * level, sample_t bias, sample_t * delay);
-int ac3_block (ac3_state_t * state, sample_t samples[][256]);
+	       sample_t * level, sample_t bias);
+int ac3_block (ac3_state_t * state, sample_t * samples);

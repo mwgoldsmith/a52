@@ -32,9 +32,25 @@
 #include "bitstream.h"
 #include "tables.h"
 
-void ac3_init (uint32_t mm_accel)
+#ifdef HAVE_MEMALIGN
+/* some systems have memalign() but no declaration for it */
+void * memalign (size_t align, size_t size);
+#else
+/* assume malloc alignment is sufficient */
+#define memalign(align,size) malloc (size)
+#endif
+
+sample_t * ac3_init (uint32_t mm_accel)
 {
+    sample_t * samples;
+    int i;
+
     imdct_init (mm_accel);
+    samples = memalign (16, 256 * 12 * sizeof (sample_t));
+    if (samples == NULL)
+	return NULL;
+    for (i = 0; i < 256 * 12; i++)
+	samples[i] = 0;
 }
 
 static uint8_t halfrate[12] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3};
@@ -51,14 +67,14 @@ int ac3_syncinfo (uint8_t * buf, int * flags,
     int half;
     int acmod;
 
-    if ((buf[0] != 0x0b) || (buf[1] != 0x77))	// syncword
+    if ((buf[0] != 0x0b) || (buf[1] != 0x77))	/* syncword */
 	return 0;
 
-    if (buf[5] >= 0x60)		// bsid >= 12
+    if (buf[5] >= 0x60)		/* bsid >= 12 */
 	return 0;
     half = halfrate[buf[5] >> 3];
 
-    // acmod, dsurmod and lfeon
+    /* acmod, dsurmod and lfeon */
     acmod = buf[6] >> 5;
     *flags = ((((buf[6] & 0xf8) == 0x50) ? AC3_DOLBY : acmod) |
 	      ((buf[6] & lfeon[acmod]) ? AC3_LFE : 0));
@@ -70,7 +86,7 @@ int ac3_syncinfo (uint8_t * buf, int * flags,
     *bit_rate = (bitrate * 1000) >> half;
 
     switch (buf[4] & 0xc0) {
-    case 0:	// 48 KHz
+    case 0:	/* 48 KHz */
 	*sample_rate = 48000 >> half;
 	return 4 * bitrate;
     case 0x40:
@@ -85,7 +101,7 @@ int ac3_syncinfo (uint8_t * buf, int * flags,
 }
 
 int ac3_frame (ac3_state_t * state, uint8_t * buf, int * flags,
-	       sample_t * level, sample_t bias, sample_t * delay)
+	       sample_t * level, sample_t bias)
 {
     static sample_t clev[4] = {LEVEL_3DB, LEVEL_45DB, LEVEL_6DB, LEVEL_45DB};
     static sample_t slev[4] = {LEVEL_3DB, LEVEL_6DB, 0, LEVEL_6DB};
@@ -97,16 +113,16 @@ int ac3_frame (ac3_state_t * state, uint8_t * buf, int * flags,
     state->acmod = acmod = buf[6] >> 5;
 
     bitstream_set_ptr (buf + 6);
-    bitstream_get (3);	// skip acmod we already parsed
+    bitstream_get (3);	/* skip acmod we already parsed */
 
-    if ((acmod == 2) && (bitstream_get (2) == 2))	// dsurmod
+    if ((acmod == 2) && (bitstream_get (2) == 2))	/* dsurmod */
 	acmod = AC3_DOLBY;
 
     if ((acmod & 1) && (acmod != 1))
-	state->clev = clev[bitstream_get (2)];	// cmixlev
+	state->clev = clev[bitstream_get (2)];	/* cmixlev */
 
     if (acmod & 4)
-	state->slev = slev[bitstream_get (2)];	// surmixlev
+	state->slev = slev[bitstream_get (2)];	/* surmixlev */
 
     state->lfeon = bitstream_get (1);
 
@@ -114,39 +130,36 @@ int ac3_frame (ac3_state_t * state, uint8_t * buf, int * flags,
 				  state->clev, state->slev);
     if (state->output < 0)
 	return 1;
-    if (state->lfeon && (*flags & AC3_LFE)) {
+    if (state->lfeon && (*flags & AC3_LFE))
 	state->output |= AC3_LFE;
-	delay += 256;
-    }
     *flags = state->output;
     state->level = *level;
     state->bias = bias;
-    state->delay = delay;
 
     chaninfo = !acmod;
     do {
-	bitstream_get (5);	// dialnorm
-	if (bitstream_get (1))	// compre
-	    bitstream_get (8);	// compr
-	if (bitstream_get (1))	// langcode
-	    bitstream_get (8);	// langcod
-	if (bitstream_get (1))	// audprodie
-	    bitstream_get (7);	// mixlevel + roomtyp
+	bitstream_get (5);	/* dialnorm */
+	if (bitstream_get (1))	/* compre */
+	    bitstream_get (8);	/* compr */
+	if (bitstream_get (1))	/* langcode */
+	    bitstream_get (8);	/* langcod */
+	if (bitstream_get (1))	/* audprodie */
+	    bitstream_get (7);	/* mixlevel + roomtyp */
     } while (chaninfo--);
 
-    bitstream_get (2);		// copyrightb + origbs
+    bitstream_get (2);		/* copyrightb + origbs */
 
-    if (bitstream_get (1))	// timecod1e
-	bitstream_get (14);	// timecod1
-    if (bitstream_get (1))	// timecod2e
-	bitstream_get (14);	// timecod2
+    if (bitstream_get (1))	/* timecod1e */
+	bitstream_get (14);	/* timecod1 */
+    if (bitstream_get (1))	/* timecod2e */
+	bitstream_get (14);	/* timecod2 */
 
-    if (bitstream_get (1)) {	// addbsie
+    if (bitstream_get (1)) {	/* addbsie */
 	int addbsil;
 
 	addbsil = bitstream_get (6);
 	do {
-	    bitstream_get (8);	// addbsi
+	    bitstream_get (8);	/* addbsi */
 	} while (addbsil--);
     }
 
@@ -362,13 +375,14 @@ static void coeff_get (sample_t * coeff, uint8_t * exp, int8_t * bap,
     i++;								\
     continue;
 
-int ac3_block (ac3_state_t * state, sample_t samples[][256])
+int ac3_block (ac3_state_t * state, sample_t * _samples)
 {
     static const uint8_t nfchans_tbl[8] = {2, 1, 2, 3, 3, 4, 4, 5};
     static int rematrix_band[4] = {25, 37, 61, 253};
     int i, nfchans, chaninfo;
     uint8_t cplexpstr, chexpstr[5], lfeexpstr, do_bit_alloc, done_cpl;
     uint8_t blksw[5], dithflag[5];
+    sample_t (* samples)[256];
 
     nfchans = nfchans_tbl[state->acmod];
 
@@ -380,11 +394,11 @@ int ac3_block (ac3_state_t * state, sample_t samples[][256])
 
     chaninfo = !(state->acmod);
     do {
-	if (bitstream_get (1))	// dynrnge
-	    bitstream_get (8);	// dynrng
+	if (bitstream_get (1))	/* dynrnge */
+	    bitstream_get (8);	/* dynrng */
     } while (chaninfo--);
 
-    if (bitstream_get (1)) {	// cplstre
+    if (bitstream_get (1)) {	/* cplstre */
 	state->cplinu = bitstream_get (1);
 	if (state->cplinu) {
 	    static int bndtab[16] = {31, 35, 37, 39, 41, 42, 43, 44,
@@ -415,7 +429,7 @@ int ac3_block (ac3_state_t * state, sample_t samples[][256])
 		state->cplbndstrc[i] = bitstream_get (1);
 		state->ncplbnd -= state->cplbndstrc[i];
 	    }
-	    state->cplbndstrc[i] = 0;	// last value is a sentinel
+	    state->cplbndstrc[i] = 0;	/* last value is a sentinel */
 	}
     }
 
@@ -425,7 +439,7 @@ int ac3_block (ac3_state_t * state, sample_t samples[][256])
 	cplcoe = 0;
 	for (i = 0; i < nfchans; i++)
 	    if (state->chincpl[i])
-		if (bitstream_get (1)) {	// cplcoe
+		if (bitstream_get (1)) {	/* cplcoe */
 		    int mstrcplco, cplcoexp, cplcomant;
 
 		    cplcoe = 1;
@@ -443,11 +457,11 @@ int ac3_block (ac3_state_t * state, sample_t samples[][256])
 		}
 	if ((state->acmod == 2) && state->phsflginu && cplcoe)
 	    for (j = 0; j < state->ncplbnd; j++)
-		if (bitstream_get (1))	// phsflg
+		if (bitstream_get (1))	/* phsflg */
 		    state->cplco[1][j] = -state->cplco[1][j];
     }
 
-    if ((state->acmod == 2) && (bitstream_get (1))) {	// rematstr
+    if ((state->acmod == 2) && (bitstream_get (1))) {	/* rematstr */
 	int end;
 
 	end = (state->cplinu) ? state->cplstrtmant : 253;
@@ -504,7 +518,7 @@ int ac3_block (ac3_state_t * state, sample_t samples[][256])
 	    if (parse_exponents (chexpstr[i], nchgrps, state->fbw_exp[i][0],
 				 state->fbw_exp[i] + 1))
 		return 1;
-	    bitstream_get (2);	// gainrng
+	    bitstream_get (2);	/* gainrng */
 	}
     if (lfeexpstr != EXP_REUSE) {
 	do_bit_alloc = 1;
@@ -514,7 +528,7 @@ int ac3_block (ac3_state_t * state, sample_t samples[][256])
 	    return 1;
     }
 
-    if (bitstream_get (1)) {	// baie
+    if (bitstream_get (1)) {	/* baie */
 	do_bit_alloc = 1;
 	state->sdcycod = bitstream_get (2);
 	state->fdcycod = bitstream_get (2);
@@ -522,7 +536,7 @@ int ac3_block (ac3_state_t * state, sample_t samples[][256])
 	state->dbpbcod = bitstream_get (2);
 	state->floorcod = bitstream_get (3);
     }
-    if (bitstream_get (1)) {	//snroffste
+    if (bitstream_get (1)) {	/* snroffste */
 	do_bit_alloc = 1;
 	state->csnroffst = bitstream_get (6);
 	if (state->cplinu) {
@@ -538,13 +552,13 @@ int ac3_block (ac3_state_t * state, sample_t samples[][256])
 	    state->lfeba.fgaincod = bitstream_get (3);
 	}
     }
-    if ((state->cplinu) && (bitstream_get (1))) {	// cplleake
+    if ((state->cplinu) && (bitstream_get (1))) {	/* cplleake */
 	do_bit_alloc = 1;
 	state->cplfleak = 2304 - (bitstream_get (3) << 8);
 	state->cplsleak = 2304 - (bitstream_get (3) << 8);
     }
 
-    if (bitstream_get (1)) {	// deltbaie
+    if (bitstream_get (1)) {	/* deltbaie */
 	do_bit_alloc = 1;
 	if (state->cplinu)
 	    state->cplba.deltbae = bitstream_get (2);
@@ -581,14 +595,15 @@ int ac3_block (ac3_state_t * state, sample_t samples[][256])
 	}
     }
 
-    if (bitstream_get (1)) {	// skiple
-	i = bitstream_get (9);	// skipl
+    if (bitstream_get (1)) {	/* skiple */
+	i = bitstream_get (9);	/* skipl */
 	while (i--)
 	    bitstream_get (8);
     }
 
+    samples = (sample_t (*)[256]) _samples;
     if (state->output & AC3_LFE)
-	samples++;	// shift for LFE channel
+	samples++;	/* shift for LFE channel */
 
     q_1_pointer = q_2_pointer = q_4_pointer = -1;
     done_cpl = 0;
@@ -665,19 +680,22 @@ int ac3_block (ac3_state_t * state, sample_t samples[][256])
     }
 
     if (state->lfeon) {
-	coeff_get (samples[-1], state->lfe_exp, state->lfe_bap, 0, 7);
 	if (state->output & AC3_LFE) {
+	    coeff_get (samples[-1], state->lfe_exp, state->lfe_bap, 0, 7);
 	    for (i = 7; i < 256; i++)
 		samples[-1][i] = 0;
-	    imdct_512 (samples[-1], state->delay - 256);
+	    imdct_512 (samples[-1], samples[6-1]);
+	} else {
+	    /* just skip the LFE coefficients */
+	    coeff_get (samples[5], state->lfe_exp, state->lfe_bap, 0, 7);
 	}
     }
 
     for (i = 0; i < nfchans; i++)
 	if (blksw[i])
-            imdct_256 (samples[i], state->delay + i * 256);
+            imdct_256 (samples[i], samples[6+i]);
         else 
-            imdct_512 (samples[i], state->delay + i * 256);
+            imdct_512 (samples[i], samples[6+i]);
 
     downmix (*samples, state->acmod, state->output, state->level, state->bias,
 	     state->clev, state->slev);
