@@ -1,15 +1,15 @@
 /*
- * mpeg2dec.c
+ * ac3dec.c
  * Copyright (C) 1999-2001 Aaron Holtzman <aholtzma@ess.engr.uvic.ca>
  *
- * This file is part of mpeg2dec, a free MPEG-2 video stream decoder.
+ * This file is part of ac3dec, a free Dolby AC-3 stream decoder.
  *
- * mpeg2dec is free software; you can redistribute it and/or modify
+ * ac3dec is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
  *
- * mpeg2dec is distributed in the hope that it will be useful,
+ * ac3dec is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
