@@ -33,10 +33,6 @@ static int16_t calc_lowcomp(int16_t a,int16_t b0,int16_t b1,int16_t bin);
 static inline uint16_t min(int16_t a,int16_t b);
 static inline uint16_t max(int16_t a,int16_t b);
 
-static void ba_compute_excitation(int16_t start, int16_t end,int16_t fgain,
-				  int16_t fastleak, int16_t slowleak,
-				  int16_t is_lfe, int16_t bndpsd[],
-				  int16_t excite[]);
 static void ba_compute_mask(int16_t start, int16_t end, uint16_t fscod,
 			    uint16_t deltbae, uint16_t deltnseg,
 			    uint16_t deltoffst[], uint16_t deltba[],
@@ -174,6 +170,7 @@ void bit_allocate(int fscod, audblk_t * audblk, ac3_ba_t * ba, uint16_t start,
     int16_t fgain;
     uint16_t snroffset;
     int i, j;
+    int bndstrt, bndend;
 
     /* Do some setup before we do the bit alloc */
     sdecay = slowdec[audblk->sdcycod];
@@ -186,22 +183,23 @@ void bit_allocate(int fscod, audblk_t * audblk, ac3_ba_t * ba, uint16_t start,
     snroffset = 64 * audblk->csnroffst + 4 * ba->fsnroffst - 960;
 
     i = start;
-    j = masktab[start];
+    j = bndstrt = masktab[start];
     do {
 	int psd, lastbin;
 
 	lastbin = min (bndtab[j] + bndsz[j], end);
 	psd = 128 * exp[i++];
 	while (i < lastbin) {
-	    int delta;
+	    int next, delta;
 
-	    delta = 128 * exp[i++] - psd;
+	    next = 128 * exp[i++];
+	    delta = next - psd;
 	    switch (delta >> 9) {
 	    case -6: case -5: case -4: case -3: case -2:
-		psd += delta;
+		psd = next;
 		break;
 	    case -1:
-		psd += delta - latab[(-delta) >> 1];
+		psd = next - latab[(-delta) >> 1];
 		break;
 	    case 0:
 		psd -= latab[delta >> 1];
@@ -211,74 +209,57 @@ void bit_allocate(int fscod, audblk_t * audblk, ac3_ba_t * ba, uint16_t start,
 	bndpsd[j++] = 3072 - psd;
     } while (i < end);
 
-    ba_compute_excitation(start, end , fgain, fastleak, slowleak, is_lfe, bndpsd, excite);
+    //ba_compute_excitation(start, end , fgain, fastleak, slowleak, is_lfe, bndpsd, excite);
 
-    ba_compute_mask(start, end, fscod, ba->deltbae, ba->deltnseg,
-		    ba->deltoffst, ba->deltba, ba->deltlen, excite, mask);
-    ba_compute_bap(start, end, snroffset, exp, mask, bap);
-}
+    bndend = j;
 
-
-static void ba_compute_excitation(int16_t start, int16_t end,int16_t fgain,
-				  int16_t fastleak, int16_t slowleak,
-				  int16_t is_lfe, int16_t bndpsd[],
-				  int16_t excite[])
 {
-    int bin;
-    int16_t bndstrt;
-    int16_t bndend;
     int16_t lowcomp = 0;
     int16_t begin = 0;
 
-    /* Compute excitation function */
-    bndstrt = masktab[start]; 
-    bndend = masktab[end - 1] + 1; 
-	
     if (bndstrt == 0) { /* For fbw and lfe channels */
 	lowcomp = calc_lowcomp(lowcomp, bndpsd[0], bndpsd[1], 0); 
 	excite[0] = bndpsd[0] - fgain - lowcomp; 
 	lowcomp = calc_lowcomp(lowcomp, bndpsd[1], bndpsd[2], 1);
 	excite[1] = bndpsd[1] - fgain - lowcomp; 
-	begin = 7 ; 
 		
-	/* Note: Do not call calc_lowcomp() for the last band of the lfe channel, (bin = 6) */ 
-	for (bin = 2; bin < 7; bin++) { 
-	    if (!(is_lfe && (bin == 6)))
-		lowcomp = calc_lowcomp(lowcomp, bndpsd[bin], bndpsd[bin+1], bin); 
-	    fastleak = bndpsd[bin] - fgain; 
-	    slowleak = bndpsd[bin] - sgain; 
-	    excite[bin] = fastleak - lowcomp; 
-			
-	    if (!(is_lfe && (bin == 6))) {
-		if (bndpsd[bin] <= bndpsd[bin+1]) {
-		    begin = bin + 1 ; 
-		    break; 
-		} 
-	    }
-	} 
-		
-	for (bin = begin; bin < min(bndend, 22); bin++) { 
-	    if (!(is_lfe && (bin == 6)))
-		lowcomp = calc_lowcomp(lowcomp, bndpsd[bin], bndpsd[bin+1], bin); 
+	i = 2;
+	do {
+	    if (!(is_lfe && (i == 6)))
+		lowcomp = calc_lowcomp(lowcomp, bndpsd[i], bndpsd[i+1], i); 
+	    fastleak = bndpsd[i] - fgain; 
+	    slowleak = bndpsd[i] - sgain; 
+	    excite[i++] = fastleak - lowcomp;
+	} while ((i < 7) && (bndpsd[i] < bndpsd[i-1]));
+
+	for (; i < min(bndend, 22); i++) { 
+	    if (!(is_lfe && (i == 6)))
+		lowcomp = calc_lowcomp(lowcomp, bndpsd[i], bndpsd[i+1], i); 
 	    fastleak -= fdecay ; 
-	    fastleak = max(fastleak, bndpsd[bin] - fgain); 
+	    fastleak = max(fastleak, bndpsd[i] - fgain); 
 	    slowleak -= sdecay ; 
-	    slowleak = max(slowleak, bndpsd[bin] - sgain); 
-	    excite[bin] = max(fastleak - lowcomp, slowleak); 
+	    slowleak = max(slowleak, bndpsd[i] - sgain); 
+	    excite[i] = max(fastleak - lowcomp, slowleak); 
 	} 
 	begin = 22; 
     } 
     else /* For coupling channel */ 
 	begin = bndstrt; 
 
-    for (bin = begin; bin < bndend; bin++) { 
+    for (i = begin; i < bndend; i++) { 
 	fastleak -= fdecay; 
-	fastleak = max(fastleak, bndpsd[bin] - fgain); 
+	fastleak = max(fastleak, bndpsd[i] - fgain); 
 	slowleak -= sdecay; 
-	slowleak = max(slowleak, bndpsd[bin] - sgain); 
-	excite[bin] = max(fastleak, slowleak) ; 
+	slowleak = max(slowleak, bndpsd[i] - sgain); 
+	excite[i] = max(fastleak, slowleak) ; 
     } 
 }
+
+    ba_compute_mask(start, end, fscod, ba->deltbae, ba->deltnseg,
+		    ba->deltoffst, ba->deltba, ba->deltlen, excite, mask);
+    ba_compute_bap(start, end, snroffset, exp, mask, bap);
+}
+
 
 static void ba_compute_mask(int16_t start, int16_t end, uint16_t fscod,
 			    uint16_t deltbae, uint16_t deltnseg,
