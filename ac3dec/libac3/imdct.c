@@ -47,9 +47,6 @@ typedef struct complex_s
 } complex_t;
 
 
-#define N 512
-
-
 /* 128 point bit-reverse LUT */
 static uint8_t bit_reverse_512[] = {
 	0x00, 0x40, 0x20, 0x60, 0x10, 0x50, 0x30, 0x70, 
@@ -82,7 +79,6 @@ static uint8_t bit_reverse_256[] = {
 static complex_t buf[128];
 
 /* Twiddle factor LUT */
-static complex_t *w[7];
 static complex_t w_1[1];
 static complex_t w_2[2];
 static complex_t w_4[4];
@@ -90,15 +86,13 @@ static complex_t w_8[8];
 static complex_t w_16[16];
 static complex_t w_32[32];
 static complex_t w_64[64];
+static complex_t * w[7] = {w_1, w_2, w_4, w_8, w_16, w_32, w_64};
 
 /* Twiddle factors for IMDCT */
 static float xcos1[128];
 static float xsin1[128];
 static float xcos2[64];
 static float xsin2[64];
-
-/* Delay buffer for time domain interleaving */
-static float delay[6][256];
 
 /* Windowing function for Modified DCT - Thank you acroread */
 float imdct_window[] = {
@@ -157,49 +151,36 @@ static inline complex_t cmplx_mult(complex_t a, complex_t b)
     return ret;
 }
 
-void imdct_init(void)
+void imdct_init (void)
 {
-    int i,k;
-    complex_t angle_step;
-    complex_t current_angle;
-
 #ifdef LIBAC3_MLIB
-    return;
-#endif
+    imdct_512 = imdct_do_512_mlib;
+    imdct_256 = imdct_do_256_mlib;
+#else
+    int i, j, k;
 
     /* Twiddle factors to turn IFFT into IMDCT */
-    for( i=0; i < 128; i++) {
-	xcos1[i] = -cos(2.0f * M_PI * (8*i+1)/(8*N)) ; 
-	xsin1[i] = -sin(2.0f * M_PI * (8*i+1)/(8*N)) ;
+    for (i = 0; i < 128; i++) {
+	xcos1[i] = -cos ((M_PI / 2048) * (8 * i + 1));
+	xsin1[i] = -sin ((M_PI / 2048) * (8 * i + 1));
     }
-	
+
     /* More twiddle factors to turn IFFT into IMDCT */
-    for( i=0; i < 64; i++) {
-	xcos2[i] = -cos(2.0f * M_PI * (8*i+1)/(4*N)) ; 
-	xsin2[i] = -sin(2.0f * M_PI * (8*i+1)/(4*N)) ;
+    for (i = 0; i < 64; i++) {
+	xcos2[i] = -cos ((M_PI / 1024) * (8 * i + 1));
+	xsin2[i] = -sin ((M_PI / 1024) * (8 * i + 1));
     }
 
-    /* Canonical twiddle factors for FFT */
-    w[0] = w_1;
-    w[1] = w_2;
-    w[2] = w_4;
-    w[3] = w_8;
-    w[4] = w_16;
-    w[5] = w_32;
-    w[6] = w_64;
-
-    for( i = 0; i < 7; i++) {
-	angle_step.real = cos(-2.0 * M_PI / (1 << (i+1)));
-	angle_step.imag = sin(-2.0 * M_PI / (1 << (i+1)));
-
-	current_angle.real = 1.0;
-	current_angle.imag = 0.0;
-
-	for (k = 0; k < 1 << i; k++) {
-	    w[i][k] = current_angle;
-	    current_angle = cmplx_mult(current_angle,angle_step);
+    for (i = 0; i < 7; i++) {
+	j = 1 << i;
+	for (k = 0; k < j; k++) {
+	    w[i][k].real = cos (-M_PI * k / j);
+	    w[i][k].imag = sin (-M_PI * k / j);
 	}
     }
+    imdct_512 = imdct_do_512;
+    imdct_256 = imdct_do_256;
+#endif
 }
 
 void
@@ -427,32 +408,4 @@ imdct_do_256(float data[],float delay[])
 	*delay_ptr++ =  buf_2[i].imag      * *--window_ptr;
 	*delay_ptr++ = -buf_2[64-i-1].real * *--window_ptr;
     }
-}
-
-void 
-imdct(ac3_state_t *state,audblk_t *audblk, stream_samples_t samples) {
-    int i;
-
-#ifdef LIBAC3_MLIB
-    for(i=0; i<state->nfchans;i++) {
-	if(audblk->blksw[i])
-	    imdct_do_256_mlib(samples[i],delay[i]);
-	else
-	    imdct_do_512_mlib(samples[i],delay[i]);
-    }
-    return;
-#endif
-
-    for(i=0; i<state->nfchans;i++) {
-	if(audblk->blksw[i])
-	    imdct_do_256(samples[i],delay[i]);
-	else
-	    imdct_do_512(samples[i],delay[i]);
-    }
-
-    //XXX We don't bother with the IMDCT for the LFE as it's currently
-    //unused.
-    //if (state->lfeon)
-    //	imdct_do_512(coeffs->lfe,samples->channel[5],delay[5]);
-    //	
 }

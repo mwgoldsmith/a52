@@ -35,6 +35,7 @@
 #include "downmix.h"
 
 extern stream_samples_t samples;	// FIXME
+static float delay[6][256];
 
 static const uint8_t nfchans[8] = {2, 1, 2, 3, 3, 4, 4, 5};
 
@@ -247,9 +248,9 @@ static inline int zero_snr_offsets (ac3_state_t * state, audblk_t * audblk)
     return 1;
 }
 
-#define Q0 ((-2 << 15) / 3)
+#define Q0 ((-2 << 15) / 3.0)
 #define Q1 (0)
-#define Q2 ((2 << 15) / 3)
+#define Q2 ((2 << 15) / 3.0)
 
 static const float q_1_0[ 32 ] = {
     Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,
@@ -276,11 +277,11 @@ static const float q_1_2[ 32 ] = {
 #undef Q1
 #undef Q2
 
-#define Q0 ((-4 << 15) / 5)
-#define Q1 ((-2 << 15) / 5)
+#define Q0 ((-4 << 15) / 5.0)
+#define Q1 ((-2 << 15) / 5.0)
 #define Q2 (0)
-#define Q3 ((2 << 15) / 5)
-#define Q4 ((4 << 15) / 5)
+#define Q3 ((2 << 15) / 5.0)
+#define Q4 ((4 << 15) / 5.0)
 
 static const float q_2_0[ 128 ] = {
     Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,
@@ -316,21 +317,21 @@ static const float q_2_2[ 128 ] = {
 #undef Q4
 
 static const float q_3[8] = {
-    (-6 << 15)/7, (-4 << 15)/7, (-2 << 15)/7, 0,
-    ( 2 << 15)/7, ( 4 << 15)/7, ( 6 << 15)/7, 0
+    (-6 << 15)/7.0, (-4 << 15)/7.0, (-2 << 15)/7.0, 0,
+    ( 2 << 15)/7.0, ( 4 << 15)/7.0, ( 6 << 15)/7.0, 0
 };
 
-#define Q0 ((-10 << 15) / 11)
-#define Q1 ((-8 << 15) / 11)
-#define Q2 ((-6 << 15) / 11)
-#define Q3 ((-4 << 15) / 11)
-#define Q4 ((-2 << 15) / 11)
+#define Q0 ((-10 << 15) / 11.0)
+#define Q1 ((-8 << 15) / 11.0)
+#define Q2 ((-6 << 15) / 11.0)
+#define Q3 ((-4 << 15) / 11.0)
+#define Q4 ((-2 << 15) / 11.0)
 #define Q5 (0)
-#define Q6 ((2 << 15) / 11)
-#define Q7 ((4 << 15) / 11)
-#define Q8 ((6 << 15) / 11)
-#define Q9 ((8 << 15) / 11)
-#define QA ((10 << 15) / 11)
+#define Q6 ((2 << 15) / 11.0)
+#define Q7 ((4 << 15) / 11.0)
+#define Q8 ((6 << 15) / 11.0)
+#define Q9 ((8 << 15) / 11.0)
+#define QA ((10 << 15) / 11.0)
 
 static const float q_4_0[ 128 ] = {
     Q0, Q0, Q0, Q0, Q0, Q0, Q0, Q0, Q0, Q0, Q0,
@@ -375,11 +376,11 @@ static const float q_4_1[ 128 ] = {
 #undef QA
 
 static const float q_5[16] = {
-    (-14 << 15)/15,(-12 << 15)/15,(-10 << 15)/15,
-    ( -8 << 15)/15,( -6 << 15)/15,( -4 << 15)/15,
-    ( -2 << 15)/15,   0          ,(  2 << 15)/15,
-    (  4 << 15)/15,(  6 << 15)/15,(  8 << 15)/15,
-    ( 10 << 15)/15,( 12 << 15)/15,( 14 << 15)/15,
+    (-14 << 15)/15.0,(-12 << 15)/15.0,(-10 << 15)/15.0,
+    ( -8 << 15)/15.0,( -6 << 15)/15.0,( -4 << 15)/15.0,
+    ( -2 << 15)/15.0,   0            ,(  2 << 15)/15.0,
+    (  4 << 15)/15.0,(  6 << 15)/15.0,(  8 << 15)/15.0,
+    ( 10 << 15)/15.0,( 12 << 15)/15.0,( 14 << 15)/15.0,
     0
 };
 
@@ -493,11 +494,11 @@ static int q_4_pointer;
     }
 
 static void coeff_get (float * coeff, uint8_t * exp, int8_t * bap,
-		       int dither, int start, int end)
+		       int dither, int end)
 {
     int i;
 
-    i = start;	// FIXME =0 except in coupling
+    i = 0;
     while (i < end)
 	GET_COEFF (CHANNEL_COEFF, CHANNEL_DITHER);
 }
@@ -510,7 +511,7 @@ static void coeff_get (float * coeff, uint8_t * exp, int8_t * bap,
     cplcoeff = val;							\
     for (ch = 0; ch < state->nfchans; ch++)				\
 	if (audblk->chincpl[ch]) {					\
-	    if (audblk->dithflag[ch])					\
+	    if (dithflag[ch])						\
 		samples[ch][i] =					\
 		    audblk->cplco[ch][bnd] * dither_gen () * cplcoeff;	\
 	    else							\
@@ -520,7 +521,7 @@ static void coeff_get (float * coeff, uint8_t * exp, int8_t * bap,
     continue;
 
 static void coeff_get_cpl (ac3_state_t * state, audblk_t * audblk,
-			   stream_samples_t samples)
+			   uint8_t * dithflag, stream_samples_t samples)
 {
     int i, i_end, bnd, sub_bnd, ch;
     float cplcoeff;
@@ -554,12 +555,13 @@ int parse_audblk (ac3_state_t * state, audblk_t * audblk)
 {
     int i, chaninfo;
     uint8_t cplexpstr, chexpstr[5], lfeexpstr, do_bit_alloc, done_cpl;
+    uint8_t blksw[5], dithflag[5];
 
     for (i = 0; i < state->nfchans; i++)
-	audblk->blksw[i] = bitstream_get (1);
+	blksw[i] = bitstream_get (1);
 
     for (i = 0; i < state->nfchans; i++)
-	audblk->dithflag[i] = bitstream_get (1);
+	dithflag[i] = bitstream_get (1);
 
     chaninfo = (state->acmod) ? 0 : 1;
     do {
@@ -574,6 +576,7 @@ int parse_audblk (ac3_state_t * state, audblk_t * audblk)
 				     45, 45, 46, 46, 47, 47, 48, 48};
 	    int cplbegf;
 	    int cplendf;
+	    int ncplsubnd;
 
 	    for (i = 0; i < state->nfchans; i++)
 		audblk->chincpl[i] = bitstream_get (1);
@@ -588,12 +591,12 @@ int parse_audblk (ac3_state_t * state, audblk_t * audblk)
 
 	    if (cplendf + 3 - cplbegf < 0)
 		return 1;
-	    audblk->ncplbnd = audblk->ncplsubnd = cplendf + 3 - cplbegf;
+	    audblk->ncplbnd = ncplsubnd = cplendf + 3 - cplbegf;
 	    audblk->cplstrtbnd = bndtab[cplbegf];
 	    audblk->cplstrtmant = cplbegf * 12 + 37;
 	    audblk->cplendmant = cplendf * 12 + 73;
 
-	    for (i = 0; i < audblk->ncplsubnd - 1; i++) {
+	    for (i = 0; i < ncplsubnd - 1; i++) {
 		audblk->cplbndstrc[i] = bitstream_get (1);
 		audblk->ncplbnd -= audblk->cplbndstrc[i];
 	    }
@@ -724,8 +727,8 @@ int parse_audblk (ac3_state_t * state, audblk_t * audblk)
     }
     if ((audblk->cplinu) && (bitstream_get (1))) {	// cplleake
 	do_bit_alloc = 1;
-	audblk->cplfleak = bitstream_get (3);
-	audblk->cplsleak = bitstream_get (3);
+	audblk->cplfleak = 2304 - (bitstream_get (3) << 8);
+	audblk->cplsleak = 2304 - (bitstream_get (3) << 8);
     }
 
     if (bitstream_get (1)) {	// deltbaie
@@ -751,10 +754,9 @@ int parse_audblk (ac3_state_t * state, audblk_t * audblk)
 	} else {
 	    if (audblk->cplinu)
 		bit_allocate (state->fscod, audblk, &audblk->cplba,
-			      audblk->cplstrtbnd, audblk->cplstrtmant,
-			      audblk->cplendmant,
-			      2304 - (audblk->cplfleak << 8),
-			      2304 - (audblk->cplsleak << 8),
+			      audblk->cplstrtbnd,
+			      audblk->cplstrtmant, audblk->cplendmant,
+			      audblk->cplfleak, audblk->cplsleak,
 			      audblk->cpl_exp, audblk->cpl_bap);
 	    for (i = 0; i < state->nfchans; i++)
 		bit_allocate (state->fscod, audblk, audblk->ba + i, 0, 0,
@@ -781,11 +783,11 @@ int parse_audblk (ac3_state_t * state, audblk_t * audblk)
 	int j;
 
 	coeff_get (samples[i], audblk->fbw_exp[i], audblk->fbw_bap[i],
-		   audblk->dithflag[i], 0, audblk->endmant[i]);
+		   dithflag[i], audblk->endmant[i]);
 
 	if (audblk->cplinu && audblk->chincpl[i]) {
 	    if (!done_cpl) {
-		coeff_get_cpl (state, audblk, samples);
+		coeff_get_cpl (state, audblk, dithflag, samples);
 		done_cpl = 1;
 	    }
 	    j = audblk->cplendmant;
@@ -795,18 +797,27 @@ int parse_audblk (ac3_state_t * state, audblk_t * audblk)
 	    samples[i][j] = 0;
     }
 
-    if (state->lfeon) {
-	int j;
-
-	coeff_get (samples[5], audblk->lfe_exp, audblk->lfe_bap, 0, 0, 7);
-	for (j = 7; j < 256; j++)
-	    samples[5][j] = 0;
-    }
-
     if (state->acmod == 2)
 	rematrix (audblk, samples);
 
-    imdct (state, audblk, samples);
+    if (state->lfeon) {
+	coeff_get (samples[5], audblk->lfe_exp, audblk->lfe_bap, 0, 7);
+#if 0
+	for (i = 7; i < 256; i++)
+	    samples[5][i] = 0;
+#endif
+    }
+
+    for (i = 0; i < state->nfchans; i++)
+	if (blksw[i])
+            imdct_256 (samples[i], delay[i]);
+        else 
+            imdct_512 (samples[i], delay[i]);
+
+#if 0
+    if (state->lfeon)
+	imdct_512 (samples[5], delay[5]);
+#endif
 
     downmix (*samples, state->acmod, 2, 1, 1, state->clev, state->slev, 384);
 
