@@ -8,5 +8,7 @@ Makefile
 Makefile.in
 .deps
 .libs
-a52dec
-extract_a52
+config.h
+config.h.in
+stamp-h
+stamp-h.in

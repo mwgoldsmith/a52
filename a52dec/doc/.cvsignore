@@ -8,5 +8,3 @@ Makefile
 Makefile.in
 .deps
 .libs
-a52dec
-extract_a52

@@ -4,7 +4,7 @@
 *.patch
 *.lo
 *.o
-a52dec-*.tar.gz
+a52dec-*
 Makefile
 Makefile.in
 configure
