@@ -31,6 +31,7 @@
 
 #include "a52.h"
 #include "a52_internal.h"
+#include "attributes.h"
 
 extern sample_t imdct_window[];
 
@@ -42,7 +43,7 @@ imdct_do_512_mlib(sample_t data[], sample_t delay[], sample_t bias)
 	sample_t *data_ptr;
 	sample_t *delay_ptr;
 	sample_t *window_ptr;
-	sample_t tmp[256] __attribute__ ((__aligned__ (16)));
+	sample_t tmp[256] ATTR_ALIGN (16);
 	int i;
 	
 	memcpy(tmp, data, 256 * sizeof(sample_t));
@@ -91,7 +92,7 @@ imdct_do_256_mlib(sample_t data[], sample_t delay[], sample_t bias)
 	sample_t *data_ptr;
 	sample_t *delay_ptr;
 	sample_t *window_ptr;
-	sample_t tmp[256] __attribute__ ((__aligned__ (16)));
+	sample_t tmp[256] ATTR_ALIGN (16);
 	int i;
 	
 	memcpy(tmp, data, 256 * sizeof(sample_t));
