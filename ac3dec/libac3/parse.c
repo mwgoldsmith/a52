@@ -25,14 +25,11 @@
 #include <inttypes.h>
 #include <string.h>
 
-#include "ac3_internal.h"
 #include "ac3.h"
+#include "ac3_internal.h"
 
 #include "bitstream.h"
-#include "bit_allocate.h"
-#include "dither.h"
-#include "imdct.h"
-#include "downmix.h"
+#include "tables.h"
 
 extern stream_samples_t samples;	// FIXME
 static float delay[6][256];
@@ -136,31 +133,6 @@ int ac3_bsi (ac3_state_t * state, uint8_t * buf)
     return 0;
 }
 
-static int8_t exp_1[128] = {
-    -2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,
-    -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
-     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-     2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-    25,25,25
-};
-static int8_t exp_2[128] = {
-    -2,-2,-2,-2,-2,-1,-1,-1,-1,-1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2,
-    -2,-2,-2,-2,-2,-1,-1,-1,-1,-1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2,
-    -2,-2,-2,-2,-2,-1,-1,-1,-1,-1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2,
-    -2,-2,-2,-2,-2,-1,-1,-1,-1,-1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2,
-    -2,-2,-2,-2,-2,-1,-1,-1,-1,-1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2,
-    25,25,25
-};
-static int8_t exp_3[128] = {
-    -2,-1, 0, 1, 2,-2,-1, 0, 1, 2,-2,-1, 0, 1, 2,-2,-1, 0, 1, 2,-2,-1, 0, 1, 2,
-    -2,-1, 0, 1, 2,-2,-1, 0, 1, 2,-2,-1, 0, 1, 2,-2,-1, 0, 1, 2,-2,-1, 0, 1, 2,
-    -2,-1, 0, 1, 2,-2,-1, 0, 1, 2,-2,-1, 0, 1, 2,-2,-1, 0, 1, 2,-2,-1, 0, 1, 2,
-    -2,-1, 0, 1, 2,-2,-1, 0, 1, 2,-2,-1, 0, 1, 2,-2,-1, 0, 1, 2,-2,-1, 0, 1, 2,
-    -2,-1, 0, 1, 2,-2,-1, 0, 1, 2,-2,-1, 0, 1, 2,-2,-1, 0, 1, 2,-2,-1, 0, 1, 2,
-    25,25,25
-};
-
 static int parse_exponents (int expstr, int ngrps, uint8_t exponent,
 			    uint8_t * dest)
 {
@@ -253,173 +225,6 @@ static inline int zero_snr_offsets (ac3_state_t * state, audblk_t * audblk)
     return 1;
 }
 
-#define Q0 ((-2 << 15) / 3.0)
-#define Q1 (0)
-#define Q2 ((2 << 15) / 3.0)
-
-static const float q_1_0[ 32 ] = {
-    Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,
-    Q1,Q1,Q1,Q1,Q1,Q1,Q1,Q1,Q1,
-    Q2,Q2,Q2,Q2,Q2,Q2,Q2,Q2,Q2,
-    0,0,0,0,0
-};
-
-static const float q_1_1[ 32 ] = {
-    Q0,Q0,Q0,Q1,Q1,Q1,Q2,Q2,Q2,
-    Q0,Q0,Q0,Q1,Q1,Q1,Q2,Q2,Q2,
-    Q0,Q0,Q0,Q1,Q1,Q1,Q2,Q2,Q2,
-    0,0,0,0,0
-};
-
-static const float q_1_2[ 32 ] = {
-    Q0,Q1,Q2,Q0,Q1,Q2,Q0,Q1,Q2,
-    Q0,Q1,Q2,Q0,Q1,Q2,Q0,Q1,Q2,
-    Q0,Q1,Q2,Q0,Q1,Q2,Q0,Q1,Q2,
-    0,0,0,0,0
-};
-
-#undef Q0
-#undef Q1
-#undef Q2
-
-#define Q0 ((-4 << 15) / 5.0)
-#define Q1 ((-2 << 15) / 5.0)
-#define Q2 (0)
-#define Q3 ((2 << 15) / 5.0)
-#define Q4 ((4 << 15) / 5.0)
-
-static const float q_2_0[ 128 ] = {
-    Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,Q0,
-    Q1,Q1,Q1,Q1,Q1,Q1,Q1,Q1,Q1,Q1,Q1,Q1,Q1,Q1,Q1,Q1,Q1,Q1,Q1,Q1,Q1,Q1,Q1,Q1,Q1,
-    Q2,Q2,Q2,Q2,Q2,Q2,Q2,Q2,Q2,Q2,Q2,Q2,Q2,Q2,Q2,Q2,Q2,Q2,Q2,Q2,Q2,Q2,Q2,Q2,Q2,
-    Q3,Q3,Q3,Q3,Q3,Q3,Q3,Q3,Q3,Q3,Q3,Q3,Q3,Q3,Q3,Q3,Q3,Q3,Q3,Q3,Q3,Q3,Q3,Q3,Q3,
-    Q4,Q4,Q4,Q4,Q4,Q4,Q4,Q4,Q4,Q4,Q4,Q4,Q4,Q4,Q4,Q4,Q4,Q4,Q4,Q4,Q4,Q4,Q4,Q4,Q4,
-    0,0,0
-};
-
-static const float q_2_1[ 128 ] = {
-    Q0,Q0,Q0,Q0,Q0,Q1,Q1,Q1,Q1,Q1,Q2,Q2,Q2,Q2,Q2,Q3,Q3,Q3,Q3,Q3,Q4,Q4,Q4,Q4,Q4,
-    Q0,Q0,Q0,Q0,Q0,Q1,Q1,Q1,Q1,Q1,Q2,Q2,Q2,Q2,Q2,Q3,Q3,Q3,Q3,Q3,Q4,Q4,Q4,Q4,Q4,
-    Q0,Q0,Q0,Q0,Q0,Q1,Q1,Q1,Q1,Q1,Q2,Q2,Q2,Q2,Q2,Q3,Q3,Q3,Q3,Q3,Q4,Q4,Q4,Q4,Q4,
-    Q0,Q0,Q0,Q0,Q0,Q1,Q1,Q1,Q1,Q1,Q2,Q2,Q2,Q2,Q2,Q3,Q3,Q3,Q3,Q3,Q4,Q4,Q4,Q4,Q4,
-    Q0,Q0,Q0,Q0,Q0,Q1,Q1,Q1,Q1,Q1,Q2,Q2,Q2,Q2,Q2,Q3,Q3,Q3,Q3,Q3,Q4,Q4,Q4,Q4,Q4,
-    0,0,0
-};
-
-static const float q_2_2[ 128 ] = {
-    Q0,Q1,Q2,Q3,Q4,Q0,Q1,Q2,Q3,Q4,Q0,Q1,Q2,Q3,Q4,Q0,Q1,Q2,Q3,Q4,Q0,Q1,Q2,Q3,Q4,
-    Q0,Q1,Q2,Q3,Q4,Q0,Q1,Q2,Q3,Q4,Q0,Q1,Q2,Q3,Q4,Q0,Q1,Q2,Q3,Q4,Q0,Q1,Q2,Q3,Q4,
-    Q0,Q1,Q2,Q3,Q4,Q0,Q1,Q2,Q3,Q4,Q0,Q1,Q2,Q3,Q4,Q0,Q1,Q2,Q3,Q4,Q0,Q1,Q2,Q3,Q4,
-    Q0,Q1,Q2,Q3,Q4,Q0,Q1,Q2,Q3,Q4,Q0,Q1,Q2,Q3,Q4,Q0,Q1,Q2,Q3,Q4,Q0,Q1,Q2,Q3,Q4,
-    Q0,Q1,Q2,Q3,Q4,Q0,Q1,Q2,Q3,Q4,Q0,Q1,Q2,Q3,Q4,Q0,Q1,Q2,Q3,Q4,Q0,Q1,Q2,Q3,Q4,
-    0,0,0
-};
-
-#undef Q0
-#undef Q1
-#undef Q2
-#undef Q3
-#undef Q4
-
-static const float q_3[8] = {
-    (-6 << 15)/7.0, (-4 << 15)/7.0, (-2 << 15)/7.0, 0,
-    ( 2 << 15)/7.0, ( 4 << 15)/7.0, ( 6 << 15)/7.0, 0
-};
-
-#define Q0 ((-10 << 15) / 11.0)
-#define Q1 ((-8 << 15) / 11.0)
-#define Q2 ((-6 << 15) / 11.0)
-#define Q3 ((-4 << 15) / 11.0)
-#define Q4 ((-2 << 15) / 11.0)
-#define Q5 (0)
-#define Q6 ((2 << 15) / 11.0)
-#define Q7 ((4 << 15) / 11.0)
-#define Q8 ((6 << 15) / 11.0)
-#define Q9 ((8 << 15) / 11.0)
-#define QA ((10 << 15) / 11.0)
-
-static const float q_4_0[ 128 ] = {
-    Q0, Q0, Q0, Q0, Q0, Q0, Q0, Q0, Q0, Q0, Q0,
-    Q1, Q1, Q1, Q1, Q1, Q1, Q1, Q1, Q1, Q1, Q1,
-    Q2, Q2, Q2, Q2, Q2, Q2, Q2, Q2, Q2, Q2, Q2,
-    Q3, Q3, Q3, Q3, Q3, Q3, Q3, Q3, Q3, Q3, Q3,
-    Q4, Q4, Q4, Q4, Q4, Q4, Q4, Q4, Q4, Q4, Q4,
-    Q5, Q5, Q5, Q5, Q5, Q5, Q5, Q5, Q5, Q5, Q5,
-    Q6, Q6, Q6, Q6, Q6, Q6, Q6, Q6, Q6, Q6, Q6,
-    Q7, Q7, Q7, Q7, Q7, Q7, Q7, Q7, Q7, Q7, Q7,
-    Q8, Q8, Q8, Q8, Q8, Q8, Q8, Q8, Q8, Q8, Q8,
-    Q9, Q9, Q9, Q9, Q9, Q9, Q9, Q9, Q9, Q9, Q9,
-    QA, QA, QA, QA, QA, QA, QA, QA, QA, QA, QA,
-    0,  0,  0,  0,  0,  0,  0
-};
-
-static const float q_4_1[ 128 ] = {
-    Q0, Q1, Q2, Q3, Q4, Q5, Q6, Q7, Q8, Q9, QA,
-    Q0, Q1, Q2, Q3, Q4, Q5, Q6, Q7, Q8, Q9, QA,
-    Q0, Q1, Q2, Q3, Q4, Q5, Q6, Q7, Q8, Q9, QA,
-    Q0, Q1, Q2, Q3, Q4, Q5, Q6, Q7, Q8, Q9, QA,
-    Q0, Q1, Q2, Q3, Q4, Q5, Q6, Q7, Q8, Q9, QA,
-    Q0, Q1, Q2, Q3, Q4, Q5, Q6, Q7, Q8, Q9, QA,
-    Q0, Q1, Q2, Q3, Q4, Q5, Q6, Q7, Q8, Q9, QA,
-    Q0, Q1, Q2, Q3, Q4, Q5, Q6, Q7, Q8, Q9, QA,
-    Q0, Q1, Q2, Q3, Q4, Q5, Q6, Q7, Q8, Q9, QA,
-    Q0, Q1, Q2, Q3, Q4, Q5, Q6, Q7, Q8, Q9, QA,
-    Q0, Q1, Q2, Q3, Q4, Q5, Q6, Q7, Q8, Q9, QA,
-    0,  0,  0,  0,  0,  0,  0
-};
-
-#undef Q0
-#undef Q1
-#undef Q2
-#undef Q3
-#undef Q4
-#undef Q5
-#undef Q6
-#undef Q7
-#undef Q8
-#undef Q9
-#undef QA
-
-static const float q_5[16] = {
-    (-14 << 15)/15.0,(-12 << 15)/15.0,(-10 << 15)/15.0,
-    ( -8 << 15)/15.0,( -6 << 15)/15.0,( -4 << 15)/15.0,
-    ( -2 << 15)/15.0,   0            ,(  2 << 15)/15.0,
-    (  4 << 15)/15.0,(  6 << 15)/15.0,(  8 << 15)/15.0,
-    ( 10 << 15)/15.0,( 12 << 15)/15.0,( 14 << 15)/15.0,
-    0
-};
-
-static const uint32_t u32_scale_factors[25] = 
-{
-	0x38000000, //2 ^ -(0 + 15)
-	0x37800000, //2 ^ -(1 + 15)
-	0x37000000, //2 ^ -(2 + 15)
-	0x36800000, //2 ^ -(3 + 15)
-	0x36000000, //2 ^ -(4 + 15)
-	0x35800000, //2 ^ -(5 + 15)
-	0x35000000, //2 ^ -(6 + 15)
-	0x34800000, //2 ^ -(7 + 15)
-	0x34000000, //2 ^ -(8 + 15)
-	0x33800000, //2 ^ -(9 + 15)
-	0x33000000, //2 ^ -(10 + 15)
-	0x32800000, //2 ^ -(11 + 15)
-	0x32000000, //2 ^ -(12 + 15)
-	0x31800000, //2 ^ -(13 + 15)
-	0x31000000, //2 ^ -(14 + 15)
-	0x30800000, //2 ^ -(15 + 15)
-	0x30000000, //2 ^ -(16 + 15)
-	0x2f800000, //2 ^ -(17 + 15)
-	0x2f000000, //2 ^ -(18 + 15)
-	0x2e800000, //2 ^ -(19 + 15)
-	0x2e000000, //2 ^ -(20 + 15)
-	0x2d800000, //2 ^ -(21 + 15)
-	0x2d000000, //2 ^ -(22 + 15)
-	0x2c800000, //2 ^ -(23 + 15)
-	0x2c000000  //2 ^ -(24 + 15)
-};
-
-static float * scale_factor = (float *) u32_scale_factors;
-
 static float q_1[2];
 static float q_2[2];
 static float q_4;
@@ -497,6 +302,19 @@ static int q_4_pointer;
 	coeff[i++] = 0;				\
 	continue;				\
     }
+
+static uint16_t lfsr_state = 1;
+
+static inline int16_t dither_gen(void)
+{
+    int16_t state;
+
+    state = dither_lut[lfsr_state >> 8] ^ (lfsr_state << 8);
+	
+    lfsr_state = (uint16_t) state;
+
+    return ((state * (int32_t) (0.707106 * 256.0))>>8);
+}
 
 static void coeff_get (float * coeff, uint8_t * exp, int8_t * bap,
 		       int dither, int end)

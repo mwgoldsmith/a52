@@ -28,21 +28,16 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
-#include "ac3_internal.h"
 #include "ac3.h"
+#include "ac3_internal.h"
 
-#include "imdct.h"
-
-void imdct_do_256(float data[],float delay[]);
-void imdct_do_512(float data[],float delay[]);
-
-void imdct_do_256_mlib(float data[],float delay[]);
-void imdct_do_512_mlib(float data[],float delay[]);
+void (* imdct_256) (float data[], float delay[]);
+void (* imdct_512) (float data[], float delay[]);
 
 typedef struct complex_s
 {
-	float real;
-	float imag;
+    float real;
+    float imag;
 } complex_t;
 
 
@@ -148,38 +143,6 @@ static inline complex_t cmplx_mult(complex_t a, complex_t b)
     ret.imag = a.real * b.imag + a.imag * b.real;
 
     return ret;
-}
-
-void imdct_init (void)
-{
-#ifdef LIBAC3_MLIB
-    imdct_512 = imdct_do_512_mlib;
-    imdct_256 = imdct_do_256_mlib;
-#else
-    int i, j, k;
-
-    /* Twiddle factors to turn IFFT into IMDCT */
-    for (i = 0; i < 128; i++) {
-	xcos1[i] = -cos ((M_PI / 2048) * (8 * i + 1));
-	xsin1[i] = -sin ((M_PI / 2048) * (8 * i + 1));
-    }
-
-    /* More twiddle factors to turn IFFT into IMDCT */
-    for (i = 0; i < 64; i++) {
-	xcos2[i] = -cos ((M_PI / 1024) * (8 * i + 1));
-	xsin2[i] = -sin ((M_PI / 1024) * (8 * i + 1));
-    }
-
-    for (i = 0; i < 7; i++) {
-	j = 1 << i;
-	for (k = 0; k < j; k++) {
-	    w[i][k].real = cos (-M_PI * k / j);
-	    w[i][k].imag = sin (-M_PI * k / j);
-	}
-    }
-    imdct_512 = imdct_do_512;
-    imdct_256 = imdct_do_256;
-#endif
 }
 
 void
@@ -407,4 +370,39 @@ imdct_do_256(float data[],float delay[])
 	*delay_ptr++ =  buf_2[i].imag      * *--window_ptr;
 	*delay_ptr++ = -buf_2[64-i-1].real * *--window_ptr;
     }
+}
+
+void imdct_init (void)
+{
+#ifdef LIBAC3_MLIB
+    void imdct_do_256_mlib(float data[],float delay[]);
+    void imdct_do_512_mlib(float data[],float delay[]);
+
+    imdct_512 = imdct_do_512_mlib;
+    imdct_256 = imdct_do_256_mlib;
+#else
+    int i, j, k;
+
+    /* Twiddle factors to turn IFFT into IMDCT */
+    for (i = 0; i < 128; i++) {
+	xcos1[i] = -cos ((M_PI / 2048) * (8 * i + 1));
+	xsin1[i] = -sin ((M_PI / 2048) * (8 * i + 1));
+    }
+
+    /* More twiddle factors to turn IFFT into IMDCT */
+    for (i = 0; i < 64; i++) {
+	xcos2[i] = -cos ((M_PI / 1024) * (8 * i + 1));
+	xsin2[i] = -sin ((M_PI / 1024) * (8 * i + 1));
+    }
+
+    for (i = 0; i < 7; i++) {
+	j = 1 << i;
+	for (k = 0; k < j; k++) {
+	    w[i][k].real = cos (-M_PI * k / j);
+	    w[i][k].imag = sin (-M_PI * k / j);
+	}
+    }
+    imdct_512 = imdct_do_512;
+    imdct_256 = imdct_do_256;
+#endif
 }

@@ -24,9 +24,8 @@
 #include <inttypes.h>
 #include <stdlib.h>
 #include <string.h>
-#include "ac3_internal.h"
 #include "ac3.h"
-#include "bit_allocate.h"
+#include "ac3_internal.h"
 
 static int hthtab[3][50] = {
     {0x730, 0x730, 0x7c0, 0x800, 0x820, 0x840, 0x850, 0x850, 0x860, 0x860,

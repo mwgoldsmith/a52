@@ -34,8 +34,8 @@
 #include <unistd.h>
 #endif
 
-#include "ac3_internal.h"
 #include "ac3.h"
+#include "ac3_internal.h"	// FIXME
 #include "libao.h"
 
 #define BUFFER_SIZE 262144

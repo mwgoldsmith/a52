@@ -30,10 +30,8 @@
 #include <stdio.h>
 #include <math.h>
 #include <string.h>
-#include "ac3_internal.h"
 #include "ac3.h"
-
-#include "downmix.h"
+#include "ac3_internal.h"
 
 
 #define LEVEL_PLUS3DB 1.4142135623730951
