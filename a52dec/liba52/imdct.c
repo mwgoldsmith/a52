@@ -47,86 +47,28 @@ typedef struct complex_s {
 
 static complex_t buf[128];
 
-static uint8_t fftorder_128[] = {
-      0, 64, 32, 96, 16, 80,112, 48,  8, 72, 40,104,120, 56, 24, 88,
-      4, 68, 36,100, 20, 84,116, 52,124, 60, 28, 92, 12, 76,108, 44,
-      2, 66, 34, 98, 18, 82,114, 50, 10, 74, 42,106,122, 58, 26, 90,
-    126, 62, 30, 94, 14, 78,110, 46,  6, 70, 38,102,118, 54, 22, 86,
-      1, 65, 33, 97, 17, 81,113, 49,  9, 73, 41,105,121, 57, 25, 89,
-      5, 69, 37,101, 21, 85,117, 53,125, 61, 29, 93, 13, 77,109, 45,
-    127, 63, 31, 95, 15, 79,111, 47,  7, 71, 39,103,119, 55, 23, 87,
-      3, 67, 35, 99, 19, 83,115, 51,123, 59, 27, 91, 11, 75,107, 43
+static uint8_t fftorder[] = {
+      0,128, 64,192, 32,160,224, 96, 16,144, 80,208,240,112, 48,176,
+      8,136, 72,200, 40,168,232,104,248,120, 56,184, 24,152,216, 88,
+      4,132, 68,196, 36,164,228,100, 20,148, 84,212,244,116, 52,180,
+    252,124, 60,188, 28,156,220, 92, 12,140, 76,204,236,108, 44,172,
+      2,130, 66,194, 34,162,226, 98, 18,146, 82,210,242,114, 50,178,
+     10,138, 74,202, 42,170,234,106,250,122, 58,186, 26,154,218, 90,
+    254,126, 62,190, 30,158,222, 94, 14,142, 78,206,238,110, 46,174,
+      6,134, 70,198, 38,166,230,102,246,118, 54,182, 22,150,214, 86,
 };
 
-static uint8_t fftorder_64[] = {
-      0, 32, 16, 48,  8, 40, 56, 24,  4, 36, 20, 52, 60, 28, 12, 44,
-      2, 34, 18, 50, 10, 42, 58, 26, 62, 30, 14, 46,  6, 38, 54, 22,
-      1, 33, 17, 49,  9, 41, 57, 25,  5, 37, 21, 53, 61, 29, 13, 45,
-     63, 31, 15, 47,  7, 39, 55, 23,  3, 35, 19, 51, 59, 27, 11, 43
-};
+/* Root values for IFFT */
+static sample_t roots16[3];
+static sample_t roots32[7];
+static sample_t roots64[15];
+static sample_t roots128[31];
 
 /* Twiddle factors for IMDCT */
 static sample_t xcos1[128];
 static sample_t xsin1[128];
 static sample_t xcos2[64];
 static sample_t xsin2[64];
-
-static sample_t roots16[] = { 0.9238795325112867561281831893967882868224,
-			      0.7071067811865475244008443621048490392848,
-			      0.3826834323650897717284599840303988667613 };
-static sample_t roots32[] = { 0.9807852804032304491261822361342390369739,
-			      0.9238795325112867561281831893967882868224,
-			      0.8314696123025452370787883776179057567385,
-			      0.7071067811865475244008443621048490392848,
-			      0.5555702330196022247428308139485328743749,
-			      0.3826834323650897717284599840303988667613,
-			      0.1950903220161282678482848684770222409276 };
-static sample_t roots64[] = { 0.9951847266721968862448369531094799215754,
-			      0.9807852804032304491261822361342390369739,
-			      0.9569403357322088649357978869802699694828,
-			      0.9238795325112867561281831893967882868224,
-			      0.8819212643483550297127568636603883495084,
-			      0.8314696123025452370787883776179057567385,
-			      0.7730104533627369608109066097584698009710,
-			      0.7071067811865475244008443621048490392848,
-			      0.6343932841636454982151716132254933706757,
-			      0.5555702330196022247428308139485328743749,
-			      0.4713967368259976485563876259052543776574,
-			      0.3826834323650897717284599840303988667613,
-			      0.2902846772544623676361923758173952746914,
-			      0.1950903220161282678482848684770222409276,
-			      0.0980171403295606019941955638886418458611 };
-static sample_t roots128[] = {0.9987954562051723927147716047591006944432,
-			      0.9951847266721968862448369531094799215754,
-			      0.9891765099647809734516737380162430639837,
-			      0.9807852804032304491261822361342390369739,
-			      0.9700312531945439926039842072861002514568,
-			      0.9569403357322088649357978869802699694828,
-			      0.9415440651830207784125094025995023571856,
-			      0.9238795325112867561281831893967882868224,
-			      0.9039892931234433315862002972305370487101,
-			      0.8819212643483550297127568636603883495084,
-			      0.8577286100002720699022699842847701370425,
-			      0.8314696123025452370787883776179057567385,
-			      0.8032075314806449098066765129631419238795,
-			      0.7730104533627369608109066097584698009710,
-			      0.7409511253549590911756168974951627297289,
-			      0.7071067811865475244008443621048490392848,
-			      0.6715589548470184006253768504274218032287,
-			      0.6343932841636454982151716132254933706757,
-			      0.5956993044924333434670365288299698895119,
-			      0.5555702330196022247428308139485328743749,
-			      0.5141027441932217265936938389688157726080,
-			      0.4713967368259976485563876259052543776574,
-			      0.4275550934302820943209668568887985343045,
-			      0.3826834323650897717284599840303988667613,
-			      0.3368898533922200506892532126191475704777,
-			      0.2902846772544623676361923758173952746914,
-			      0.2429801799032638899482741620774711183209,
-			      0.1950903220161282678482848684770222409276,
-			      0.1467304744553617516588501296467178197062,
-			      0.0980171403295606019941955638886418458611,
-			      0.0490676743274180142549549769426826583147 };
 
 /* Windowing function for Modified DCT - Thank you acroread */
 sample_t a52_imdct_window[] = {
@@ -272,7 +214,6 @@ static inline void ifft8 (complex_t * buf)
     BUTTERFLY_HALF (buf[1], buf[3], buf[5], buf[7], roots16[1]);
 }
 
-/* buf[0...4n-1]; weight[n...2n-2]; n >= 2 */
 static void ifft_pass (complex_t * buf, sample_t * weight, int n)
 {
     complex_t * buf1;
@@ -336,36 +277,31 @@ static void ifft128_c (complex_t * buf)
     ifft_pass (buf, roots128 - 32, 32);
 }
 
-void a52_imdct_512(sample_t data[],sample_t delay[], sample_t bias)
+void a52_imdct_512 (sample_t * data, sample_t * delay, sample_t bias)
 {
-    int i,k;
-
+    int i, k;
     sample_t tmp_a_i;
     sample_t tmp_a_r;
-
-    sample_t *data_ptr;
-    sample_t *delay_ptr;
-    sample_t *window_ptr;
+    sample_t * data_ptr;
+    sample_t * delay_ptr;
+    sample_t * window_ptr;
 	
-    /* 512 IMDCT with source and dest data in 'data' */
-	
-    /* Pre IFFT complex multiply plus IFFT cmplx conjugate plus shuffling */
-    for( i=0; i < 128; i++) {
-	k = fftorder_128[i];
-	/* z[i] = (X[256-2*k-1] + j * X[2*k]) * (xcos1[k] + j * xsin1[k]) ; */
-	buf[i].real =         (data[256-2*k-1] * xcos1[k])  -  (data[2*k]       * xsin1[k]);
-	buf[i].imag = -1.0 * ((data[2*k]       * xcos1[k])  +  (data[256-2*k-1] * xsin1[k]));
+    for (i = 0; i < 128; i++) {
+	k = fftorder[i];
+	/* z[i] = (X[255-k] + j * X[k]) * (xcos1[k/2] + j * xsin1[k/2]) ; */
+	buf[i].real =  (data[255-k] * xcos1[k/2]) - (data[k]     * xsin1[k/2]);
+	buf[i].imag = -((data[k]    * xcos1[k/2]) + (data[255-k] * xsin1[k/2]));
     }
 
     ifft128 (buf);
 
     /* Post IFFT complex multiply  plus IFFT complex conjugate*/
-    for( i=0; i < 128; i++) {
+    for (i = 0; i < 128; i++) {
 	/* y[n] = z[n] * (xcos1[n] + j * xsin1[n]) ; */
 	tmp_a_r =        buf[i].real;
 	tmp_a_i = -1.0 * buf[i].imag;
-	buf[i].real =(tmp_a_r * xcos1[i])  -  (tmp_a_i  * xsin1[i]);
-	buf[i].imag =(tmp_a_r * xsin1[i])  +  (tmp_a_i  * xcos1[i]);
+	buf[i].real = (tmp_a_r * xcos1[i]) - (tmp_a_i * xsin1[i]);
+	buf[i].imag = (tmp_a_r * xsin1[i]) + (tmp_a_i * xcos1[i]);
     }
 	
     data_ptr = data;
@@ -373,33 +309,33 @@ void a52_imdct_512(sample_t data[],sample_t delay[], sample_t bias)
     window_ptr = a52_imdct_window;
 
     /* Window and convert to real valued signal */
-    for(i=0; i< 64; i++) { 
-	*data_ptr++   = -buf[64+i].imag   * *window_ptr++ + *delay_ptr++ + bias; 
-	*data_ptr++   =  buf[64-i-1].real * *window_ptr++ + *delay_ptr++ + bias; 
+    for (i = 0; i < 64; i++) {
+	*data_ptr++ = -buf[64+i].imag   * *window_ptr++ + *delay_ptr++ + bias;
+	*data_ptr++ =  buf[64-i-1].real * *window_ptr++ + *delay_ptr++ + bias;
     }
 
-    for(i=0; i< 64; i++) { 
-	*data_ptr++  = -buf[i].real       * *window_ptr++ + *delay_ptr++ + bias; 
-	*data_ptr++  =  buf[128-i-1].imag * *window_ptr++ + *delay_ptr++ + bias; 
+    for (i = 0; i < 64; i++) {
+	*data_ptr++ = -buf[i].real       * *window_ptr++ + *delay_ptr++ + bias;
+	*data_ptr++ =  buf[128-i-1].imag * *window_ptr++ + *delay_ptr++ + bias;
     }
 
     /* The trailing edge of the window goes into the delay line */
     delay_ptr = delay;
 
-    for(i=0; i< 64; i++) { 
-	*delay_ptr++  = -buf[64+i].real   * *--window_ptr; 
-	*delay_ptr++  =  buf[64-i-1].imag * *--window_ptr; 
+    for (i = 0; i < 64; i++) {
+	*delay_ptr++ = -buf[64+i].real   * *--window_ptr;
+	*delay_ptr++ =  buf[64-i-1].imag * *--window_ptr;
     }
 
-    for(i=0; i<64; i++) {
-	*delay_ptr++  =  buf[i].imag       * *--window_ptr; 
-	*delay_ptr++  = -buf[128-i-1].real * *--window_ptr; 
+    for (i = 0; i < 64; i++) {
+	*delay_ptr++ =  buf[i].imag       * *--window_ptr;
+	*delay_ptr++ = -buf[128-i-1].real * *--window_ptr;
     }
 }
 
 void a52_imdct_256(sample_t data[],sample_t delay[],sample_t bias)
 {
-    int i,k, p, q;
+    int i, k, p, q;
 
     sample_t tmp_a_i;
     sample_t tmp_a_r;
@@ -414,10 +350,11 @@ void a52_imdct_256(sample_t data[],sample_t delay[],sample_t bias)
     buf_2 = &buf[64];
 
     /* Pre IFFT complex multiply plus IFFT cmplx conjugate */
-    for( i=0; i < 64; i++) {
-	k = fftorder_64[i];
-	p = 2 * (128-2*k-1);
-	q = 2 * (2 * k);
+    for (i = 0; i < 64; i++) {
+	k = fftorder[i];
+	p = 254-k;
+	q = k;
+	k = k / 4;
 	/* z1[i] = (X1[128-2*k-1] + j * X1[2*k]) * (xcos2[k] + j * xsin2[k]); */
 	buf_1[i].real =         (data[p] * xcos2[k])  -  (data[q] * xsin2[k]);
 	buf_1[i].imag = -1.0 * ((data[q] * xcos2[k])  +  (data[p] * xsin2[k]));
@@ -429,17 +366,17 @@ void a52_imdct_256(sample_t data[],sample_t delay[],sample_t bias)
     ifft64 (buf_2);
 
     /* Post IFFT complex multiply */
-    for( i=0; i < 64; i++) {
+    for (i = 0; i < 64; i++) {
 	/* y1[n] = z1[n] * (xcos2[n] + j * xs in2[n]) ; */ 
 	tmp_a_r =  buf_1[i].real;
 	tmp_a_i = -buf_1[i].imag;
-	buf_1[i].real =(tmp_a_r * xcos2[i])  -  (tmp_a_i  * xsin2[i]);
-	buf_1[i].imag =(tmp_a_r * xsin2[i])  +  (tmp_a_i  * xcos2[i]);
+	buf_1[i].real = (tmp_a_r * xcos2[i]) - (tmp_a_i * xsin2[i]);
+	buf_1[i].imag = (tmp_a_r * xsin2[i]) + (tmp_a_i * xcos2[i]);
 	/* y2[n] = z2[n] * (xcos2[n] + j * xsin2[n]) ; */ 
 	tmp_a_r =  buf_2[i].real;
 	tmp_a_i = -buf_2[i].imag;
-	buf_2[i].real =(tmp_a_r * xcos2[i])  -  (tmp_a_i  * xsin2[i]);
-	buf_2[i].imag =(tmp_a_r * xsin2[i])  +  (tmp_a_i  * xcos2[i]);
+	buf_2[i].real = (tmp_a_r * xcos2[i]) - (tmp_a_i * xsin2[i]);
+	buf_2[i].imag = (tmp_a_r * xsin2[i]) + (tmp_a_i * xcos2[i]);
     }
 	
     data_ptr = data;
@@ -447,24 +384,24 @@ void a52_imdct_256(sample_t data[],sample_t delay[],sample_t bias)
     window_ptr = a52_imdct_window;
 
     /* Window and convert to real valued signal */
-    for(i=0; i< 64; i++) { 
-	*data_ptr++  = -buf_1[i].imag      * *window_ptr++ + *delay_ptr++ + bias;
-	*data_ptr++  =  buf_1[64-i-1].real * *window_ptr++ + *delay_ptr++ + bias;
+    for (i = 0; i < 64; i++) {
+	*data_ptr++ = -buf_1[i].imag      * *window_ptr++ + *delay_ptr++ + bias;
+	*data_ptr++ =  buf_1[64-i-1].real * *window_ptr++ + *delay_ptr++ + bias;
     }
 
-    for(i=0; i< 64; i++) {
-	*data_ptr++  = -buf_1[i].real      * *window_ptr++ + *delay_ptr++ + bias;
-	*data_ptr++  =  buf_1[64-i-1].imag * *window_ptr++ + *delay_ptr++ + bias;
+    for (i = 0; i < 64; i++) {
+	*data_ptr++ = -buf_1[i].real      * *window_ptr++ + *delay_ptr++ + bias;
+	*data_ptr++ =  buf_1[64-i-1].imag * *window_ptr++ + *delay_ptr++ + bias;
     }
 	
     delay_ptr = delay;
 
-    for(i=0; i< 64; i++) {
+    for (i = 0; i < 64; i++) {
 	*delay_ptr++ = -buf_2[i].real      * *--window_ptr;
 	*delay_ptr++ =  buf_2[64-i-1].imag * *--window_ptr;
     }
 
-    for(i=0; i< 64; i++) {
+    for (i = 0; i < 64; i++) {
 	*delay_ptr++ =  buf_2[i].imag      * *--window_ptr;
 	*delay_ptr++ = -buf_2[64-i-1].real * *--window_ptr;
     }
@@ -474,16 +411,26 @@ void a52_imdct_init (uint32_t mm_accel)
 {
     int i;
 
-    /* Twiddle factors to turn IFFT into IMDCT */
+    for (i = 0; i < 3; i++)
+	roots16[i] = cos ((M_PI / 8) * (i + 1));
+
+    for (i = 0; i < 7; i++)
+	roots32[i] = cos ((M_PI / 16) * (i + 1));
+
+    for (i = 0; i < 15; i++)
+	roots64[i] = cos ((M_PI / 32) * (i + 1));
+
+    for (i = 0; i < 31; i++)
+	roots128[i] = cos ((M_PI / 64) * (i + 1));
+
     for (i = 0; i < 128; i++) {
-	xcos1[i] = -cos ((M_PI / 2048) * (8 * i + 1));
-	xsin1[i] = -sin ((M_PI / 2048) * (8 * i + 1));
+	xcos1[i] = cos ((M_PI / 2048) * (8 * i + 1));
+	xsin1[i] = sin ((M_PI / 2048) * (8 * i + 1));
     }
 
-    /* More twiddle factors to turn IFFT into IMDCT */
     for (i = 0; i < 64; i++) {
-	xcos2[i] = -cos ((M_PI / 1024) * (8 * i + 1));
-	xsin2[i] = -sin ((M_PI / 1024) * (8 * i + 1));
+	xcos2[i] = cos ((M_PI / 1024) * (8 * i + 1));
+	xsin2[i] = sin ((M_PI / 1024) * (8 * i + 1));
     }
 
 #ifdef LIBA52_DJBFFT
