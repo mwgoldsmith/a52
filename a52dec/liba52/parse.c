@@ -69,6 +69,8 @@ a52_state_t * a52_init (uint32_t mm_accel)
     for (i = 0; i < 256 * 12; i++)
 	state->samples[i] = 0;
 
+    state->downmixed = 1;
+
     a52_imdct_init (mm_accel);
 
     return state;
@@ -526,7 +528,7 @@ int a52_block (a52_state_t * state)
     for (i = 0; i < nfchans; i++)
 	dithflag[i] = bitstream_get (1);
 
-    chaninfo = !(state->acmod);
+    chaninfo = !state->acmod;
     do {
 	if (bitstream_get (1)) {	/* dynrnge */
 	    int dynrng;
@@ -828,8 +830,8 @@ int a52_block (a52_state_t * state)
 		break;
 
     if (i < nfchans) {
-	if (samples[2 * 1536 - 1] == (sample_t)0x776b6e21) {
-	    samples[2 * 1536 - 1] = 0;
+	if (state->downmixed) {
+	    state->downmixed = 0;
 	    a52_upmix (samples + 1536, state->acmod, state->output);
 	}
 
@@ -863,10 +865,10 @@ int a52_block (a52_state_t * state)
 	a52_downmix (samples, state->acmod, state->output, 0,
 		     state->clev, state->slev);
 
-	if (samples[2 * 1536 - 1] != (sample_t)0x776b6e21) {
+	if (!state->downmixed) {
+	    state->downmixed = 1;
 	    a52_downmix (samples + 1536, state->acmod, state->output, 0,
 			 state->clev, state->slev);
-	    samples[2 * 1536 - 1] = (sample_t)0x776b6e21;
 	}
 
 	if (blksw[0])

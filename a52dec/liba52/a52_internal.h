@@ -85,6 +85,7 @@ struct a52_state_s {
     int8_t lfe_bap[7];
 
     sample_t * samples;
+    int downmixed;
 };
 
 #define LEVEL_PLUS6DB 2.0
