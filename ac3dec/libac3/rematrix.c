@@ -55,7 +55,6 @@ void rematrix(audblk_t *audblk, stream_samples_t samples)
     uint32_t start;
     uint32_t end;
     uint32_t i,j;
-    float left,right;
 
     if ((!audblk->cplinu) || (audblk->cplstrtmant > 61))
 	num_bands = 4;
@@ -64,19 +63,21 @@ void rematrix(audblk_t *audblk, stream_samples_t samples)
     else
 	num_bands = 2;
 
-    for(i=0;i < num_bands; i++) {
-	if(!audblk->rematflg[i])
+    for (i = 0; i < num_bands; i++) {
+	if (!audblk->rematflg[i])
 	    continue;
 
 	start = rematrix_band[i].start;
 	end = min(rematrix_band[i].end ,audblk->cplstrtmant-1);
 	// apparently bug if coupling not used - end is not right
 	
-	for(j=start;j < end; j++) {
-	    left  = samples[0][j] + samples[1][j];
-	    right = samples[0][j] - samples[1][j];
-	    samples[0][j] = left;
-	    samples[1][j] = right;
+	for (j = start; j < end; j++) {	// FIXME should be <=
+	    float tmp0, tmp1;
+
+	    tmp0 = samples[0][j];
+	    tmp1 = samples[1][j];
+	    samples[0][j] = tmp0 + tmp1;
+	    samples[1][j] = tmp0 - tmp1;
 	}
     }
 }
