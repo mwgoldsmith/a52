@@ -28,6 +28,7 @@
 #include <string.h>
 #include <sys/time.h>
 #include <inttypes.h>
+#include <math.h>
 #include "ac3.h"
 #include "ac3_internal.h"
 #include "bitstream.h"
@@ -60,14 +61,15 @@ int ac3_frame_length(uint8_t * buf)
 
 static int16_t blah (float f)
 {
-#if 0
-    if (f > 32767)
+    int i;
+
+    i = rint (f);
+    if (i > 32767)
 	return 32767;
-    else if (f < -32768)
+    else if (i < -32768)
 	return -32768;
     else
-#endif
-	return f;
+	return i;
 }
 
 static void float_to_int (float * f, int16_t * s16) 
