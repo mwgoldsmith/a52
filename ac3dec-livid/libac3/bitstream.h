@@ -42,5 +42,3 @@ static inline uint32_t bitstream_get (uint32_t num_bits)
 
 	return bitstream_get_bh (num_bits);
 }
-
-
