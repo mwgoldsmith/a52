@@ -29,12 +29,9 @@
 
 
 
-static inline int16_t logadd(int16_t a,int16_t  b);
 static int16_t calc_lowcomp(int16_t a,int16_t b0,int16_t b1,int16_t bin);
 static inline uint16_t min(int16_t a,int16_t b);
 static inline uint16_t max(int16_t a,int16_t b);
-static void ba_compute_psd(int16_t start, int16_t end, uint8_t exps[], 
-			   int16_t psd[], int16_t bndpsd[]);
 
 static void ba_compute_excitation(int16_t start, int16_t end,int16_t fgain,
 				  int16_t fastleak, int16_t slowleak,
@@ -46,7 +43,7 @@ static void ba_compute_mask(int16_t start, int16_t end, uint16_t fscod,
 			    uint16_t deltlen[], int16_t excite[],
 			    int16_t mask[]);
 static void ba_compute_bap(int16_t start, int16_t end, int16_t snroffset,
-			   int16_t psd[], int16_t mask[], int16_t bap[]);
+			   int8_t exp[], int16_t mask[], int16_t bap[]);
 
 /* Misc LUTs for bit allocation process */
 
@@ -156,7 +153,6 @@ static int16_t fdecay;
 static int16_t sgain;
 static int16_t dbknee;
 static int16_t floor;
-static int16_t psd[256];
 static int16_t bndpsd[256];
 static int16_t excite[256];
 static int16_t mask[256];
@@ -171,76 +167,57 @@ static inline uint16_t min(int16_t a,int16_t b)
     return (a < b ? a : b);
 }
 
-static inline int16_t logadd(int16_t a,int16_t  b) 
-{ 
-    int16_t c;
-    int16_t address;
-
-    c = a - b; 
-    address = min((abs(c) >> 1), 255); 
-	
-    if (c >= 0) 
-	return(a + latab[address]); 
-    else 
-	return(b + latab[address]); 
-}
-
-
-void bit_allocate(int fscod, audblk_t * audblk, uint16_t start, uint16_t end,
-		  uint16_t fgaincod, uint16_t snroffset, uint16_t fastleak,
-		  uint16_t slowleak, uint8_t * exp, uint16_t * bap,
-		  int deltbae, int deltnseg, uint16_t * deltoffst,
-		  uint16_t * deltba, uint16_t * deltlen, int is_lfe)
+void bit_allocate(int fscod, audblk_t * audblk, ac3_ba_t * ba, uint16_t start,
+		  uint16_t end, uint16_t fastleak, uint16_t slowleak,
+		  uint8_t * exp, uint16_t * bap, int is_lfe)
 {
     int16_t fgain;
+    uint16_t snroffset;
+    int i, j;
 
     /* Do some setup before we do the bit alloc */
-    sdecay = slowdec[audblk->sdcycod]; 
+    sdecay = slowdec[audblk->sdcycod];
     fdecay = fastdec[audblk->fdcycod];
-    sgain = slowgain[audblk->sgaincod]; 
-    dbknee = dbpbtab[audblk->dbpbcod]; 
-    floor = floortab[audblk->floorcod]; 
+    sgain = slowgain[audblk->sgaincod];
+    dbknee = dbpbtab[audblk->dbpbcod];
+    floor = floortab[audblk->floorcod];
 
-    fgain = fastgain[fgaincod]; 
+    fgain = fastgain[ba->fgaincod];
+    snroffset = 64 * audblk->csnroffst + 4 * ba->fsnroffst - 960;
 
-    ba_compute_psd(start, end, exp, psd, bndpsd);
+    i = start;
+    j = masktab[start];
+    do {
+	int psd, lastbin;
+
+	lastbin = min (bndtab[j] + bndsz[j], end);
+	psd = 128 * exp[i++];
+	while (i < lastbin) {
+	    int delta;
+
+	    delta = 128 * exp[i++] - psd;
+	    switch (delta >> 9) {
+	    case -6: case -5: case -4: case -3: case -2:
+		psd += delta;
+		break;
+	    case -1:
+		psd += delta - latab[(-delta) >> 1];
+		break;
+	    case 0:
+		psd -= latab[delta >> 1];
+		break;
+	    }
+	}
+	bndpsd[j++] = 3072 - psd;
+    } while (i < end);
 
     ba_compute_excitation(start, end , fgain, fastleak, slowleak, is_lfe, bndpsd, excite);
 
-    ba_compute_mask(start, end, fscod, deltbae, deltnseg, deltoffst,
-			deltba, deltlen, excite, mask);
-    ba_compute_bap(start, end, snroffset, psd, mask, bap);
+    ba_compute_mask(start, end, fscod, ba->deltbae, ba->deltnseg,
+		    ba->deltoffst, ba->deltba, ba->deltlen, excite, mask);
+    ba_compute_bap(start, end, snroffset, exp, mask, bap);
 }
 
-
-static void ba_compute_psd(int16_t start, int16_t end, uint8_t exps[], 
-			   int16_t psd[], int16_t bndpsd[])
-{
-    int bin,i,j,k;
-    int16_t lastbin = 0;
-	
-    /* Map the exponents into dBs */
-    for (bin=start; bin<end; bin++) { 
-	psd[bin] = (3072 - (exps[bin] << 7)); 
-    }
-
-    /* Integrate the psd function over each bit allocation band */
-    j = start; 
-    k = masktab[start]; 
-	
-    do { 
-	lastbin = min(bndtab[k] + bndsz[k], end); 
-	bndpsd[k] = psd[j]; 
-	j++; 
-
-	for (i = j; i < lastbin; i++) { 
-	    bndpsd[k] = logadd(bndpsd[k], psd[j]);
-	    j++; 
-	} 
-		
-	k++; 
-    } while (end > lastbin);
-}
 
 static void ba_compute_excitation(int16_t start, int16_t end,int16_t fgain,
 				  int16_t fastleak, int16_t slowleak,
@@ -346,7 +323,7 @@ static void ba_compute_mask(int16_t start, int16_t end, uint16_t fscod,
 }
 
 static void ba_compute_bap(int16_t start, int16_t end, int16_t snroffset,
-			   int16_t psd[], int16_t mask[], int16_t bap[])
+			   int8_t exps[], int16_t mask[], int16_t bap[])
 {
     int i,j,k;
     int16_t lastbin = 0;
@@ -367,7 +344,7 @@ static void ba_compute_bap(int16_t start, int16_t end, int16_t snroffset,
 	mask[j] &= 0x1fe0;
 	mask[j] += floor; 
 	for (k = i; k < lastbin; k++) { 
-	    address = (psd[i] - mask[j]) >> 5; 
+	    address = (3072 - 128 * exps[i] - mask[j]) >> 5; 
 	    address = min(63, max(0, address)); 
 	    bap[i] = baptab[address]; 
 	    i++; 

@@ -385,32 +385,20 @@ int parse_audblk (ac3_state_t * state, audblk_t * audblk)
 	    memset (audblk->lfe_bap, 0, sizeof (audblk->lfe_bap));
 	} else {
 	    if (audblk->cplinu)
-		bit_allocate (state->fscod, audblk, audblk->cplstrtmant,
-			      audblk->cplendmant, audblk->cplba.fgaincod,
-			      (((audblk->csnroffst - 15) << 4) +
-			       audblk->cplba.fsnroffst) << 2,
+		bit_allocate (state->fscod, audblk, &audblk->cplba,
+			      audblk->cplstrtmant, audblk->cplendmant,
 			      (audblk->cplfleak << 8) + 768,
 			      (audblk->cplsleak << 8) + 768,
-			      audblk->cpl_exp, audblk->cpl_bap,
-			      audblk->cplba.deltbae, audblk->cplba.deltnseg,
-			      audblk->cplba.deltoffst, audblk->cplba.deltba,
-			      audblk->cplba.deltlen, 0);
+			      audblk->cpl_exp, audblk->cpl_bap, 0);
 	    for (i = 0; i < state->nfchans; i++)
-		bit_allocate (state->fscod, audblk, 0, audblk->endmant[i],
-			      audblk->ba[i].fgaincod,
-			      (((audblk->csnroffst - 15) << 4) +
-			       audblk->ba[i].fsnroffst) << 2, 0, 0,
-			      audblk->fbw_exp[i], audblk->fbw_bap[i],
-			      audblk->ba[i].deltbae, audblk->ba[i].deltnseg,
-			      audblk->ba[i].deltoffst, audblk->ba[i].deltba,
-			      audblk->ba[i].deltlen, 0);
-	    if (state->lfeon)
-		bit_allocate (state->fscod, audblk, 0, 7,
-			      audblk->lfeba.fgaincod,
-			      (((audblk->csnroffst - 15) << 4) +
-			       audblk->lfeba.fsnroffst) << 2, 0, 0,
-			      audblk->lfe_exp, audblk->lfe_bap,
-			      2, 0, NULL, NULL, NULL, 1);
+		bit_allocate (state->fscod, audblk, audblk->ba + i, 0,
+			      audblk->endmant[i], 0, 0,
+			      audblk->fbw_exp[i], audblk->fbw_bap[i], 0);
+	    if (state->lfeon) {
+		audblk->lfeba.deltbae = DELTA_BIT_NONE;
+		bit_allocate (state->fscod, audblk, &audblk->lfeba, 0, 7, 0, 0,
+			      audblk->lfe_exp, audblk->lfe_bap, 1);
+	    }
 	}
     }
 
