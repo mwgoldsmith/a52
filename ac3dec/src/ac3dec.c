@@ -201,7 +201,7 @@ int ac3_decode_data (uint8_t * start, uint8_t * end)
     static uint8_t buf[1920 * 2];
     static uint8_t * bufptr = buf;
     static int16_t s16_samples[2 * 6 * 256]; 
-    static uint8_t * bufpos = buf + 5;
+    static uint8_t * bufpos = buf + 7;
     int num_frames = 0;
     int sample_rate;
     int bit_rate;
@@ -209,13 +209,13 @@ int ac3_decode_data (uint8_t * start, uint8_t * end)
     while (start < end) {
 	*bufptr++ = *start++;
 	if (bufptr == bufpos) {
-	    if (bufpos == buf + 5) {
+	    if (bufpos == buf + 7) {
 		int length;
 
 		length = ac3_syncinfo (buf, &sample_rate, &bit_rate);
 		if (!length) {
 		    printf ("skip\n");
-		    for (bufptr = buf; bufptr < buf + 4; bufptr++)
+		    for (bufptr = buf; bufptr < buf + 6; bufptr++)
 			bufptr[0] = bufptr[1];
 		    continue;
 		}
@@ -238,12 +238,12 @@ int ac3_decode_data (uint8_t * start, uint8_t * end)
 		}
 		output_play (s16_samples, 256 * 6 * 2);
 		bufptr = buf;
-		bufpos = buf + 5;
+		bufpos = buf + 7;
 		continue;
 	    error:
 		printf ("error\n");
 		bufptr = buf;
-		bufpos = buf + 5;
+		bufpos = buf + 7;
 	    }
 	}
     }

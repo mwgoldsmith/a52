@@ -41,6 +41,8 @@ void ac3_init (void)
     imdct_init ();
 }
 
+static uint8_t halfrate[12] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3};
+
 int ac3_syncinfo (uint8_t * buf, int * sample_rate, int * bit_rate)
 {
     static int rate[] = { 32,  40,  48,  56,  64,  80,  96, 112,
@@ -48,24 +50,30 @@ int ac3_syncinfo (uint8_t * buf, int * sample_rate, int * bit_rate)
 			 512, 576, 640};
     int frmsizecod;
     int bitrate;
+    int half;
 
     if ((buf[0] != 0x0b) || (buf[1] != 0x77))	// syncword
 	return 0;
 
+    if (buf[5] >= 0x60)		// bsid >= 12
+	return 0;
+    half = halfrate[buf[5] >> 3];
+
     frmsizecod = buf[4] & 63;
     if (frmsizecod >= 38)
 	return 0;
-    *bit_rate = bitrate = rate [frmsizecod >> 1];
+    bitrate = rate [frmsizecod >> 1];
+    *bit_rate = (bitrate * 1000) >> half;
 
     switch (buf[4] & 0xc0) {
     case 0:	// 48 KHz
-	*sample_rate = 48000;
+	*sample_rate = 48000 >> half;
 	return 4 * bitrate;
     case 0x40:
-	*sample_rate = 44100;
+	*sample_rate = 44100 >> half;
 	return 2 * (320 * bitrate / 147 + (frmsizecod & 1));
     case 0x80:
-	*sample_rate = 32000;
+	*sample_rate = 32000 >> half;
 	return 6 * bitrate;
     default:
 	return 0;
@@ -83,8 +91,7 @@ int ac3_bsi (ac3_state_t * state, uint8_t * buf)
 
     state->fscod = buf[4] >> 6;
 
-    if (buf[5] >= 0x48)		// bsid >= 9
-	return 1;
+    state->halfrate = halfrate[buf[5] >> 3];
 
     state->acmod = buf[6] >> 5;
     state->nfchans = nfchans[state->acmod];
@@ -576,19 +583,20 @@ int ac3_audblk (ac3_state_t * state, audblk_t * audblk, int output_flags,
 	    memset (audblk->lfe_bap, 0, sizeof (audblk->lfe_bap));
 	} else {
 	    if (audblk->cplinu)
-		bit_allocate (state->fscod, audblk, &audblk->cplba,
-			      audblk->cplstrtbnd,
+		bit_allocate (state->fscod, state->halfrate, audblk,
+			      &audblk->cplba, audblk->cplstrtbnd,
 			      audblk->cplstrtmant, audblk->cplendmant,
 			      audblk->cplfleak, audblk->cplsleak,
 			      audblk->cpl_exp, audblk->cpl_bap);
 	    for (i = 0; i < state->nfchans; i++)
-		bit_allocate (state->fscod, audblk, audblk->ba + i, 0, 0,
-			      audblk->endmant[i], 0, 0,
+		bit_allocate (state->fscod, state->halfrate, audblk,
+			      audblk->ba + i, 0, 0, audblk->endmant[i], 0, 0,
 			      audblk->fbw_exp[i], audblk->fbw_bap[i]);
 	    if (state->lfeon) {
 		audblk->lfeba.deltbae = DELTA_BIT_NONE;
-		bit_allocate (state->fscod, audblk, &audblk->lfeba, 0, 0, 7,
-			      0, 0, audblk->lfe_exp, audblk->lfe_bap);
+		bit_allocate (state->fscod, state->halfrate, audblk,
+			      &audblk->lfeba, 0, 0, 7, 0, 0,
+			      audblk->lfe_exp, audblk->lfe_bap);
 	    }
 	}
     }

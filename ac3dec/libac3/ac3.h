@@ -23,16 +23,14 @@
  */
 
 typedef struct ac3_state_s {
-    int nfchans;	// number of channels, derived from acmod
-
-    /* from syncinfo */
     uint8_t fscod;	// sample rate
-
-    /* from bsi */
+    uint8_t halfrate;	// halfrate factor
     uint8_t acmod;	// coded channels
     float clev;		// centre channel mix level
     float slev;		// surround channels mix level
     uint8_t lfeon;	// coded lfe channel
+    // derived information
+    int nfchans;	// number of channels, derived from acmod
 } ac3_state_t;
 
 typedef struct ac3_ba_s {
