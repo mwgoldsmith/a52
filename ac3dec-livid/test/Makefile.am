@@ -1,4 +1,5 @@
 noinst_PROGRAMS = bitstream_test imdct_test imdct_timing uncouple_timing 
+noinst_HEADERS = timing.h
 
 bitstream_test_SOURCES = bitstream_test.c
 bitstream_test_LDADD = ../bitstream.o ../crc.o
@@ -19,3 +20,6 @@ check:
 	rm -f imdct_test.out
 	./imdct_test > imdct_test.out
 	diff imdct_test.out imdct_test.out.ref
+
+clean:
+	rm -f *.out

@@ -14,6 +14,9 @@ noinst_HEADERS = bitstream.h decode.h imdct.h ac3.h stats.h mantissa.h\
 	exponent.h bit_allocate.h uncouple.h output.h parse.h crc.h debug.h\
 	ring_buffer.h matlab.h
 
+EXTRA_decode_SOURCES = output_linux.c output_solaris.c
+
+EXTRA_DIST = README
 
 SUBDIRS = . test tools
 

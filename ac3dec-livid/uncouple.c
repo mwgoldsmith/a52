@@ -1,5 +1,5 @@
 /* 
- *    convert.c
+ *    uncouple.c
  *
  *	Aaron Holtzman - May 1999
  *
@@ -114,6 +114,7 @@ void convert_to_float(uint_16 exp, uint_16 mant, uint_32 *dest)
 		i++;
 #endif
 		i = 0;
+		//FIXME is this any better? 
 	if (mantissa & 0x8000)
 		i = 1;
 	else if (mantissa & 0x4000)

@@ -5,4 +5,3 @@
 - Separate uint_* typedefs from ac3.h
 - Fix coupling channel support
 - Add delta bit allocation support
-- Make Makefile.am for tools dir
