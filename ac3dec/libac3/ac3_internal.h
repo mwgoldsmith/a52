@@ -41,7 +41,8 @@ void bit_allocate (ac3_state_t * state, ac3_ba_t * ba, int bndstart,
 
 int downmix_init (int input, int flags, sample_t * level,
 		  sample_t clev, sample_t slev);
-void downmix_lfe (sample_t * samples, sample_t bias);
+int downmix_coeff (sample_t * coeff, int acmod, int output, sample_t level,
+		   sample_t clev, sample_t slev);
 void downmix (sample_t * samples, int acmod, int output, sample_t bias,
 	      sample_t clev, sample_t slev);
 void upmix (sample_t * samples, int acmod, int output);

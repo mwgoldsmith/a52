@@ -366,6 +366,7 @@ static void coeff_get (sample_t * coeff, uint8_t * exp, int8_t * bap,
 }
 
 static void coeff_get_coupling (ac3_state_t * state, int nfchans,
+				sample_t * coeff,
 				sample_t (* samples)[256], uint8_t dithflag[5])
 {
     int sub_bnd, bnd, i, i_end, ch;
@@ -382,7 +383,7 @@ static void coeff_get_coupling (ac3_state_t * state, int nfchans,
 	while (state->cplbndstrc[sub_bnd++])
 	    i_end += 12;
 	for (ch = 0; ch < nfchans; ch++)
-	    cplco[ch] = state->cplco[ch][bnd] * state->level;
+	    cplco[ch] = state->cplco[ch][bnd] * coeff[ch];
 	bnd++;
 
 	while (i < i_end) {
@@ -480,6 +481,8 @@ int ac3_block (ac3_state_t * state, sample_t * samples)
     int i, nfchans, chaninfo;
     uint8_t cplexpstr, chexpstr[5], lfeexpstr, do_bit_alloc, done_cpl;
     uint8_t blksw[5], dithflag[5];
+    sample_t coeff[5];
+    int chanbias;
 
     nfchans = nfchans_tbl[state->acmod];
 
@@ -703,6 +706,9 @@ int ac3_block (ac3_state_t * state, sample_t * samples)
     if (state->output & AC3_LFE)
 	samples += 256;	/* shift for LFE channel */
 
+    chanbias = downmix_coeff (coeff, state->acmod, state->output, state->level,
+			      state->clev, state->slev);
+
     q_1_pointer = q_2_pointer = q_4_pointer = -1;
     done_cpl = 0;
 
@@ -710,12 +716,12 @@ int ac3_block (ac3_state_t * state, sample_t * samples)
 	int j;
 
 	coeff_get (samples + 256 * i, state->fbw_exp[i], state->fbw_bap[i],
-		   state->level, dithflag[i], state->endmant[i]);
+		   coeff[i], dithflag[i], state->endmant[i]);
 
 	if (state->cplinu && state->chincpl[i]) {
 	    if (!done_cpl) {
 		done_cpl = 1;
-		coeff_get_coupling (state, nfchans,
+		coeff_get_coupling (state, nfchans, coeff,
 				    (sample_t (*)[256])samples, dithflag);
 	    }
 	    j = state->cplendmant;
@@ -759,8 +765,7 @@ int ac3_block (ac3_state_t * state, sample_t * samples)
 		       state->level, 0, 7);
 	    for (i = 7; i < 256; i++)
 		(samples-256)[i] = 0;
-	    imdct_512 (samples - 256, samples + 1536 - 256, 0);
-	    downmix_lfe (samples - 256, state->bias);
+	    imdct_512 (samples - 256, samples + 1536 - 256, state->bias);
 	} else {
 	    /* just skip the LFE coefficients */
 	    coeff_get (samples + 1280, state->lfe_exp, state->lfe_bap,
@@ -780,11 +785,27 @@ int ac3_block (ac3_state_t * state, sample_t * samples)
 	    upmix (samples + 1536, state->acmod, state->output);
 	}
 
-	for (i = 0; i < nfchans; i++)
-	    if (blksw[i])
-		imdct_256 (samples + 256 * i, samples + 1536 + 256 * i, 0);
-	    else 
-		imdct_512 (samples + 256 * i, samples + 1536 + 256 * i, 0);
+	for (i = 0; i < nfchans; i++) {
+	    sample_t bias;
+
+	    bias = 0;
+	    if (chanbias & (i << i))
+		bias = state->bias;
+
+	    if (coeff[i]) {
+		if (blksw[i])
+		    imdct_256 (samples + 256 * i, samples + 1536 + 256 * i,
+			       bias);
+		else 
+		    imdct_512 (samples + 256 * i, samples + 1536 + 256 * i,
+			       bias);
+	    } else {
+		int j;
+
+		for (j = 0; j < 256; j++)
+		    (samples + 256 * i)[j] = bias;
+	    }
+	}
 
 	downmix (samples, state->acmod, state->output, state->bias,
 		 state->clev, state->slev);
