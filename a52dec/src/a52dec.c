@@ -131,8 +131,9 @@ static void print_usage (char ** argv)
     ao_driver_t * drivers;
 
     fprintf (stderr, "usage: "
-	     "%s [-o <mode>] [-s [<track>]] [-t <pid>] [-c] [-r] [-a] \\\n"
+	     "%s [-h] [-o <mode>] [-s [<track>]] [-t <pid>] [-c] [-r] [-a] \\\n"
 	     "\t\t[-g <gain>] <file>\n"
+	     "\t-h\tdisplay help and available audio output modes\n"
 	     "\t-s\tuse program stream demultiplexer, track 0-7 or 0x80-0x87\n"
 	     "\t-t\tuse transport stream demultiplexer, pid 0x10-0x1ffe\n"
 	     "\t-c\tuse c implementation, disables all accelerations\n"
@@ -156,8 +157,11 @@ static void handle_args (int argc, char ** argv)
     char * s;
 
     drivers = ao_drivers ();
-    while ((c = getopt (argc, argv, "s::t:crag:o:")) != -1)
+    while ((c = getopt (argc, argv, "hs::t:crag:o:")) != -1)
 	switch (c) {
+	case 'h':
+	    print_usage (argv);
+
 	case 'o':
 	    for (i = 0; drivers[i].name != NULL; i++)
 		if (strcmp (drivers[i].name, optarg) == 0)

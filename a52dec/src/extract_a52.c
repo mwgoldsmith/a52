@@ -42,7 +42,8 @@ static int demux_pid = 0;
 
 static void print_usage (char ** argv)
 {
-    fprintf (stderr, "usage: %s [-s <track>] [-t <pid>] <file>\n"
+    fprintf (stderr, "usage: %s [-h] [-s <track>] [-t <pid>] <file>\n"
+	     "\t-h\tdisplay help\n"
 	     "\t-s\tset track number (0-7 or 0x80-0x87)\n"
 	     "\t-t\tuse transport stream demultiplexer, pid 0x10-0x1ffe\n",
 	     argv[0]);
@@ -55,8 +56,11 @@ static void handle_args (int argc, char ** argv)
     int c;
     char * s;
 
-    while ((c = getopt (argc, argv, "s:t:")) != -1)
+    while ((c = getopt (argc, argv, "hs:t:")) != -1)
 	switch (c) {
+	case 'h':
+	    print_usage (argv);
+
 	case 's':
 	    demux_track = strtol (optarg, &s, 0);
 	    if (demux_track < 0x80)
