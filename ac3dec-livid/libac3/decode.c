@@ -140,8 +140,6 @@ ac3_decode_frame(void)
 	return &frame;	
 
 error:
-	fprintf(stderr,"Invalid frame - skipping\n");
-
 	//mute the frame
 	memset(s16_samples,0,sizeof(sint_16) * 256 * 2 * 6);
 

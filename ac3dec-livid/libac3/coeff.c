@@ -211,7 +211,7 @@ coeff_get_mantissa(uint_16 bap, uint_16 dithflag)
 				group_code = bitstream_get(5);
 
 				if(group_code > 26)
-					error_flag = 1;
+					goto error;
 
 				m_1[0] = group_code / 9; 
 				m_1[1] = (group_code % 9) / 3; 
@@ -228,7 +228,7 @@ coeff_get_mantissa(uint_16 bap, uint_16 dithflag)
 				group_code = bitstream_get(7);
 
 				if(group_code > 124)
-					error_flag = 1;
+					goto error;
 
 				m_2[0] = group_code / 25;
 				m_2[1] = (group_code % 25) / 5 ;
@@ -243,7 +243,7 @@ coeff_get_mantissa(uint_16 bap, uint_16 dithflag)
 			mantissa = bitstream_get(3);
 
 			if(mantissa > 6)
-					error_flag = 1;
+				goto error;
 
 			mantissa = q_3[mantissa];
 			break;
@@ -254,7 +254,7 @@ coeff_get_mantissa(uint_16 bap, uint_16 dithflag)
 				group_code = bitstream_get(7);
 
 				if(group_code > 120)
-					error_flag = 1;
+					goto error;
 
 				m_4[0] = group_code / 11;
 				m_4[1] = group_code % 11;
@@ -268,7 +268,7 @@ coeff_get_mantissa(uint_16 bap, uint_16 dithflag)
 			mantissa = bitstream_get(4);
 
 			if(mantissa > 14)
-				error_flag = 1;
+				goto error;
 
 			mantissa = q_5[mantissa];
 			break;
@@ -279,6 +279,15 @@ coeff_get_mantissa(uint_16 bap, uint_16 dithflag)
 	}
 
 	return mantissa;
+
+
+
+error:
+	if(!error_flag)
+		fprintf(stderr,"** Invalid mantissa - skipping frame **\n");
+	error_flag = 1;
+
+	return 0;
 }
 
 //

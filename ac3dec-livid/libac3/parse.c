@@ -142,14 +142,17 @@ parse_syncinfo(syncinfo_t *syncinfo)
 	bitstream_buffer_frame(syncinfo->frame_size * 2 - 5);
 
 	// Check the crc over the entire frame 
+	crc_init();
+
 	crc_process_byte(tmp>>16);
 	crc_process_byte((tmp>>8) & 0xff);
 	crc_process_byte(tmp & 0xff);
 	crc_process_frame(bitstream_get_buffer_start(),syncinfo->frame_size * 2 - 5);
+
 	if(!crc_validate())
 	{
 		error_flag = 1;
-		dprintf("(crc) failed crc skipping frame\n");
+		fprintf(stderr,"** CRC failed - skipping frame **\n");
 		return;
 	}
 
