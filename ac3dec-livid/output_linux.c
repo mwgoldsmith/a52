@@ -51,7 +51,7 @@
 
 #define BUFFER_SIZE 1024 
 
-static char dev[] = "/dev/audio";
+static char dev[] = "/dev/dsp";
 static int fd;
 
 //FIXME uncomment all the matlab calls in this module
@@ -83,6 +83,10 @@ int output_open(int bits, int rate, int channels)
 	dprintf("Opened audio device \"%s\"\n",dev);
 
 	fcntl(fd,F_SETFL,O_NONBLOCK);
+
+	tmp = BUFFER_SIZE;
+  ioctl(fd,SNDCTL_DSP_SETFRAGMENT,&tmp);
+
 
   tmp = bits;
   ioctl(fd,SNDCTL_DSP_SAMPLESIZE,&tmp);
@@ -156,7 +160,7 @@ void output_play(bsi_t *bsi,stream_samples_t *samples)
 	 * write slot available */
 	while(!out_buf)
 	{
-		usleep(5000);
+		usleep(1000);
 		output_flush();
 		out_buf = rb_begin_write();
 	} 

@@ -127,7 +127,7 @@ static float window[] = {
 	1.00000, 1.00000, 1.00000, 1.00000, 1.00000, 1.00000, 1.00000, 1.00000 };
 
 
-static void swap_cmplx(complex_t *a, complex_t *b)
+static inline void swap_cmplx(complex_t *a, complex_t *b)
 {
 	complex_t tmp;
 
@@ -233,7 +233,7 @@ imdct_do_512(float x[],float y[],float delay[])
 	float *delay_ptr;
 	float *window_ptr;
 
-	/* Pre IFFT complex multiply plus IFFT cmplx conjugate */
+	// Pre IFFT complex multiply plus IFFT cmplx conjugate 
 	for( i=0; i < N/4; i++)
 	{
 		/* z[i] = (X[N/2-2*i-1] + j * X[2*i]) * (xcos1[i] + j * xsin1[i]) ; */ 
@@ -249,7 +249,6 @@ imdct_do_512(float x[],float y[],float delay[])
 			swap_cmplx(&buf[i],&buf[k]);
 	}
 
-#if 1
 	/* FFT Merge */
 	for (m=0; m < 7; m++)
 	{
@@ -274,9 +273,7 @@ imdct_do_512(float x[],float y[],float delay[])
 			}
 		}
 	}
-#endif
 
-#if 1
 	/* Post IFFT complex multiply  plus IFFT complex conjugate*/
 	for( i=0; i < N/4; i++)
 	{
@@ -286,23 +283,7 @@ imdct_do_512(float x[],float y[],float delay[])
 		buf[i].real =(tmp_a_r * xcos1[i])  -  (tmp_a_i  * xsin1[i]);
 	  buf[i].imag =(tmp_a_r * xsin1[i])  +  (tmp_a_i  * xcos1[i]);
 	}
-#endif 
 	
-#if 0
-	/* Window and convert to real valued signal */
-	for(i=0; i<N/8; i++) 
-	{ 
-		y[0   + 2*i]   = -buf[N/8+i].imag   * window[0   + 2*i]; 
-		y[0   + 2*i+1] =  buf[N/8-i-1].real * window[0   + 2*i+1]; 
-		y[128 + 2*i]   = -buf[i].real       * window[128 + 2*i]; 
-		y[128 + 2*i+1] =  buf[N/4-i-1].imag * window[128 + 2*i+1]; 
-		y[256 + 2*i]   = -buf[N/8+i].real   * window[256 - 2*i-1];
-		y[256 + 2*i+1] =  buf[N/8-i-1].imag * window[256 - 2*i-2];
-		y[384 + 2*i]   =  buf[i].imag       * window[128 - 2*i-1];
-		y[384 + 2*i+1] = -buf[N/4-i-1].real * window[128 - 2*i-2];
-	}
-
-#else 
   y_ptr = y;
 	delay_ptr = delay;
 	window_ptr = window;
@@ -333,16 +314,6 @@ imdct_do_512(float x[],float y[],float delay[])
 		*delay_ptr++  =  buf[i].imag       * *--window_ptr; 
 		*delay_ptr++  = -buf[N/4-i-1].real * *--window_ptr; 
 	}
-
-#endif
-
-#if 0
-	for(i=0; i< 256; i++) 
-	{ 
-		y[i] = 2.0f * (y[i] + delay[i]); 
-		delay[i] = y[256 +i]; 
-	}
-#endif
 }
 
 void
