@@ -93,7 +93,7 @@ int main(int argc,char *argv[])
 
 		if(!crc_validate())
 		{
-			dprintf("(crc) CRC check failed\n");
+			printf("(crc) CRC check failed on frame %ld\n",frame_count);
 		}
 		else
 		{
