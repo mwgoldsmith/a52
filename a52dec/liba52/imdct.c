@@ -75,7 +75,7 @@ static void (* ifft64) (complex_t * buf);
 
 static inline void ifft2 (complex_t * buf)
 {
-    double r, i;
+    sample_t r, i;
 
     r = buf[0].real;
     i = buf[0].imag;
@@ -87,7 +87,7 @@ static inline void ifft2 (complex_t * buf)
 
 static inline void ifft4 (complex_t * buf)
 {
-    double tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7, tmp8;
+    sample_t tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7, tmp8;
 
     tmp1 = buf[0].real + buf[1].real;
     tmp2 = buf[3].real + buf[2].real;
@@ -181,7 +181,7 @@ static inline void ifft4 (complex_t * buf)
 
 static inline void ifft8 (complex_t * buf)
 {
-    double tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7, tmp8;
+    sample_t tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7, tmp8;
 
     ifft4 (buf);
     ifft2 (buf + 4);
@@ -195,7 +195,7 @@ static void ifft_pass (complex_t * buf, sample_t * weight, int n)
     complex_t * buf1;
     complex_t * buf2;
     complex_t * buf3;
-    double tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7, tmp8;
+    sample_t tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7, tmp8;
     int i;
 
     buf++;
