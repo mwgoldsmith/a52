@@ -36,30 +36,30 @@
 //
 //Lookup tables of 0.15 two's complement quantization values
 //
-static const uint16_t q_1[3] = 
+static const int16_t q_1[3] = 
 {
 	( -2 << 15)/3, 0,(  2 << 15)/3 
 };
 
-static const uint16_t q_2[5] =
+static const int16_t q_2[5] =
 {
 	( -4 << 15)/5,( -2 << 15)/5, 0,
 	(  2 << 15)/5,(  4 << 15)/5
 };
 
-static const uint16_t q_3[7] = 
+static const int16_t q_3[7] = 
 {
 	( -6 << 15)/7,( -4 << 15)/7,( -2 << 15)/7, 0,
 	(  2 << 15)/7,(  4 << 15)/7,(  6 << 15)/7
 };
 
-static const uint16_t q_4[11] = 
+static const int16_t q_4[11] = 
 {
 	(-10 << 15)/11,(-8 << 15)/11,(-6 << 15)/11, ( -4 << 15)/11,(-2 << 15)/11,  0,
 	(  2 << 15)/11,( 4 << 15)/11,( 6 << 15)/11, (  8 << 15)/11,(10 << 15)/11
 };
 
-static const uint16_t q_5[15] = 
+static const int16_t q_5[15] = 
 {
 	(-14 << 15)/15,(-12 << 15)/15,(-10 << 15)/15,
 	( -8 << 15)/15,( -6 << 15)/15,( -4 << 15)/15,
@@ -156,17 +156,6 @@ coeff_unpack(ac3_state_t *state, audblk_t *audblk, stream_samples_t samples)
     }
 }
 
-static inline float
-convert_to_float(uint16_t exp, int16_t mantissa)
-{
-    float x;
-
-        //the scale by 2^-15 is built into the scale factor table
-        x = mantissa * scale_factor[exp];
-	
-	return x;
-}
-
 static float
 coeff_get_float(uint16_t bap, uint16_t dithflag, int exp)
 {
@@ -176,7 +165,7 @@ coeff_get_float(uint16_t bap, uint16_t dithflag, int exp)
     switch(bap) {
     case 0:
 	if(dithflag)
-	    return convert_to_float (exp, dither_gen ());
+	    return dither_gen () * scale_factor[exp];
 	else
 	    return 0;
 
@@ -192,7 +181,7 @@ coeff_get_float(uint16_t bap, uint16_t dithflag, int exp)
 	    m_1[2] = (group_code % 9) % 3; 
 	    m_1_pointer = 0;
 	}
-	return convert_to_float (exp, q_1[m_1[m_1_pointer++]]);
+	return q_1[m_1[m_1_pointer++]] * scale_factor[exp];
     case 2:
 
 	if(m_2_pointer > 2) {
@@ -206,7 +195,7 @@ coeff_get_float(uint16_t bap, uint16_t dithflag, int exp)
 	    m_2[2] = (group_code % 25) % 5 ; 
 	    m_2_pointer = 0;
 	}
-	return convert_to_float (exp, q_2[m_2[m_2_pointer++]]);
+	return q_2[m_2[m_2_pointer++]] * scale_factor[exp];
 
     case 3:
 	group_code = bitstream_get(3);
@@ -214,7 +203,7 @@ coeff_get_float(uint16_t bap, uint16_t dithflag, int exp)
 	if(group_code > 6)
 	    goto error;
 
-	return convert_to_float (exp, q_3[group_code]);
+	return q_3[group_code] * scale_factor[exp];
 
     case 4:
 	if(m_4_pointer > 1) {
@@ -227,7 +216,7 @@ coeff_get_float(uint16_t bap, uint16_t dithflag, int exp)
 	    m_4[1] = group_code % 11;
 	    m_4_pointer = 0;
 	}
-	return convert_to_float (exp, q_4[m_4[m_4_pointer++]]);
+	return q_4[m_4[m_4_pointer++]] * scale_factor[exp];
 
     case 5:
 	group_code = bitstream_get(4);
@@ -235,10 +224,10 @@ coeff_get_float(uint16_t bap, uint16_t dithflag, int exp)
 	if(group_code > 14)
 	    goto error;
 
-	return convert_to_float (exp, q_5[group_code]);
+	return q_5[group_code] * scale_factor[exp];
 
     default:
-	return convert_to_float (exp, bitstream_get((qnttztab-6)[bap]) << (16 - (qnttztab-6)[bap]));
+	return ((int16_t)(bitstream_get((qnttztab-6)[bap]) << (16 - (qnttztab-6)[bap]))) * scale_factor[exp];
     }
 
 
@@ -285,7 +274,7 @@ coeff_uncouple_ch(float samples[],ac3_state_t *state,audblk_t *audblk,uint32_t c
 	    else
 		cpl_mant_tmp = ((0x10) | audblk->cplcomant[ch][bnd]) << 10;
 
-	    cpl_coord = convert_to_float(cpl_exp_tmp,cpl_mant_tmp) * 8.0f;
+	    cpl_coord = cpl_mant_tmp * scale_factor[cpl_exp_tmp] * 8.0f;
 
 	    //Invert the phase for the right channel if necessary
 	    if(state->acmod == 0x2 && audblk->phsflginu && ch == 1 && audblk->phsflg[bnd])
@@ -298,7 +287,7 @@ coeff_uncouple_ch(float samples[],ac3_state_t *state,audblk_t *audblk,uint32_t c
 	    //Get new dither values for each channel if necessary, so
 	    //the channels are uncorrelated
 	    if(audblk->dithflag[ch] && audblk->cpl_bap[i] == 0)
-		samples[i]  = cpl_coord * convert_to_float(audblk->cpl_exp[i],dither_gen());
+		samples[i]  = cpl_coord * dither_gen() * scale_factor[audblk->cpl_exp[i]];
 	    else
 		samples[i]  = cpl_coord * audblk->cplcoeff[i];
 
