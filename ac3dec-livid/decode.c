@@ -84,7 +84,8 @@ int main(int argc,char *argv[])
 	bs = bitstream_open(in_file);
 	imdct_init();
 	decode_sanity_check_init();
-	output_open(16,48000,2);
+	output_open(16,44100,2);
+	//output_open(16,48000,2);
 
 	while(1)
 	{

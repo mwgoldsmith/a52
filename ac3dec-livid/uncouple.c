@@ -34,9 +34,7 @@ uncouple(bsi_t *bsi,audblk_t *audblk,stream_coeffs_t *coeffs)
 		for(i=0; i< bsi->nfchans; i++)
 		{
 			if(audblk->chincpl[i])
-			{
 				uncouple_channel(coeffs,audblk,i);
-			}
 		}
 
 	}
@@ -56,25 +54,29 @@ void
 uncouple_channel(stream_coeffs_t *coeffs,audblk_t *audblk, uint_32 ch)
 {
 	uint_32 bnd = 0;
+	uint_32 sub_bnd = 0;
 	uint_32 i,j;
 	float cpl_coord;
 	float coeff;
 	uint_32 cpl_exp_tmp;
 	uint_32 cpl_mant_tmp;
 
+
 	for(i=audblk->cplstrtmant;i<audblk->cplendmant;)
 	{
-		if(!audblk->cplbndstrc[bnd])
+		//FIXME remove
+		//printf("cplbndstrc %x bnd %d sub_bnd %d\n",audblk->cplbndstrc[sub_bnd],bnd,sub_bnd);
+		if(!audblk->cplbndstrc[sub_bnd++])
 		{
 			cpl_exp_tmp = audblk->cplcoexp[ch][bnd] + 3 * audblk->mstrcplco[ch];
 			if(audblk->cplcoexp[ch][bnd] == 15)
-				cpl_mant_tmp = (audblk->cplcomant[ch][bnd]) << 12;
+				cpl_mant_tmp = (audblk->cplcomant[ch][bnd]) << 11;
 			else
-				cpl_mant_tmp = ((0x10) | audblk->cplcomant[ch][bnd]) << 11;
+				cpl_mant_tmp = ((0x10) | audblk->cplcomant[ch][bnd]) << 10;
 			
 			convert_to_float(cpl_exp_tmp,cpl_mant_tmp,(uint_32*)&cpl_coord);
+			bnd++;
 		}
-		bnd++;
 
 		for(j=0;j < 12; j++)
 		{
@@ -86,6 +88,9 @@ uncouple_channel(stream_coeffs_t *coeffs,audblk_t *audblk, uint_32 ch)
 				convert_to_float(audblk->cpl_exp[i], audblk->cplmant[i],(uint_32*)&coeff);
 
 			coeffs->fbw[ch][i]  = cpl_coord * coeff;
+			//coeffs->fbw[ch][i]  = 0.0;
+			if(audblk->cplmant[i])
+				fprintf(stderr,"cplexp = %d cplmant = %d cpl_coord = %f coeff = %f\n",audblk->cpl_exp[i],audblk->cplmant[i],cpl_coord, coeff);
 
 			i++;
 		}
