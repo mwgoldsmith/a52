@@ -276,7 +276,7 @@ int parse_audblk (ac3_state_t * state, audblk_t * audblk)
 	    audblk->ncplsubnd = audblk->cplendf + 3 - audblk->cplbegf;
 	    audblk->ncplbnd = audblk->ncplsubnd;
 
-	    for (i = 1; i< audblk->ncplsubnd; i++) {
+	    for (i = 0; i < audblk->ncplsubnd - 1; i++) {
 		audblk->cplbndstrc[i] = bitstream_get (1);
 		audblk->ncplbnd -= audblk->cplbndstrc[i];
 	    }

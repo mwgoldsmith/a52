@@ -291,25 +291,27 @@ static void coeff_get (float * coeff, uint8_t * exp, int8_t * bap,
 static void coeff_get_cpl (ac3_state_t * state, audblk_t * audblk,
 			   stream_samples_t samples)
 {
-    int i, j, ch, bnd, sub_bnd;
+    int i, j, ch, bnd, sub_bnd, i_end;
 
-    sub_bnd = 0;
-    bnd = -1;
-    for (i = audblk->cplstrtmant; i < audblk->cplendmant; i += 12) {
-	if (!audblk->cplbndstrc[sub_bnd++])
-	    bnd++;
+    sub_bnd = bnd = 0;
+    for (i = audblk->cplstrtmant; i < audblk->cplendmant; i = i_end) {
+	i_end = i + 12;
+	while (audblk->cplbndstrc[sub_bnd++])
+	    i_end += 12;
 
 	coeff_get (audblk->cplcoeff, audblk->cpl_exp, audblk->cpl_bap,
-		   0, i, i + 12);
+		   0, i, i_end);
 
-	for (ch = 0; ch < state->nfchans; ch++)
-	    if (audblk->chincpl[ch])
-		for (j = i; j < i + 12; j++) {
+	for (j = i; j < i_end; j++)
+	    for (ch = 0; ch < state->nfchans; ch++)
+		if (audblk->chincpl[ch]) {
 		    if (audblk->dithflag[ch] && audblk->cpl_bap[j] == 0)
 			samples[ch][j] = audblk->cplco[ch][bnd] * dither_gen() * scale_factor[audblk->cpl_exp[j]];
 		    else
 			samples[ch][j] = audblk->cplco[ch][bnd] * audblk->cplcoeff[j];
 		}
+
+	bnd++;
     }
 }
 
