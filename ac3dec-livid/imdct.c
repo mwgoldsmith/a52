@@ -12,7 +12,8 @@
 #include "decode.h"
 #include "imdct.h"
 
-void imdct_do(float x[],float y[]);
+void imdct_do_256(float x[],float y[]);
+void imdct_do_512(float x[],float y[]);
 
 typedef struct complex_s
 {
@@ -23,9 +24,7 @@ typedef struct complex_s
 
 #define N 512
 
-static complex_t pre_trans[N/4];
-static complex_t post_trans[N/4];
-static complex_t pre_window[N/4];
+static complex_t buf[N/4];
 
 /* 128 point bit-reverse LUT */
 static uint_8 bit_reverse[] = {
@@ -56,15 +55,10 @@ static complex_t w_16[16];
 static complex_t w_32[32];
 static complex_t w_64[64];
 
-#if 0 //FIXME remove
-/* LUTs for DFT */
-static float cos_dft[128][128];
-static float sin_dft[128][128];
-#endif
-
 /* Twiddle factors for IMDCT */
 static float xcos1[N/4];
 static float xsin1[N/4];
+
 /* Windowing function for Modified DCT - Thank you acroread */
 static float window[] = {
 	0.00014, 0.00024, 0.00037, 0.00051, 0.00067, 0.00086, 0.00107, 0.00130,
@@ -152,15 +146,6 @@ void imdct_init(void)
 		xsin1[i] = -sin(2 * M_PI * (8*i+1)/(8*N)) ;
 	}
 	
-#if 0 //FIXME remove in lieu of FFT 
-	for( i=0; i < N/4; i++)
-		for( k=0; k < N/4; k++)
-		{
-			cos_dft[i][k] = cos(8*M_PI*k*i/N);
-			sin_dft[i][k] = sin(8*M_PI*k*i/N);
-		}
-#endif
-
 	w[0] = w_1;
 	w[1] = w_2;
 	w[2] = w_4;
@@ -186,23 +171,123 @@ void imdct_init(void)
 }
 
 void 
-imdct(bsi_t *bsi, stream_coeffs_t *coeffs, stream_samples_t *samples)
+imdct(bsi_t *bsi,audblk_t *audblk, 
+		stream_coeffs_t *coeffs, stream_samples_t *samples)
 {
 	int i;
 
 	for(i=0; i<bsi->nfchans;i++)
-		imdct_do(coeffs->fbw[i],samples->channel[i]);
+	{
+		if(audblk->blksw[i])
+			imdct_do_256(coeffs->fbw[i],samples->channel[i]);
+		else
+			imdct_do_512(coeffs->fbw[i],samples->channel[i]);
+	}
 
 	if (bsi->lfeon)
-		imdct_do(coeffs->lfe,samples->channel[5]);
+		imdct_do_512(coeffs->lfe,samples->channel[5]);
 }
 
 void
-imdct_do(float x[],float y[])
+imdct_do_512(float x[],float y[])
 {
 	int i,k;
 	int p,q;
 	int m;
+	int two_m;
+	int two_m_plus_one;
+
+	float tmp_a_i;
+	float tmp_a_r;
+	float tmp_b_i;
+	float tmp_b_r;
+
+	/* Pre IFFT complex multiply */
+	for( i=0; i < N/4; i++)
+	{
+		/* z[i] = (X[N/2-2*i-1] + j * X[2*i]) * (xcos1[i] + j * xsin1[i]) ; */ 
+		buf[i].real =(x[N/2-2*i-1] * xcos1[i])  -  (x[2*i]       * xsin1[i]);
+	  buf[i].imag =(x[2*i]       * xcos1[i])  +  (x[N/2-2*i-1] * xsin1[i]);
+	}
+
+	/* IFFT cmplx conjugate and shuffle */
+	
+	//cmplx conjugate
+	for(i=0; i<N/4; i++) 
+		buf[i].imag *= -1;
+
+	//Bit reversed shuffling
+	for(i=0; i<N/4; i++) 
+	{ 
+		k = bit_reverse[i];
+		if (k < i)
+			swap_cmplx(&buf[i],&buf[k]);
+	}
+
+	/* FFT Merge */
+	for (m=0; m < 7; m++)
+	{
+		two_m = (1 << m);
+		two_m_plus_one = (1 << (m+1));
+
+		for(k = 0; k < two_m; k++)
+		{
+			for(i = 0; i < 128; i += two_m_plus_one)
+			{
+				p = k + i;
+				q = p + two_m;
+				tmp_a_r = buf[p].real;
+				tmp_a_i = buf[p].imag;
+				tmp_b_r = buf[q].real * w[m][k].real - buf[q].imag * w[m][k].imag;
+				tmp_b_i = buf[q].imag * w[m][k].real + buf[q].real * w[m][k].imag;
+				buf[p].real = tmp_a_r + tmp_b_r;
+				buf[p].imag =  tmp_a_i + tmp_b_i;
+				buf[q].real = tmp_a_r - tmp_b_r;
+				buf[q].imag =  tmp_a_i - tmp_b_i;
+
+			}
+		}
+	}
+
+	//cmplx conjugate
+	for( i=0; i < N/4; i++)
+	{
+		buf[i].imag *= -1;
+	}
+
+	/* Post IFFT complex multiply */
+	for( i=0; i < N/4; i++)
+	{
+		/* y[n] = z[n] * (xcos1[n] + j * xsin1[n]) ; */
+		tmp_a_r = buf[i].real;
+		tmp_a_i = buf[i].imag;
+		buf[i].real =(tmp_a_r * xcos1[i])  -  (tmp_a_i  * xsin1[i]);
+	  buf[i].imag =(tmp_a_r * xsin1[i])  +  (tmp_a_i  * xcos1[i]);
+	}
+	
+	/* Window and convert to real valued signal */
+	for(i=0; i<N/8; i++) { 
+		y[2*i]         = -buf[N/8+i].imag   * window[2*i]; 
+		y[2*i+1]       =  buf[N/8-i-1].real * window[2*i+1]; 
+		y[N/4+2*i]     = -buf[i].real       * window[N/4+2*i]; 
+		y[N/4+2*i+1]   =  buf[N/4-i-1].imag * window[N/4+2*i+1]; 
+		y[N/2+2*i]     = -buf[N/8+i].real   * window[N/2-2*i-1];
+		y[N/2+2*i+1]   =  buf[N/8-i-1].imag * window[N/2-2*i-2];
+		y[3*N/4+2*i]   =  buf[i].imag       * window[N/4-2*i-1];
+		y[3*N/4+2*i+1] = -buf[N/4-i-1].real * window[N/4-2*i-2];
+	}
+
+	//FIXME insert overlap and add segment here
+}
+
+void
+imdct_do_256(float x[],float y[])
+{
+#if 0
+	int i,k;
+	int p,q;
+	int m;
+	complex_t a,b;
 
 	/* Pre IFFT complex multiply */
 	for( i=0; i < N/4; i++)
@@ -212,24 +297,18 @@ imdct_do(float x[],float y[])
 	  pre_trans[i].imag =(x[2*i]       * xcos1[i])  +  (x[N/2-2*i-1] * xsin1[i]);
 	}
 
-#if 0
-	/* BIGASS FIXME We do complex IDFT because we're lazy */
-	for(i=0; i<N/4; i++) { 
-		post_trans[i].real = 0.0; 
-		post_trans[i].imag = 0.0; 
+	/* IFFT cmplx conjugate and shuffle */
+	
+	//cmplx conjugate
+	for(i=0; i<N/4; i++) 
+		pre_trans[i].imag *= -1;
 
-		for(k=0; k<N/4; k++) 
-		{ 
-			post_trans[i].real += (pre_trans[k].real * cos_dft[i][k]) - (pre_trans[k].imag * sin_dft[i][k]);
-			post_trans[i].imag += (pre_trans[k].real * sin_dft[i][k]) + (pre_trans[k].imag * cos_dft[i][k]);
-		} 
-	}
-#endif
-
-	/* Begin FFT shuffle */
-	for(i=0; i<N/16; i++) 
+	//Bit reversed shuffling
+	for(i=0; i<N/4; i++) 
 	{ 
-		swap_cmplx(&pre_trans[i],&pre_trans[bit_reverse[i]]);
+		k = bit_reverse[i];
+		if (k < i)
+			swap_cmplx(&pre_trans[i],&pre_trans[k]);
 	}
 
 	/* FFT Merge */
@@ -241,21 +320,26 @@ imdct_do(float x[],float y[])
 			{
 				p = k + i;
 				q = p + (1 << m);
-				post_trans[p] = cmplx_add(pre_trans[p],
-						cmplx_mult(pre_trans[q],w[m][k]));
-				post_trans[q] = cmplx_sub(pre_trans[p],
-						cmplx_mult(pre_trans[q],w[m][k]));
+				a = pre_trans[p];
+				b = cmplx_mult(pre_trans[q],w[m][k]);
+				pre_trans[p] = cmplx_add(a,b);
+				pre_trans[q] = cmplx_sub(a,b);
 
 			}
 		}
+	}
+
+	for( i=0; i < N/4; i++)
+	{
+		pre_trans[i].imag *= -1;
 	}
 
 	/* Post IFFT complex multiply */
 	for( i=0; i < N/4; i++)
 	{
 		/* z[i] = (X[N/2-2*i-1] + j * X[2*i]) * (xcos1[i] + j * xsin1[i]) ; */ 
-		pre_window[i].real =(post_trans[i].real * xcos1[i])  -  (post_trans[i].imag  * xsin1[i]);
-	  pre_window[i].imag =(post_trans[i].real * xsin1[i])  +  (post_trans[i].imag  * xcos1[i]);
+		pre_window[i].real =(pre_trans[i].real * xcos1[i])  -  (pre_trans[i].imag  * xsin1[i]);
+	  pre_window[i].imag =(pre_trans[i].real * xsin1[i])  +  (pre_trans[i].imag  * xcos1[i]);
 	}
 	
 	/* Window and convert to real valued signal */
@@ -270,4 +354,7 @@ imdct_do(float x[],float y[])
 		y[3*N/4+2*i]   =  pre_window[i].imag       * window[N/4-2*i-1];
 		y[3*N/4+2*i+1] = -pre_window[N/4-i-1].real * window[N/4-2*i-2];
 	}
+
+#endif
+	//FIXME insert overlap and add segment here
 }

@@ -89,7 +89,7 @@ int main(int argc,char *argv[])
 #endif
 
 			/* Convert the frequency data into time samples */
-			imdct(&bsi,&stream_coeffs,&stream_samples);
+			imdct(&bsi,&audblk,&stream_coeffs,&stream_samples);
 		decode_sanity_check();
 
 			/* Send the samples to the output device */
@@ -151,7 +151,6 @@ void decode_sanity_check_init(void)
 
 void decode_sanity_check(void)
 {
-#if 0
 	int i;
 
 	if(syncinfo.magic != DECODE_MAGIC_NUMBER)
@@ -205,7 +204,6 @@ void decode_sanity_check(void)
 			fprintf(stderr,"\n** Sanity check failed -- chbwcod too big **"); 
 	}
 
-#endif
 	return;
 }	
 
