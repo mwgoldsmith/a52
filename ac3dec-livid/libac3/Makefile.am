@@ -20,7 +20,7 @@ lib_LTLIBRARIES = codec_ac3dec.la
 codec_ac3dec_la_LIBADD = downmix.lo
 codec_ac3dec_la_DEPENDENCIES = downmix.lo
 codec_ac3dec_la_CFLAGS = @MM_CFLAGS@
-codec_ac3dec_la_LDFLAGS = -avoid-version -module Wl,-soname,codec_ac3dec.so -lm @MM_LIBS@
+codec_ac3dec_la_LDFLAGS = -avoid-version -module Wl,-soname,codec_ac3dec.so -lm @MM_LIBS@ -L$(top_builddir)/src/oms/.libs -loms
 codec_ac3dec_la_SOURCES = bitstream.c codec.c imdct.c coeff.c exponent.c stats.c bit_allocate.c  parse.c crc.c debug.c rematrix.c dither.c sanity_check.c srfft.c
 
 EXTRA_codec_ac3dec_la_SOURCES = downmix.c downmix_i386.S
