@@ -47,7 +47,7 @@ typedef struct {
     int q1_ptr;
     int q2_ptr;
     int q4_ptr;
-} quantizer_t;
+} quantizer_set_t;
 
 static uint8_t halfrate[12] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3};
 
@@ -317,7 +317,7 @@ static inline int16_t dither_gen (a52_state_t * state)
 }
 
 static void coeff_get (a52_state_t * state, sample_t * coeff,
-		       expbap_t * expbap, quantizer_t * quantizer,
+		       expbap_t * expbap, quantizer_set_t * quant,
 		       sample_t level, int dither, int end)
 {
     int i;
@@ -346,33 +346,33 @@ static void coeff_get (a52_state_t * state, sample_t * coeff,
 	    }
 
 	case -1:
-	    if (quantizer->q1_ptr >= 0) {
-		coeff[i] = quantizer->q1[quantizer->q1_ptr--] * factor[exp[i]];
+	    if (quant->q1_ptr >= 0) {
+		coeff[i] = quant->q1[quant->q1_ptr--] * factor[exp[i]];
 		continue;
 	    } else {
 		int code;
 
 		code = bitstream_get (state, 5);
 
-		quantizer->q1_ptr = 1;
-		quantizer->q1[0] = q_1_2[code];
-		quantizer->q1[1] = q_1_1[code];
+		quant->q1_ptr = 1;
+		quant->q1[0] = q_1_2[code];
+		quant->q1[1] = q_1_1[code];
 		coeff[i] = q_1_0[code] * factor[exp[i]];
 		continue;
 	    }
 
 	case -2:
-	    if (quantizer->q2_ptr >= 0) {
-		coeff[i] = quantizer->q2[quantizer->q2_ptr--] * factor[exp[i]];
+	    if (quant->q2_ptr >= 0) {
+		coeff[i] = quant->q2[quant->q2_ptr--] * factor[exp[i]];
 		continue;
 	    } else {
 		int code;
 
 		code = bitstream_get (state, 7);
 
-		quantizer->q2_ptr = 1;
-		quantizer->q2[0] = q_2_2[code];
-		quantizer->q2[1] = q_2_1[code];
+		quant->q2_ptr = 1;
+		quant->q2[0] = q_2_2[code];
+		quant->q2[1] = q_2_1[code];
 		coeff[i] = q_2_0[code] * factor[exp[i]];
 		continue;
 	    }
@@ -382,17 +382,17 @@ static void coeff_get (a52_state_t * state, sample_t * coeff,
 	    continue;
 
 	case -3:
-	    if (quantizer->q4_ptr == 0) {
-		quantizer->q4_ptr = -1;
-		coeff[i] = quantizer->q4 * factor[exp[i]];
+	    if (quant->q4_ptr == 0) {
+		quant->q4_ptr = -1;
+		coeff[i] = quant->q4 * factor[exp[i]];
 		continue;
 	    } else {
 		int code;
 
 		code = bitstream_get (state, 7);
 
-		quantizer->q4_ptr = 0;
-		quantizer->q4 = q_4_1[code];
+		quant->q4_ptr = 0;
+		quant->q4 = q_4_1[code];
 		coeff[i] = q_4_0[code] * factor[exp[i]];
 		continue;
 	    }
@@ -410,7 +410,7 @@ static void coeff_get (a52_state_t * state, sample_t * coeff,
 
 static void coeff_get_coupling (a52_state_t * state, int nfchans,
 				sample_t * coeff, sample_t (* samples)[256],
-				quantizer_t * quantizer, uint8_t dithflag[5])
+				quantizer_set_t * quant, uint8_t dithflag[5])
 {
     int cplbndstrc, bnd, i, i_end, ch;
     uint8_t * exp;
@@ -453,33 +453,33 @@ static void coeff_get_coupling (a52_state_t * state, int nfchans,
 		continue;
 
 	    case -1:
-		if (quantizer->q1_ptr >= 0) {
-		    cplcoeff = quantizer->q1[quantizer->q1_ptr--];
+		if (quant->q1_ptr >= 0) {
+		    cplcoeff = quant->q1[quant->q1_ptr--];
 		    break;
 		} else {
 		    int code;
 
 		    code = bitstream_get (state, 5);
 
-		    quantizer->q1_ptr = 1;
-		    quantizer->q1[0] = q_1_2[code];
-		    quantizer->q1[1] = q_1_1[code];
+		    quant->q1_ptr = 1;
+		    quant->q1[0] = q_1_2[code];
+		    quant->q1[1] = q_1_1[code];
 		    cplcoeff = q_1_0[code];
 		    break;
 		}
 
 	    case -2:
-		if (quantizer->q2_ptr >= 0) {
-		    cplcoeff = quantizer->q2[quantizer->q2_ptr--];
+		if (quant->q2_ptr >= 0) {
+		    cplcoeff = quant->q2[quant->q2_ptr--];
 		    break;
 		} else {
 		    int code;
 
 		    code = bitstream_get (state, 7);
 
-		    quantizer->q2_ptr = 1;
-		    quantizer->q2[0] = q_2_2[code];
-		    quantizer->q2[1] = q_2_1[code];
+		    quant->q2_ptr = 1;
+		    quant->q2[0] = q_2_2[code];
+		    quant->q2[1] = q_2_1[code];
 		    cplcoeff = q_2_0[code];
 		    break;
 		}
@@ -489,17 +489,17 @@ static void coeff_get_coupling (a52_state_t * state, int nfchans,
 		break;
 
 	    case -3:
-		if (quantizer->q4_ptr == 0) {
-		    quantizer->q4_ptr = -1;
-		    cplcoeff = quantizer->q4;
+		if (quant->q4_ptr == 0) {
+		    quant->q4_ptr = -1;
+		    cplcoeff = quant->q4;
 		    break;
 		} else {
 		    int code;
 
 		    code = bitstream_get (state, 7);
 
-		    quantizer->q4_ptr = 0;
-		    quantizer->q4 = q_4_1[code];
+		    quant->q4_ptr = 0;
+		    quant->q4 = q_4_1[code];
 		    cplcoeff = q_4_0[code];
 		    break;
 		}
@@ -530,7 +530,7 @@ int a52_block (a52_state_t * state)
     uint8_t blksw[5], dithflag[5];
     sample_t coeff[5];
     int chanbias;
-    quantizer_t quantizer;
+    quantizer_set_t quant;
     sample_t * samples;
 
     nfchans = nfchans_tbl[state->acmod];
@@ -767,20 +767,20 @@ int a52_block (a52_state_t * state)
     chanbias = a52_downmix_coeff (coeff, state->acmod, state->output,
 				  state->dynrng, state->clev, state->slev);
 
-    quantizer.q1_ptr = quantizer.q2_ptr = quantizer.q4_ptr = -1;
+    quant.q1_ptr = quant.q2_ptr = quant.q4_ptr = -1;
     done_cpl = 0;
 
     for (i = 0; i < nfchans; i++) {
 	int j;
 
-	coeff_get (state, samples + 256 * i, state->fbw_expbap +i, &quantizer,
+	coeff_get (state, samples + 256 * i, state->fbw_expbap +i, &quant,
 		   coeff[i], dithflag[i], state->endmant[i]);
 
 	if ((state->chincpl >> i) & 1) {
 	    if (!done_cpl) {
 		done_cpl = 1;
 		coeff_get_coupling (state, nfchans, coeff,
-				    (sample_t (*)[256])samples, &quantizer,
+				    (sample_t (*)[256])samples, &quant,
 				    dithflag);
 	    }
 	    j = state->cplendmant;
@@ -823,14 +823,14 @@ int a52_block (a52_state_t * state)
 
     if (state->lfeon) {
 	if (state->output & A52_LFE) {
-	    coeff_get (state, samples - 256, &state->lfe_expbap, &quantizer,
+	    coeff_get (state, samples - 256, &state->lfe_expbap, &quant,
 		       state->dynrng, 0, 7);
 	    for (i = 7; i < 256; i++)
 		(samples-256)[i] = 0;
 	    a52_imdct_512 (samples - 256, samples + 1536 - 256, state->bias);
 	} else {
 	    /* just skip the LFE coefficients */
-	    coeff_get (state, samples + 1280, &state->lfe_expbap, &quantizer,
+	    coeff_get (state, samples + 1280, &state->lfe_expbap, &quant,
 		       0, 0, 7);
 	}
     }
