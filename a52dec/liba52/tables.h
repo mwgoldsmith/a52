@@ -46,11 +46,7 @@ static const int8_t exp_3[128] = {
     25,25,25
 };
 
-#ifndef LIBA52_FIXED
-#define Q(x) (32768.0 * x)
-#else
 #define Q(x) ROUND (32768.0 * x)
-#endif
 
 #define Q0 Q (-2/3)
 #define Q1 Q (0)
