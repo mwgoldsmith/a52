@@ -161,6 +161,7 @@ done:
 }
 
 
+#if 0
 /**
  *
  **/
@@ -171,7 +172,7 @@ static void _decode_mute (void)
 	memset (s16_samples, 0, sizeof(int16_t) * 256 * 2 * 6);
 	error_flag = 0;
 }
-
+#endif
 
 /**
  *
