@@ -188,6 +188,7 @@ static ao_instance_t * win_open (int flags)
     instance->sample_rate = 0;
     instance->set_params = 1;
     instance->flags = flags;
+    instance->current_buffer = 0;
 
     return (ao_instance_t *) instance;
 }
