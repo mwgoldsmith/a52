@@ -6,6 +6,8 @@
 * redo all bit allocation if previous frame had zero_snr_offsets
 * make dynrng work in dual-channel streams
 
+* fix and test mlib IMDCT
+
 * finish a52_internal.h cleanup
 	* use sensible data types
 	* move some arrays into bit fields
