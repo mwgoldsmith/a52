@@ -79,13 +79,13 @@ void imdct_init(void)
 void 
 imdct(stream_coeffs_t *coeffs, stream_samples_t *samples)
 {
+	int i;
 	/* FIXME only do the transform for channels that are enabled */
-	imdct_do(coeffs->left,samples->left);
-	imdct_do(coeffs->right,samples->right);
-	imdct_do(coeffs->centre,samples->centre);
-	imdct_do(coeffs->left_surround,samples->left_surround);
-	imdct_do(coeffs->right_surround,samples->right_surround);
-	imdct_do(coeffs->low_frequency,samples->low_frequency);
+
+	for(i=0; i<5;i++)
+		imdct_do(coeffs->fbw[i],samples->channel[i]);
+
+	imdct_do(coeffs->lfe,samples->channel[6]);
 }
 
 void

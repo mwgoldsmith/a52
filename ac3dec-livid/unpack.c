@@ -73,7 +73,7 @@ unpack_exp(uint_16 type,uint_16 expstr,uint_16 ngrps,uint_16 initial_exp,
 	{
 		exp_1 = exps[i] / 25;
 		exp_2 = (exps[i] - (exp_1 * 25)) / 5;
-		exp_2 = exps[i] - (exp_1 * 25) - (exp_2 * 5) ;
+		exp_3 = exps[i] - (exp_1 * 25) - (exp_2 * 5) ;
 
 		exp_acc += (exp_1 - 2);
 

@@ -11,6 +11,18 @@
 #include "decode.h"
 #include "bitstream.h"
 
+//FIXME this is ugly
+#undef LITTLE_ENDIAN
+#define LITTLE_ENDIAN
+
+#ifdef LITTLE_ENDIAN 
+#define SWAP_ENDIAN32(x)  ((((uint_8*)&x)[0] << 24) |  \
+                         (((uint_8*)&x)[1] << 16) |  \
+                         (((uint_8*)&x)[2] << 8) |   \
+                         ((uint_8*)&x)[3])           
+#else 
+#define SWAP_ENDIAN32(x)  (x)
+#endif
 
 static uint_32 bit_mask[] = { 
 	0x80000000, 0xC0000000, 0xE0000000,0xF0000000,
@@ -21,6 +33,8 @@ static uint_32 bit_mask[] = {
 	0xFFFFF800, 0xFFFFFC00, 0xFFFFFE00,0xFFFFFF00,
 	0xFFFFFF80, 0xFFFFFFC0, 0xFFFFFFE0,0xFFFFFFF0,
 	0xFFFFFFF8, 0xFFFFFFFC, 0xFFFFFFFE,0xFFFFFFFF};
+
+static void bitstream_load(bitstream_t *bs);
 
 /* Fetches 1-32 bits from the file opened in bitstream_open */
 uint_32
@@ -42,12 +56,20 @@ bitstream_get(bitstream_t *bs,uint_32 num_bits)
 			(32 - bs->bits_left);
 		num_bits -= bs->bits_left;
 		result <<= num_bits;
-		fread(&bs->current_word,4,1,bs->file);
+		bitstream_load(bs);
 		result |= (bs->current_word & bit_mask[num_bits]) >> (32 - num_bits);
 		bs->current_word <<= num_bits;
-		bs->bits_left = 32 - num_bits;
+		bs->bits_left -= num_bits;
 	}
 	return result;
+}
+
+static void
+bitstream_load(bitstream_t *bs)
+{
+		fread(&bs->current_word,1,4,bs->file);
+		bs->current_word = SWAP_ENDIAN32(bs->current_word);
+		bs->bits_left = 32;
 }
 
 /* Opens a bitstream for use in bitstream_get */
@@ -68,8 +90,7 @@ bitstream_open(char file_name[])
 		return 0;
 	}
 
-	fread(&bs->current_word,4,1,bs->file);
-	bs->bits_left = 32;
+	bitstream_load(bs);
 
 	return bs;
 }

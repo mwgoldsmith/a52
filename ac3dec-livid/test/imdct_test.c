@@ -19,14 +19,14 @@ int main(void)
 {
 	int i;
 
-	coeffs.left[80] = 1.0;
+	coeffs.fbw[0][80] = 1.0;
 
 	imdct_init();
 
 	imdct(&coeffs,&samples);
 
 	for(i=0;i<512;i++)
-		printf("%f\n",samples.left[i]);
+		printf("%f\n",samples.channel[0][i]);
 	
 	return 0;
 

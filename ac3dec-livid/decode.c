@@ -1,9 +1,3 @@
-/* 
- *  decode.c
- *
- *	Aaron Holtzman - May 1999
- *
- */
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -12,14 +6,16 @@
 #include "bitstream.h"
 #include "imdct.h"
 #include "unpack.h"
+#include "stats.h"
 
 static void decode_fill_syncinfo(bitstream_t *bs);
 static void decode_fill_bsi(bitstream_t *bs);
 static void decode_fill_audblk(bitstream_t *bs);
+static void decode_find_sync(bitstream_t *bs);
 
-static stream_coeffs_t stream_coeffs;
-static stream_samples_t stream_samples;
-static audblk_t audblk;
+//static stream_coeffs_t stream_coeffs;
+//static stream_samples_t stream_samples;
+//static audblk_t audblk;
 static bsi_t bsi;
 static syncinfo_t syncinfo;
 /* Misc LUTs */
@@ -30,14 +26,17 @@ int main(int argc,char argv[])
 	int i;
 	bitstream_t *bs;
 
-	bs = bitstream_open("foo.dat");
+	bs = bitstream_open("foo.ac3");
 	/* FIXME check for end of stream and exit */
+
+	decode_find_sync(bs);
 	while(1)
 	{
 		decode_fill_syncinfo(bs);
 		decode_fill_bsi(bs);
 		for(i=0; i < 6; i++)
 		{
+#if 0
 			/* Extract most of the audblk info from the bitstream
 			 * (minus the mantissas */
 			decode_fill_audblk(bs);
@@ -70,6 +69,7 @@ int main(int argc,char argv[])
 
 			/* Send the samples to the output device */
 			/*output_samples(&stream_samples);*/
+#endif
 		}
 	}
 
@@ -80,14 +80,8 @@ decode_fill_syncinfo(bitstream_t *bs)
 {
 	uint_32 data;
 
-	/* See if we have the sync word */
-	data = bitstream_get(bs,16);
-	if(data != 0x0b77)
-	{
-		/* FIXME - if we don't have sync, then do proper synchronization */
-		printf("Arghh!\n");
-		exit(1);
-	}
+	/* Make sure we sync'ed */
+	decode_find_sync(bs);
 
 	/* FIXME  At this point we should probably go through the data
 	 * in the buffer and verify the CRC. Initially, we're just 
@@ -105,6 +99,7 @@ decode_fill_syncinfo(bitstream_t *bs)
 
 
 	/*FIXME insert stats here*/
+	stats_printf_syncinfo(&syncinfo);
 }
 
 /*
@@ -236,13 +231,14 @@ decode_fill_bsi(bitstream_t *bs)
 			bsi.addbsi[i] = bitstream_get(bs,8);
 	}
 
-	/*FIXME insert stats here*/
+	stats_printf_bsi(&bsi);
 }
 
 /* More pain inducing parsing */
 void
 decode_fill_audblk(bitstream_t *bs)
 {
+#if 0
 	int i,j;
 
 	for (i=0;i < bsi.nfchans; i++)
@@ -431,5 +427,22 @@ decode_fill_audblk(bitstream_t *bs)
 
 
 
+#endif
+}
+
+static 
+void decode_find_sync(bitstream_t *bs)
+{
+	uint_16 sync_word;
+
+	sync_word = bitstream_get(bs,16);
+
+	while(1)
+	{
+		if(sync_word == 0x0b77)
+			break;
+		sync_word = sync_word * 2;
+		sync_word |= bitstream_get(bs,1);
+	}
 }
 

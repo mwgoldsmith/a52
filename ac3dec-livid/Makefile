@@ -76,8 +76,8 @@ bin_PROGRAMS = decode
 
 decode_LDFLAGS = -lm
 
-decode_SOURCES = bitstream.c coeffs.c decode.c imdct.c unpack.c
-noinst_HEADERS = bitstream.h coeffs.h decode.h imdct.h ac3.h
+decode_SOURCES = bitstream.c decode.c imdct.c unpack.c stats.c
+noinst_HEADERS = bitstream.h decode.h imdct.h ac3.h unpack.h stats.h
 
 SUBDIRS = . test
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -91,7 +91,7 @@ DEFS = -DHAVE_CONFIG_H -I. -I$(srcdir) -I.
 CPPFLAGS = 
 LDFLAGS = 
 LIBS = 
-decode_OBJECTS =  bitstream.o coeffs.o decode.o imdct.o unpack.o
+decode_OBJECTS =  bitstream.o decode.o imdct.o unpack.o stats.o
 decode_LDADD = $(LDADD)
 decode_DEPENDENCIES = 
 COMPILE = $(CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -108,8 +108,8 @@ DISTFILES = $(DIST_COMMON) $(SOURCES) $(HEADERS) $(TEXINFOS) $(EXTRA_DIST)
 
 TAR = tar
 GZIP_ENV = --best
-DEP_FILES =  .deps/bitstream.P .deps/coeffs.P .deps/decode.P \
-.deps/imdct.P .deps/unpack.P
+DEP_FILES =  .deps/bitstream.P .deps/decode.P .deps/imdct.P \
+.deps/stats.P .deps/unpack.P
 SOURCES = $(decode_SOURCES)
 OBJECTS = $(decode_OBJECTS)
 
