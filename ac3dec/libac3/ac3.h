@@ -22,6 +22,13 @@
  *
  */
 
+typedef struct ac3_ba_s {
+    uint16_t fsnroffst;	// fine SNR offset
+    uint16_t fgaincod;	// fast gain
+    uint16_t deltbae;	// delta bit allocation exists
+    int8_t deltba[50];	// per-band delta bit allocation
+} ac3_ba_t;
+
 typedef struct ac3_state_s {
     uint8_t fscod;	// sample rate
     uint8_t halfrate;	// halfrate factor
@@ -33,16 +40,7 @@ typedef struct ac3_state_s {
     int output;		// type of output
     float level;	// output level
     float bias;		// output bias
-} ac3_state_t;
 
-typedef struct ac3_ba_s {
-    uint16_t fsnroffst;	// fine SNR offset
-    uint16_t fgaincod;	// fast gain
-    uint16_t deltbae;	// delta bit allocation exists
-    int8_t deltba[50];	// per-band delta bit allocation
-} ac3_ba_t;
-
-typedef struct audblk_s {
     uint16_t cplinu;		// coupling in use
     uint16_t chincpl[5];	// channel coupled
     uint16_t phsflginu;		// phase flags in use (stereo only)
@@ -81,6 +79,9 @@ typedef struct audblk_s {
     int8_t fbw_bap[5][256];
     int8_t cpl_bap[256];
     int8_t lfe_bap[7];
+} ac3_state_t;
+
+typedef struct audblk_s {
 } audblk_t;
 
 #define AC3_CHANNEL 0

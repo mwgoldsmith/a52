@@ -120,7 +120,7 @@ do {						\
     mask -= floor;				\
 } while (0)
 
-void bit_allocate (int fscod, int halfrate, audblk_t * audblk, ac3_ba_t * ba,
+void bit_allocate (int fscod, int halfrate, ac3_state_t * state, ac3_ba_t * ba,
 		   int bndstart, int start, int end, int fastleak,
 		   int slowleak, uint8_t * exp, int8_t * bap)
 {
@@ -135,19 +135,19 @@ void bit_allocate (int fscod, int halfrate, audblk_t * audblk, ac3_ba_t * ba,
     int8_t * deltba;
     int * hth;
 
-    fdecay = (63 + 20 * audblk->fdcycod) >> halfrate;
+    fdecay = (63 + 20 * state->fdcycod) >> halfrate;
     fgain = 128 + 128 * ba->fgaincod;
-    sdecay = (15 + 2 * audblk->sdcycod) >> halfrate;
-    sgain = slowgain[audblk->sgaincod];
-    dbknee = dbpbtab[audblk->dbpbcod];
+    sdecay = (15 + 2 * state->sdcycod) >> halfrate;
+    sgain = slowgain[state->sgaincod];
+    dbknee = dbpbtab[state->dbpbcod];
     hth = hthtab[fscod];
     /*
      * if there is no delta bit allocation, make deltba point to an area
      * known to contain zeroes. baptab+156 here.
      */
     deltba = (ba->deltbae == DELTA_BIT_NONE) ? baptab + 156 : ba->deltba;
-    floor = floortab[audblk->floorcod];
-    snroffset = 960 - 64 * audblk->csnroffst - 4 * ba->fsnroffst + floor;
+    floor = floortab[state->floorcod];
+    snroffset = 960 - 64 * state->csnroffst - 4 * ba->fsnroffst + floor;
     floor >>= 5;
 
     i = bndstart;
