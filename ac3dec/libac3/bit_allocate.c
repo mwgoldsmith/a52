@@ -162,6 +162,7 @@ void bit_allocate(int fscod, audblk_t * audblk, ac3_ba_t * ba, uint16_t start,
     int lowcomp;
     int excite;
     int8_t * deltba;
+    int psd;
 
     /* Do some setup before we do the bit alloc */
     sdecay = slowdec[audblk->sdcycod];
@@ -180,7 +181,7 @@ void bit_allocate(int fscod, audblk_t * audblk, ac3_ba_t * ba, uint16_t start,
     i = start;
     j = bndstrt = masktab[start];
     do {
-	int psd, lastbin;
+	int lastbin;
 
 	lastbin = min (bndtab[j] + bndsz[j], end);
 	psd = 128 * exp[i++];
@@ -212,39 +213,41 @@ void bit_allocate(int fscod, audblk_t * audblk, ac3_ba_t * ba, uint16_t start,
     if (i == 0) {	// not the coupling channel
 	do {
 	    if (i < j) {
-		if (bndpsd[i+1] == bndpsd[i] + 256)
+		if (exp[i+1] == exp[i] - 2)
 		    lowcomp = 384;
-		else if (lowcomp && (bndpsd[i+1] < bndpsd[i]))
+		else if (lowcomp && (exp[i+1] > exp[i]))
 		    lowcomp -= 64;
 	    }
-	    excite = bndpsd[i] - fgain - lowcomp;
-	    if (bndpsd[i] < dbknee)
-		excite += (dbknee - bndpsd[i]) >> 2;
+	    psd = 3072 - 128 * exp[i];
+	    excite = psd - fgain - lowcomp;
+	    if (psd < dbknee)
+		excite += (dbknee - psd) >> 2;
 	    mask[i] = max (excite, hth[fscod][i]);
 	    if (deltba != NULL)
 		mask[i] += deltba[i] << 7;
 	    i++;
-	} while ((i < 3) || ((i < 7) && (bndpsd[i] < bndpsd[i-1])));
-	fastleak = bndpsd[i-1] - fgain;
-	slowleak = bndpsd[i-1] - sgain;
+	} while ((i < 3) || ((i < 7) && (exp[i] > exp[i-1])));
+	fastleak = psd - fgain;
+	slowleak = psd - sgain;
 
 	while (i < 7) {
 	    if (i < j) {
-		if (bndpsd[i+1] == bndpsd[i] + 256)
+		if (exp[i+1] == exp[i] - 2)
 		    lowcomp = 384;
-		else if (lowcomp && (bndpsd[i+1] < bndpsd[i]))
+		else if (lowcomp && (exp[i+1] > exp[i]))
 		    lowcomp -= 64;
 	    }
+	    psd = 3072 - 128 * exp[i];
 	    fastleak -= fdecay;
-	    if (fastleak < bndpsd[i] - fgain)
-		fastleak = bndpsd[i] - fgain;
+	    if (fastleak < psd - fgain)
+		fastleak = psd - fgain;
 	    slowleak -= sdecay;
-	    if (slowleak < bndpsd[i] - sgain)
-		slowleak = bndpsd[i] - sgain;
+	    if (slowleak < psd - sgain)
+		slowleak = psd - sgain;
 	    excite = ((fastleak - lowcomp > slowleak) ?
 		      fastleak - lowcomp : slowleak);
-	    if (bndpsd[i] < dbknee)
-		excite += (dbknee - bndpsd[i]) >> 2;
+	    if (psd < dbknee)
+		excite += (dbknee - psd) >> 2;
 	    mask[i] = max (excite, hth[fscod][i]);
 	    if (deltba != NULL)
 		mask[i] += deltba[i] << 7;
@@ -254,20 +257,21 @@ void bit_allocate(int fscod, audblk_t * audblk, ac3_ba_t * ba, uint16_t start,
 	    goto done_excite;
 
 	do {
-	    if (bndpsd[i+1] == bndpsd[i] + 256)
+	    if (exp[i+1] == exp[i] - 2)
 		lowcomp = 320;
-	    else if (lowcomp && (bndpsd[i+1] < bndpsd[i]))
+	    else if (lowcomp && (exp[i+1] > exp[i]))
 		lowcomp -= 64;
+	    psd = 3072 - 128 * exp[i];
 	    fastleak -= fdecay;
-	    if (fastleak < bndpsd[i] - fgain)
-		fastleak = bndpsd[i] - fgain;
+	    if (fastleak < psd - fgain)
+		fastleak = psd - fgain;
 	    slowleak -= sdecay;
-	    if (slowleak < bndpsd[i] - sgain)
-		slowleak = bndpsd[i] - sgain;
+	    if (slowleak < psd - sgain)
+		slowleak = psd - sgain;
 	    excite = ((fastleak - lowcomp > slowleak) ?
 		      fastleak - lowcomp : slowleak);
-	    if (bndpsd[i] < dbknee)
-		excite += (dbknee - bndpsd[i]) >> 2;
+	    if (psd < dbknee)
+		excite += (dbknee - psd) >> 2;
 	    mask[i] = max (excite, hth[fscod][i]);
 	    if (deltba != NULL)
 		mask[i] += deltba[i] << 7;
@@ -276,16 +280,17 @@ void bit_allocate(int fscod, audblk_t * audblk, ac3_ba_t * ba, uint16_t start,
 
 	while (lowcomp > 128) {		// two iterations maximum
 	    lowcomp -= 128;
+	    psd = 3072 - 128 * exp[i];
 	    fastleak -= fdecay;
-	    if (fastleak < bndpsd[i] - fgain)
-		fastleak = bndpsd[i] - fgain;
+	    if (fastleak < psd - fgain)
+		fastleak = psd - fgain;
 	    slowleak -= sdecay;
-	    if (slowleak < bndpsd[i] - sgain)
-		slowleak = bndpsd[i] - sgain;
+	    if (slowleak < psd - sgain)
+		slowleak = psd - sgain;
 	    excite = ((fastleak - lowcomp > slowleak) ?
 		      fastleak - lowcomp : slowleak);
-	    if (bndpsd[i] < dbknee)
-		excite += (dbknee - bndpsd[i]) >> 2;
+	    if (psd < dbknee)
+		excite += (dbknee - psd) >> 2;
 	    mask[i] = max (excite, hth[fscod][i]);
 	    if (deltba != NULL)
 		mask[i] += deltba[i] << 7;
