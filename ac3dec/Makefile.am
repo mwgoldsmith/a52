@@ -1,3 +1,3 @@
-SUBDIRS = autotools include test doc libac3 libao src
+SUBDIRS = autotools include doc libac3 libao src test
 
 EXTRA_DIST = bootstrap

@@ -12,8 +12,8 @@ fi
 srcdir=`cd $srcdir;pwd`
 builddir=`cd $builddir;pwd`
 
-testfile=$srcdir/tests
-if [ $# -ge 1 ]; then testfile=$1; fi
+testfile="$srcdir/tests"
+if [ $# -ge 1 ]; then testfile="$1"; fi
 
 dirs=`awk -F '#' '{print $1}' $testfile`
 
