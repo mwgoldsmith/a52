@@ -21,11 +21,14 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+void float2s16_1 (float * f, int16_t * s16);
 void float2s16_2 (float * f, int16_t * s16);
+void float2s16_3 (float * f, int16_t * s16);
 void float2s16_4 (float * f, int16_t * s16);
 void float2s16_5 (float * f, int16_t * s16);
 int channels_multi (int flags);
 void float2s16_multi (float * f, int16_t * s16, int flags);
+void float2s16_wav (float * f, int16_t * s16, int flags);
 void s16_swap (int16_t * s16, int channels);
 
 #ifdef WORDS_BIGENDIAN
