@@ -152,9 +152,9 @@ typedef struct audblk_s {
 	uint8_t lfe_exp[7];
 
 	/* Bit allocation pointer results */
-	uint16_t fbw_bap[5][256];
-	uint16_t cpl_bap[256];
-	uint16_t lfe_bap[7];
+	int8_t fbw_bap[5][256];
+	int8_t cpl_bap[256];
+	int8_t lfe_bap[7];
 	
 	uint32_t	magic3;
 } audblk_t;

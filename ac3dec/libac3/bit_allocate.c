@@ -57,83 +57,73 @@ static int16_t masktab[] = { 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 
 			     49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49,  0,  0,  0 };
 
 
-static int16_t latab[] = { 0x0040, 0x003f, 0x003e, 0x003d, 0x003c, 0x003b, 0x003a, 0x0039,
-			   0x0038, 0x0037, 0x0036, 0x0035, 0x0034, 0x0034, 0x0033, 0x0032,
-			   0x0031, 0x0030, 0x002f, 0x002f, 0x002e, 0x002d, 0x002c, 0x002c,
-			   0x002b, 0x002a, 0x0029, 0x0029, 0x0028, 0x0027, 0x0026, 0x0026,
-			   0x0025, 0x0024, 0x0024, 0x0023, 0x0023, 0x0022, 0x0021, 0x0021,
-			   0x0020, 0x0020, 0x001f, 0x001e, 0x001e, 0x001d, 0x001d, 0x001c,
-			   0x001c, 0x001b, 0x001b, 0x001a, 0x001a, 0x0019, 0x0019, 0x0018,
-			   0x0018, 0x0017, 0x0017, 0x0016, 0x0016, 0x0015, 0x0015, 0x0015,
-			   0x0014, 0x0014, 0x0013, 0x0013, 0x0013, 0x0012, 0x0012, 0x0012,
-			   0x0011, 0x0011, 0x0011, 0x0010, 0x0010, 0x0010, 0x000f, 0x000f,
-			   0x000f, 0x000e, 0x000e, 0x000e, 0x000d, 0x000d, 0x000d, 0x000d,
-			   0x000c, 0x000c, 0x000c, 0x000c, 0x000b, 0x000b, 0x000b, 0x000b,
-			   0x000a, 0x000a, 0x000a, 0x000a, 0x000a, 0x0009, 0x0009, 0x0009,
-			   0x0009, 0x0009, 0x0008, 0x0008, 0x0008, 0x0008, 0x0008, 0x0008,
-			   0x0007, 0x0007, 0x0007, 0x0007, 0x0007, 0x0007, 0x0006, 0x0006,
-			   0x0006, 0x0006, 0x0006, 0x0006, 0x0006, 0x0006, 0x0005, 0x0005,
-			   0x0005, 0x0005, 0x0005, 0x0005, 0x0005, 0x0005, 0x0004, 0x0004,
-			   0x0004, 0x0004, 0x0004, 0x0004, 0x0004, 0x0004, 0x0004, 0x0004,
-			   0x0004, 0x0003, 0x0003, 0x0003, 0x0003, 0x0003, 0x0003, 0x0003,
-			   0x0003, 0x0003, 0x0003, 0x0003, 0x0003, 0x0003, 0x0003, 0x0002,
-			   0x0002, 0x0002, 0x0002, 0x0002, 0x0002, 0x0002, 0x0002, 0x0002,
-			   0x0002, 0x0002, 0x0002, 0x0002, 0x0002, 0x0002, 0x0002, 0x0002,
-			   0x0002, 0x0002, 0x0001, 0x0001, 0x0001, 0x0001, 0x0001, 0x0001,
-			   0x0001, 0x0001, 0x0001, 0x0001, 0x0001, 0x0001, 0x0001, 0x0001,
-			   0x0001, 0x0001, 0x0001, 0x0001, 0x0001, 0x0001, 0x0001, 0x0001,
-			   0x0001, 0x0001, 0x0001, 0x0001, 0x0001, 0x0001, 0x0001, 0x0001,
-			   0x0001, 0x0001, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
-			   0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
-			   0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
-			   0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
-			   0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
-			   0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
-			   0x0000, 0x0000, 0x0000, 0x0000};
+static int16_t hth_[][50] = {
+    {0x730, 0x730, 0x7c0, 0x800, 0x820, 0x840, 0x850, 0x850, 0x860, 0x860,
+     0x860, 0x860, 0x860, 0x870, 0x870, 0x870, 0x880, 0x880, 0x890, 0x890,
+     0x8a0, 0x8a0, 0x8b0, 0x8b0, 0x8c0, 0x8c0, 0x8d0, 0x8e0, 0x8f0, 0x900,
+     0x910, 0x910, 0x910, 0x910, 0x900, 0x8f0, 0x8c0, 0x870, 0x820, 0x7e0,
+     0x7a0, 0x770, 0x760, 0x7a0, 0x7c0, 0x7c0, 0x6e0, 0x400, 0x3c0, 0x3c0},
+    {0x710, 0x710, 0x7a0, 0x7f0, 0x820, 0x830, 0x840, 0x850, 0x850, 0x860,
+     0x860, 0x860, 0x860, 0x860, 0x870, 0x870, 0x870, 0x880, 0x880, 0x880,
+     0x890, 0x890, 0x8a0, 0x8a0, 0x8b0, 0x8b0, 0x8c0, 0x8c0, 0x8e0, 0x8f0,
+     0x900, 0x910, 0x910, 0x910, 0x910, 0x900, 0x8e0, 0x8b0, 0x870, 0x820,
+     0x7e0, 0x7b0, 0x760, 0x770, 0x7a0, 0x7c0, 0x780, 0x5d0, 0x3c0, 0x3c0},
+    {0x680, 0x680, 0x750, 0x7b0, 0x7e0, 0x810, 0x820, 0x830, 0x840, 0x850,
+     0x850, 0x850, 0x860, 0x860, 0x860, 0x860, 0x860, 0x860, 0x860, 0x860,
+     0x870, 0x870, 0x870, 0x870, 0x880, 0x880, 0x880, 0x890, 0x8a0, 0x8b0,
+     0x8c0, 0x8d0, 0x8e0, 0x8f0, 0x900, 0x910, 0x910, 0x910, 0x900, 0x8f0,
+     0x8d0, 0x8b0, 0x840, 0x7f0, 0x790, 0x760, 0x7a0, 0x7c0, 0x7b0, 0x720}
+};
 
-static int16_t hth_[][50] = {{ 0x04d0, 0x04d0, 0x0440, 0x0400, 0x03e0, 0x03c0, 0x03b0, 0x03b0,  
-			      0x03a0, 0x03a0, 0x03a0, 0x03a0, 0x03a0, 0x0390, 0x0390, 0x0390,  
-			      0x0380, 0x0380, 0x0370, 0x0370, 0x0360, 0x0360, 0x0350, 0x0350,  
-			      0x0340, 0x0340, 0x0330, 0x0320, 0x0310, 0x0300, 0x02f0, 0x02f0,
-			      0x02f0, 0x02f0, 0x0300, 0x0310, 0x0340, 0x0390, 0x03e0, 0x0420,
-			      0x0460, 0x0490, 0x04a0, 0x0460, 0x0440, 0x0440, 0x0520, 0x0800,
-			      0x0840, 0x0840 },
-			    { 0x04f0, 0x04f0, 0x0460, 0x0410, 0x03e0, 0x03d0, 0x03c0, 0x03b0, 
-			      0x03b0, 0x03a0, 0x03a0, 0x03a0, 0x03a0, 0x03a0, 0x0390, 0x0390, 
-			      0x0390, 0x0380, 0x0380, 0x0380, 0x0370, 0x0370, 0x0360, 0x0360, 
-			      0x0350, 0x0350, 0x0340, 0x0340, 0x0320, 0x0310, 0x0300, 0x02f0, 
-			      0x02f0, 0x02f0, 0x02f0, 0x0300, 0x0320, 0x0350, 0x0390, 0x03e0, 
-			      0x0420, 0x0450, 0x04a0, 0x0490, 0x0460, 0x0440, 0x0480, 0x0630, 
-			      0x0840, 0x0840 },
-			    { 0x0580, 0x0580, 0x04b0, 0x0450, 0x0420, 0x03f0, 0x03e0, 0x03d0, 
-			      0x03c0, 0x03b0, 0x03b0, 0x03b0, 0x03a0, 0x03a0, 0x03a0, 0x03a0, 
-			      0x03a0, 0x03a0, 0x03a0, 0x03a0, 0x0390, 0x0390, 0x0390, 0x0390, 
-			      0x0380, 0x0380, 0x0380, 0x0370, 0x0360, 0x0350, 0x0340, 0x0330, 
-			      0x0320, 0x0310, 0x0300, 0x02f0, 0x02f0, 0x02f0, 0x0300, 0x0310, 
-			      0x0330, 0x0350, 0x03c0, 0x0410, 0x0470, 0x04a0, 0x0460, 0x0440, 
-			      0x0450, 0x04e0 }};
+static int8_t baptab[] = {
+    15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15,
+    15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15,
+    15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15,
+    15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15,
+    15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15,
+    15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15,	// 93 padding entries
 
+    15, 15, 15, 15, 15, 15, 15, 15, 15, 14, 14, 14, 14, 14, 14, 14,
+    14, 13, 13, 13, 13, 12, 12, 12, 12, 11, 11, 11, 11, 10, 10, 10,
+    10,  9,  9,  9,  9,  8,  8,  8,  8,  7,  7,  7,  7,  6,  6,  6,
+     6,  5,  5,  4,  4,  3,  3,  3,  2,  2,  1,  1,  1,  1,  1,  0,
 
-static int16_t baptab[] = { 0,  1,  1,  1,  1,  1,  2,  2,  3,  3,  3,  4,  4,  5,  5,  6,
-			    6,  6,  6,  7,  7,  7,  7,  8,  8,  8,  8,  9,  9,  9,  9, 10, 
-			    10, 10, 10, 11, 11, 11, 11, 12, 12, 12, 12, 13, 13, 13, 13, 14,
-			    14, 14, 14, 14, 14, 14, 14, 15, 15, 15, 15, 15, 15, 15, 15, 15 };
+     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+     0,  0,  0,  0					// 148 padding entries
+};
 
-static int16_t sdecay;
-static int16_t fdecay;
-static int16_t sgain;
-static int16_t dbknee;
-static int16_t floor;
-
-static inline int16_t max (int16_t a, int16_t b)
-{
-    return (a > b ? a : b);
-}
-	
-static inline int16_t min (int16_t a, int16_t b)
-{
-    return (a < b ? a : b);
-}
+static int8_t latab[256] = {
+    -64, -63, -62, -61, -60, -59, -58, -57, -56, -55, -54, -53,
+    -52, -52, -51, -50, -49, -48, -47, -47, -46, -45, -44, -44,
+    -43, -42, -41, -41, -40, -39, -38, -38, -37, -36, -36, -35,
+    -35, -34, -33, -33, -32, -32, -31, -30, -30, -29, -29, -28,
+    -28, -27, -27, -26, -26, -25, -25, -24, -24, -23, -23, -22,
+    -22, -21, -21, -21, -20, -20, -19, -19, -19, -18, -18, -18,
+    -17, -17, -17, -16, -16, -16, -15, -15, -15, -14, -14, -14,
+    -13, -13, -13, -13, -12, -12, -12, -12, -11, -11, -11, -11,
+    -10, -10, -10, -10, -10,  -9,  -9,  -9,  -9,  -9,  -8,  -8,
+     -8,  -8,  -8,  -8,  -7,  -7,  -7,  -7,  -7,  -7,  -6,  -6,
+     -6,  -6,  -6,  -6,  -6,  -6,  -5,  -5,  -5,  -5,  -5,  -5,
+     -5,  -5,  -4,  -4,  -4,  -4,  -4,  -4,  -4,  -4,  -4,  -4,
+     -4,  -3,  -3,  -3,  -3,  -3,  -3,  -3,  -3,  -3,  -3,  -3,
+     -3,  -3,  -3,  -2,  -2,  -2,  -2,  -2,  -2,  -2,  -2,  -2,
+     -2,  -2,  -2,  -2,  -2,  -2,  -2,  -2,  -2,  -2,  -1,  -1,
+     -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,
+     -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,
+     -1,  -1,  -1,  -1,  -1,  -1,   0,   0,   0,   0,   0,   0,
+      0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
+      0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
+      0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
+      0,   0,   0,   0
+};
 
 #define UPDATE_LEAK() 		\
 do {				\
@@ -149,10 +139,10 @@ do {				\
 do {						\
     if (psd > dbknee)				\
 	mask -= (psd - dbknee) >> 2;		\
-    if (mask > 3072 - hth[i])			\
-	mask = 3072 - hth[i];			\
+    if (mask > hth[i])				\
+	mask = hth[i];				\
     if (deltba != NULL)				\
-	mask -= deltba[i] << 7;			\
+	mask -= 128 * deltba[i];		\
     mask -= snroffset;				\
     mask = (mask > 0) ? 0 : ((-mask) >> 5);	\
     mask -= floor;				\
@@ -160,23 +150,21 @@ do {						\
 
 void bit_allocate(int fscod, audblk_t * audblk, ac3_ba_t * ba, uint16_t start,
 		  uint16_t end, int16_t fastleak, int16_t slowleak,
-		  uint8_t * exp, uint16_t * bap)
+		  uint8_t * exp, int8_t * bap)
 {
-    static int16_t slowgain[] = { 0x540, 0x4d8, 0x478, 0x410 };
-    static int16_t dbpbtab[]  = { 0xc00, 0x500, 0x300, 0x100 };
-    static int16_t floortab[] = {0x910, 0x950, 0x990, 0x9d0,
-				 0xa10, 0xa90, 0xb10, 0x1400 };
+    static int slowgain[] = {0x540, 0x4d8, 0x478, 0x410};
+    static int dbpbtab[]  = {0xc00, 0x500, 0x300, 0x100};
+    static int floortab[] = {0x910, 0x950, 0x990, 0x9d0,
+			     0xa10, 0xa90, 0xb10, 0x1400};
 
-    int16_t fgain;
-    int16_t snroffset;
     int i, j;
-    int lowcomp;
-    int8_t * deltba;
+    int fdecay, fgain, sdecay, sgain, dbknee, floor, snroffset;
     int psd, mask;
-    int16_t * hth;
+    int8_t * deltba;
+    uint16_t * hth;
 
     fdecay = 63 + 20 * audblk->fdcycod;
-    fgain = (ba->fgaincod + 1) << 7;
+    fgain = 128 + 128 * ba->fgaincod;
     sdecay = 15 + 2 * audblk->sdcycod;
     sgain = slowgain[audblk->sgaincod];
     dbknee = dbpbtab[audblk->dbpbcod];
@@ -189,6 +177,8 @@ void bit_allocate(int fscod, audblk_t * audblk, ac3_ba_t * ba, uint16_t start,
     i = masktab[start];
     j = start;
     if (start == 0) {	// not the coupling channel
+	int lowcomp;
+
 	lowcomp = 0;
 	j = end - 1;
 	do {
@@ -201,7 +191,7 @@ void bit_allocate(int fscod, audblk_t * audblk, ac3_ba_t * ba, uint16_t start,
 	    psd = 128 * exp[i];
 	    mask = psd + fgain + lowcomp;
 	    COMPUTE_MASK ();
-	    bap[i++] = baptab[63 - max (0, min (63, 63 + mask + 4 * exp[i]))];
+	    bap[i++] = (baptab+156)[mask + 4 * exp[i]];
 	} while ((i < 3) || ((i < 7) && (exp[i] > exp[i-1])));
 	fastleak = psd + fgain;
 	slowleak = psd + sgain;
@@ -218,7 +208,7 @@ void bit_allocate(int fscod, audblk_t * audblk, ac3_ba_t * ba, uint16_t start,
 	    mask = ((fastleak + lowcomp < slowleak) ?
 		    fastleak + lowcomp : slowleak);
 	    COMPUTE_MASK ();
-	    bap[i++] = baptab[63 - max (0, min (63, 63 + mask + 4 * exp[i]))];
+	    bap[i++] = (baptab+156)[mask + 4 * exp[i]];
 	}
 
 	if (end == 7)	// lfe channel
@@ -234,7 +224,7 @@ void bit_allocate(int fscod, audblk_t * audblk, ac3_ba_t * ba, uint16_t start,
 	    mask = ((fastleak + lowcomp < slowleak) ?
 		    fastleak + lowcomp : slowleak);
 	    COMPUTE_MASK ();
-	    bap[i++] = baptab[63 - max (0, min (63, 63 + mask + 4 * exp[i]))];
+	    bap[i++] = (baptab+156)[mask + 4 * exp[i]];
 	} while (i < 20);
 
 	while (lowcomp > 128) {		// two iterations maximum
@@ -244,7 +234,7 @@ void bit_allocate(int fscod, audblk_t * audblk, ac3_ba_t * ba, uint16_t start,
 	    mask = ((fastleak + lowcomp < slowleak) ?
 		    fastleak + lowcomp : slowleak);
 	    COMPUTE_MASK ();
-	    bap[i++] = baptab[63 - max (0, min (63, 63 + mask + 4 * exp[i]))];
+	    bap[i++] = (baptab+156)[mask + 4 * exp[i]];
 	}
 	j = i;
     }
@@ -253,7 +243,7 @@ void bit_allocate(int fscod, audblk_t * audblk, ac3_ba_t * ba, uint16_t start,
 	int startband, endband;
 
 	startband = j;
-	endband = min (bndtab[i] + bndsz[i], end);
+	endband = (bndtab[i] + bndsz[i] < end) ? bndtab[i] + bndsz[i] : end;
 	psd = 128 * exp[j++];
 	while (j < endband) {
 	    int next, delta;
@@ -265,10 +255,10 @@ void bit_allocate(int fscod, audblk_t * audblk, ac3_ba_t * ba, uint16_t start,
 		psd = next;
 		break;
 	    case -1:
-		psd = next - latab[(-delta) >> 1];
+		psd = next + latab[(-delta) >> 1];
 		break;
 	    case 0:
-		psd -= latab[delta >> 1];
+		psd += latab[delta >> 1];
 		break;
 	    }
 	}
@@ -279,9 +269,9 @@ void bit_allocate(int fscod, audblk_t * audblk, ac3_ba_t * ba, uint16_t start,
 	i++;
 	j = startband;
 	do {
-	    bap[j++] = baptab[63 - max (0, min (63, 63 + mask + 4 * exp[j]))];
 	    // max(mask+4*exp)=147=-(minpsd+fgain-deltba-snroffset)>>5+4*exp
 	    // min(mask+4*exp)=-156=-(sgain-deltba-snroffset)>>5
+	    bap[j++] = (baptab+156)[mask + 4 * exp[j]];
 	} while (j < endband);
     } while (j < end);
 }
