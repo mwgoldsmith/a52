@@ -184,8 +184,8 @@ void decode_find_sync(bitstream_t *bs)
 		sync_word |= bitstream_get(bs,1);
 		i++;
 	}
-	dprintf("(sync) %ld bits skipped to synchronize\n",i);
-	dprintf("(sync) begin frame %ld\n",frame_count);
+	dprintf("(sync) %d bits skipped to synchronize\n",i);
+	dprintf("(sync) begin frame %d\n",frame_count);
 	frame_count++;
 
 	bs->total_bits_read = 16;

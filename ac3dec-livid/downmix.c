@@ -110,7 +110,7 @@ void downmix(bsi_t* bsi, stream_samples_t* stream_sample)
 				for (j = 0; j < 256; j++) 
 				{
 					right_tmp =  0.2265f * *right_sur++;
-					left_tmp  = -1 * right_tmp;
+					left_tmp  = - right_tmp;
 					right_tmp += 0.3204f * *right++ + 0.2265f * *centre;
 					left_tmp  += 0.3204f * *left++  + 0.2265f * *centre++;
 
@@ -129,7 +129,7 @@ void downmix(bsi_t* bsi, stream_samples_t* stream_sample)
 				for (j = 0; j < 256; j++) 
 				{
 					right_tmp =  0.2265f * *right_sur++;
-					left_tmp  = -1 * right_tmp;
+					left_tmp  = - right_tmp;
 					right_tmp += 0.3204f * *right++; 
 					left_tmp  += 0.3204f * *left++;
 

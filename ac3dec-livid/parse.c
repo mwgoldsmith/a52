@@ -368,8 +368,13 @@ parse_audblk(bsi_t *bsi,audblk_t *audblk,bitstream_t *bs)
 	{
 		/* Get the coupling channel exponent strategy */
 		audblk->cplexpstr = bitstream_get(bs,2);
-		audblk->ncplgrps = (audblk->cplendmant - audblk->cplstrtmant) / 
+
+		if(audblk->cplexpstr==0) 
+			audblk->ncplgrps = 0;
+		else
+			audblk->ncplgrps = (audblk->cplendmant - audblk->cplstrtmant) / 
 				(3 << (audblk->cplexpstr-1));
+
 	}
 
 	for(i = 0; i < bsi->nfchans; i++)

@@ -179,11 +179,11 @@ void imdct_init(void)
 
 	for( i = 0; i < 7; i++)
 	{
-		angle_step.real = cos(-2.0 * M_PI / (1 << (i+1)));
-		angle_step.imag = sin(-2.0 * M_PI / (1 << (i+1)));
+		angle_step.real = cos(-2.0f * M_PI / (1 << (i+1)));
+		angle_step.imag = sin(-2.0f * M_PI / (1 << (i+1)));
 
-		current_angle.real = 1.0;
-		current_angle.imag = 0.0;
+		current_angle.real = 1.0f;
+		current_angle.imag = 0.0f;
 
 		for (k = 0; k < 1 << i; k++)
 		{
@@ -237,8 +237,8 @@ imdct_do_512(float x[],float y[],float delay[])
 	for( i=0; i < N/4; i++)
 	{
 		/* z[i] = (X[N/2-2*i-1] + j * X[2*i]) * (xcos1[i] + j * xsin1[i]) ; */ 
-		buf[i].real =         (x[N/2-2*i-1] * xcos1[i])  -  (x[2*i]       * xsin1[i]);
-	  buf[i].imag = -1.0 * ((x[2*i]       * xcos1[i])  +  (x[N/2-2*i-1] * xsin1[i]));
+		buf[i].real =   (x[N/2-2*i-1] * xcos1[i])  -  (x[2*i]       * xsin1[i]);
+	  buf[i].imag = -((x[2*i]       * xcos1[i])  +  (x[N/2-2*i-1] * xsin1[i]));
 	}
 
 	//Bit reversed shuffling
@@ -278,8 +278,8 @@ imdct_do_512(float x[],float y[],float delay[])
 	for( i=0; i < N/4; i++)
 	{
 		/* y[n] = z[n] * (xcos1[n] + j * xsin1[n]) ; */
-		tmp_a_r =        buf[i].real;
-		tmp_a_i = -1.0 * buf[i].imag;
+		tmp_a_r =   buf[i].real;
+		tmp_a_i = - buf[i].imag;
 		buf[i].real =(tmp_a_r * xcos1[i])  -  (tmp_a_i  * xsin1[i]);
 	  buf[i].imag =(tmp_a_r * xsin1[i])  +  (tmp_a_i  * xcos1[i]);
 	}
@@ -345,11 +345,11 @@ imdct_do_256(float x[],float y[],float delay[])
 		q = 2 * (2 * k);
 
 		/* Z1[k] = (X1[N/4-2*k-1] + j * X1[2*k]) * (xcos2[k] + j * xsin2[k]); */ 
-		buf_1[k].real =         x[p] * xcos2[k] - x[q] * xsin2[k];
-	  buf_1[k].imag = -1.0 * (x[q] * xcos2[k] + x[p] * xsin2[k]); 
+		buf_1[k].real =    x[p] * xcos2[k] - x[q] * xsin2[k];
+	  buf_1[k].imag = - (x[q] * xcos2[k] + x[p] * xsin2[k]); 
 		/* Z2[k] = (X2[N/4-2*k-1] + j * X2[2*k]) * (xcos2[k] + j * xsin2[k]); */ 
-		buf_2[k].real =          x[p + 1] * xcos2[k] - x[q + 1] * xsin2[k];
-	  buf_2[k].imag = -1.0 * ( x[q + 1] * xcos2[k] + x[p + 1] * xsin2[k]); 
+		buf_2[k].real =    x[p + 1] * xcos2[k] - x[q + 1] * xsin2[k];
+	  buf_2[k].imag = - (x[q + 1] * xcos2[k] + x[p + 1] * xsin2[k]); 
 	}
 
 	//IFFT Bit reversed shuffling
@@ -403,13 +403,13 @@ imdct_do_256(float x[],float y[],float delay[])
 	for( i=0; i < N/8; i++)
 	{
 		/* y1[n] = z1[n] * (xcos2[n] + j * xs in2[n]) ; */ 
-		tmp_a_r =        buf_1[i].real;
-		tmp_a_i = -1.0 * buf_1[i].imag;
+		tmp_a_r =   buf_1[i].real;
+		tmp_a_i = - buf_1[i].imag;
 		buf_1[i].real =(tmp_a_r * xcos2[i])  -  (tmp_a_i  * xsin2[i]);
 	  buf_1[i].imag =(tmp_a_r * xsin2[i])  +  (tmp_a_i  * xcos2[i]);
 		/* y2[n] = z2[n] * (xcos2[n] + j * xsin2[n]) ; */ 
-		tmp_a_r =        buf_2[i].real;
-		tmp_a_i = -1.0 * buf_2[i].imag;
+		tmp_a_r =   buf_2[i].real;
+		tmp_a_i = - buf_2[i].imag;
 		buf_2[i].real =(tmp_a_r * xcos2[i])  -  (tmp_a_i  * xsin2[i]);
 	  buf_2[i].imag =(tmp_a_r * xsin2[i])  +  (tmp_a_i  * xcos2[i]);
 	}
