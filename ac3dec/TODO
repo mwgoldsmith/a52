@@ -9,7 +9,6 @@
 * use sample_t instead of float
 * move coeff_get_cpl function inline ??????
 * cplfleak/cplsleak: move 2304-x in bit_allocate.c ?
-* q_* tables: use exact values (divide by float not int)
 * scale_factors[]: use float initialisation not int
 
 * investigate rematrix.c : <= instead of < ??????
