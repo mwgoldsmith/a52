@@ -25,7 +25,7 @@
 #define MM_ACCEL_H
 
 /* generic accelerations */
-#define MM_ACCEL_MLIB		0x00000001
+#define MM_ACCEL_DJBFFT		0x00000001
 
 /* x86 accelerations */
 #define MM_ACCEL_X86_MMX	0x80000000

@@ -545,7 +545,7 @@ int main (int argc, char ** argv)
 
     handle_args (argc, argv);
 
-    accel = disable_accel ? 0 : MM_ACCEL_MLIB;
+    accel = disable_accel ? 0 : MM_ACCEL_DJBFFT;
 
     output = ao_open (output_open);
     if (output == NULL) {

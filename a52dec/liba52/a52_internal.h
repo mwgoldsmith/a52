@@ -117,9 +117,5 @@ void a52_downmix (sample_t * samples, int acmod, int output, sample_t bias,
 void a52_upmix (sample_t * samples, int acmod, int output);
 
 void a52_imdct_init (uint32_t mm_accel);
-extern void (* a52_imdct_256) (sample_t * data, sample_t * delay,
-			       sample_t bias);
-extern void (* a52_imdct_512) (sample_t * data, sample_t * delay,
-			       sample_t bias);
-void a52_imdct_do_256_mlib (sample_t * data, sample_t * delay, sample_t bias);
-void a52_imdct_do_512_mlib (sample_t * data, sample_t * delay, sample_t bias);
+void a52_imdct_256 (sample_t * data, sample_t * delay, sample_t bias);
+void a52_imdct_512 (sample_t * data, sample_t * delay, sample_t bias);

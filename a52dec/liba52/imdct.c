@@ -25,6 +25,9 @@
 
 #include <math.h>
 #include <stdio.h>
+#ifdef LIBA52_DJBFFT
+#include <fftc4.h>
+#endif
 #ifndef M_PI
 #define M_PI 3.1415926535897932384626433832795029
 #endif
@@ -33,9 +36,6 @@
 #include "a52.h"
 #include "a52_internal.h"
 #include "mm_accel.h"
-
-void (* a52_imdct_256) (sample_t data[], sample_t delay[], sample_t bias);
-void (* a52_imdct_512) (sample_t data[], sample_t delay[], sample_t bias);
 
 typedef struct complex_s {
     sample_t real;
@@ -160,6 +160,9 @@ sample_t a52_imdct_window[] = {
     0.99999, 0.99999, 0.99999, 1.00000, 1.00000, 1.00000, 1.00000, 1.00000,
     1.00000, 1.00000, 1.00000, 1.00000, 1.00000, 1.00000, 1.00000, 1.00000
 };
+
+static void (* ifft128) (complex_t * buf);
+static void (* ifft64) (complex_t * buf);
 
 static inline void ifft2 (complex_t * buf)
 {
@@ -310,7 +313,7 @@ static void ifft32 (complex_t * buf)
     ifft_pass (buf, roots32 - 8, 8);
 }
 
-static void ifft64 (complex_t * buf)
+static void ifft64_c (complex_t * buf)
 {
     ifft32 (buf);
     ifft16 (buf + 32);
@@ -318,7 +321,7 @@ static void ifft64 (complex_t * buf)
     ifft_pass (buf, roots64 - 16, 16);
 }
 
-static void ifft128 (complex_t * buf)
+static void ifft128_c (complex_t * buf)
 {
     ifft32 (buf);
     ifft16 (buf + 32);
@@ -330,8 +333,7 @@ static void ifft128 (complex_t * buf)
     ifft_pass (buf, roots128 - 32, 32);
 }
 
-static void
-imdct_do_512(sample_t data[],sample_t delay[], sample_t bias)
+void a52_imdct_512(sample_t data[],sample_t delay[], sample_t bias)
 {
     int i,k;
 
@@ -392,8 +394,7 @@ imdct_do_512(sample_t data[],sample_t delay[], sample_t bias)
     }
 }
 
-static void
-imdct_do_256(sample_t data[],sample_t delay[],sample_t bias)
+void a52_imdct_256(sample_t data[],sample_t delay[],sample_t bias)
 {
     int i,k, p, q;
 
@@ -468,31 +469,30 @@ imdct_do_256(sample_t data[],sample_t delay[],sample_t bias)
 
 void a52_imdct_init (uint32_t mm_accel)
 {
-#ifdef LIBA52_MLIB
-    if (mm_accel & MM_ACCEL_MLIB) {
-        fprintf (stderr, "Using mlib for IMDCT transform\n");
-	a52_imdct_512 = a52_imdct_do_512_mlib;
-	a52_imdct_256 = a52_imdct_do_256_mlib;
+    int i;
+
+    /* Twiddle factors to turn IFFT into IMDCT */
+    for (i = 0; i < 128; i++) {
+	xcos1[i] = -cos ((M_PI / 2048) * (8 * i + 1));
+	xsin1[i] = -sin ((M_PI / 2048) * (8 * i + 1));
+    }
+
+    /* More twiddle factors to turn IFFT into IMDCT */
+    for (i = 0; i < 64; i++) {
+	xcos2[i] = -cos ((M_PI / 1024) * (8 * i + 1));
+	xsin2[i] = -sin ((M_PI / 1024) * (8 * i + 1));
+    }
+
+#ifdef LIBA52_DJBFFT
+    if (mm_accel & MM_ACCEL_DJBFFT) {
+	fprintf (stderr, "Using djbfft for IMDCT transform\n");
+	ifft128 = (void (*) (complex_t *)) fftc4_un128;
+	ifft64 = (void (*) (complex_t *)) fftc4_un64;
     } else
 #endif
     {
-	int i;
-
 	fprintf (stderr, "No accelerated IMDCT transform found\n");
-
-	/* Twiddle factors to turn IFFT into IMDCT */
-	for (i = 0; i < 128; i++) {
-	    xcos1[i] = -cos ((M_PI / 2048) * (8 * i + 1));
-	    xsin1[i] = -sin ((M_PI / 2048) * (8 * i + 1));
-	}
-
-	/* More twiddle factors to turn IFFT into IMDCT */
-	for (i = 0; i < 64; i++) {
-	    xcos2[i] = -cos ((M_PI / 1024) * (8 * i + 1));
-	    xsin2[i] = -sin ((M_PI / 1024) * (8 * i + 1));
-	}
-
-	a52_imdct_512 = imdct_do_512;
-	a52_imdct_256 = imdct_do_256;
+	ifft128 = ifft128_c;
+	ifft64 = ifft64_c;
     }
 }
