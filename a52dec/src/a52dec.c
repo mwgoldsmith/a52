@@ -46,6 +46,7 @@ static uint8_t buffer[BUFFER_SIZE];
 static FILE * in_file;
 static int demux_track = 0;
 static int demux_pid = 0;
+static int demux_pes = 0;
 static int disable_accel = 0;
 static int disable_dynrng = 0;
 static int disable_adjust = 0;
@@ -137,6 +138,7 @@ static void print_usage (char ** argv)
 	     "\t-h\tdisplay help and available audio output modes\n"
 	     "\t-s\tuse program stream demultiplexer, track 0-7 or 0x80-0x87\n"
 	     "\t-t\tuse transport stream demultiplexer, pid 0x10-0x1ffe\n"
+	     "\t-T\tuse transport stream PES demultiplexer\n"
 	     "\t-c\tuse c implementation, disables all accelerations\n"
 	     "\t-r\tdisable dynamic range compression\n"
 	     "\t-a\tdisable level adjustment based on output mode\n"
@@ -158,7 +160,7 @@ static void handle_args (int argc, char ** argv)
     char * s;
 
     drivers = ao_drivers ();
-    while ((c = getopt (argc, argv, "hs::t:crag:o:")) != -1)
+    while ((c = getopt (argc, argv, "hs::t:Tcrag:o:")) != -1)
 	switch (c) {
 	case 'o':
 	    for (i = 0; drivers[i].name != NULL; i++)
@@ -189,6 +191,10 @@ static void handle_args (int argc, char ** argv)
 		fprintf (stderr, "Invalid pid: %s\n", optarg);
 		print_usage (argv);
 	    }
+	    break;
+
+	case 'T':
+	    demux_pes = 1;
 	    break;
 
 	case 'c':
@@ -420,7 +426,7 @@ static int demux (uint8_t * buf, uint8_t * end, int flags)
 		goto continue_header;
 	    }
 	}
-	if (demux_pid) {
+	if (demux_pid || demux_pes) {
 	    if (header[3] != 0xbd) {
 		fprintf (stderr, "bad stream id %x\n", header[3]);
 		exit (1);
@@ -434,12 +440,16 @@ static int demux (uint8_t * buf, uint8_t * end, int flags)
 	    NEEDBYTES (len);
 	    DONEBYTES (len);
 	    bytes = 6 + (header[4] << 8) + header[5] - len;
-	    a52_decode_data (buf, end);
-	    state = DEMUX_DATA;
-	    state_bytes = bytes - (end - buf);
-	    return 0;
-	}
-	switch (header[3]) {
+	    if (bytes > end - buf) {
+		a52_decode_data (buf, end);
+		state = DEMUX_DATA;
+		state_bytes = bytes - (end - buf);
+		return 0;
+	    } else if (bytes > 0) {
+		a52_decode_data (buf, buf + bytes);
+		buf += bytes;
+	    }
+	} else switch (header[3]) {
 	case 0xb9:	/* program end code */
 	    /* DONEBYTES (4); */
 	    /* break;         */
@@ -618,7 +628,7 @@ int main (int argc, char ** argv)
 
     if (demux_pid)
 	ts_loop ();
-    else if (demux_track)
+    else if (demux_track || demux_pes)
 	ps_loop ();
     else
 	es_loop ();

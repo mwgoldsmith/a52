@@ -39,13 +39,15 @@ static uint8_t buffer[BUFFER_SIZE];
 static FILE * in_file;
 static int demux_track = 0x80;
 static int demux_pid = 0;
+static int demux_pes = 0;
 
 static void print_usage (char ** argv)
 {
     fprintf (stderr, "usage: %s [-h] [-s <track>] [-t <pid>] <file>\n"
 	     "\t-h\tdisplay help\n"
 	     "\t-s\tset track number (0-7 or 0x80-0x87)\n"
-	     "\t-t\tuse transport stream demultiplexer, pid 0x10-0x1ffe\n",
+	     "\t-t\tuse transport stream demultiplexer, pid 0x10-0x1ffe\n"
+	     "\t-T\tuse transport stream PES demultiplexer\n",
 	     argv[0]);
 
     exit (1);
@@ -56,7 +58,7 @@ static void handle_args (int argc, char ** argv)
     int c;
     char * s;
 
-    while ((c = getopt (argc, argv, "hs:t:")) != -1)
+    while ((c = getopt (argc, argv, "hs:t:T")) != -1)
 	switch (c) {
 	case 's':
 	    demux_track = strtol (optarg, &s, 0);
@@ -74,6 +76,10 @@ static void handle_args (int argc, char ** argv)
 		fprintf (stderr, "Invalid pid: %s\n", optarg);
 		print_usage (argv);
 	    }
+	    break;
+
+	case 'T':
+	    demux_pes = 1;
 	    break;
 
 	default:
@@ -209,7 +215,7 @@ static int demux (uint8_t * buf, uint8_t * end, int flags)
 		goto continue_header;
 	    }
 	}
-	if (demux_pid) {
+	if (demux_pid || demux_pes) {
 	    if (header[3] != 0xbd) {
 		fprintf (stderr, "bad stream id %x\n", header[3]);
 		exit (1);
@@ -223,12 +229,16 @@ static int demux (uint8_t * buf, uint8_t * end, int flags)
 	    NEEDBYTES (len);
 	    DONEBYTES (len);
 	    bytes = 6 + (header[4] << 8) + header[5] - len;
-	    fwrite (buf, end - buf, 1, stdout);
-	    state = DEMUX_DATA;
-	    state_bytes = bytes - (end - buf);
-	    return 0;
-	}
-	switch (header[3]) {
+	    if (bytes > end - buf) {
+		fwrite (buf, end - buf, 1, stdout);
+		state = DEMUX_DATA;
+		state_bytes = bytes - (end - buf);
+		return 0;
+	    } else if (bytes > 0) {
+		fwrite (buf, bytes, 1, stdout);
+		buf += bytes;
+	    }
+	} else switch (header[3]) {
 	case 0xb9:	/* program end code */
 	    /* DONEBYTES (4); */
 	    /* break;         */
