@@ -1,6 +1,7 @@
 * get rid of globals in bitstream parsing
 * finish API documentation
 * avoid overflows, including reading the ac3 stream !!!
+* add configure option for double-precision
 
 * finish ac3_internal.h cleanup
 	* use sensible data types

@@ -130,7 +130,7 @@ static void handle_args (int argc, char * argv[])
     int i;
 
     drivers = ao_drivers ();
-    while ((c = getopt (argc,argv,"so:")) != -1) {
+    while ((c = getopt (argc, argv, "so:")) != -1) {
 	switch (c) {
 	case 'o':
 	    for (i = 0; drivers[i].name != NULL; i++)
