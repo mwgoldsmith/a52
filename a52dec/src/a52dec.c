@@ -47,7 +47,7 @@ static int disable_accel = 0;
 static int disable_dynrng = 0;
 static ao_open_t * output_open = NULL;
 static ao_instance_t * output;
-static sample_t * samples;
+static a52_state_t * state;
 
 #ifdef HAVE_SYS_TIME_H
 
@@ -213,8 +213,6 @@ static void handle_args (int argc, char ** argv)
 
 void a52_decode_data (uint8_t * start, uint8_t * end)
 {
-    static a52_state_t state;
-
     static uint8_t buf[3840];
     static uint8_t * bufptr = buf;
     static uint8_t * bufpos = buf + 7;
@@ -250,14 +248,14 @@ void a52_decode_data (uint8_t * start, uint8_t * end)
 		if (ao_setup (output, sample_rate, &flags, &level, &bias))
 		    goto error;
 		flags |= A52_ADJUST_LEVEL;
-		if (a52_frame (&state, buf, &flags, &level, bias))
+		if (a52_frame (state, buf, &flags, &level, bias))
 		    goto error;
 		if (disable_dynrng)
-		    a52_dynrng (&state, NULL, NULL);
+		    a52_dynrng (state, NULL, NULL);
 		for (i = 0; i < 6; i++) {
-		    if (a52_block (&state, samples))
+		    if (a52_block (state))
 			goto error;
-		    if (ao_play (output, flags, samples))
+		    if (ao_play (output, flags, a52_samples (state)))
 			goto error;
 		}
 		bufptr = buf;
@@ -555,8 +553,8 @@ int main (int argc, char ** argv)
 	return 1;
     }
 
-    samples = a52_init (accel);
-    if (samples == NULL) {
+    state = a52_init (accel);
+    if (state == NULL) {
 	fprintf (stderr, "A52 init failed\n");
 	return 1;
     }
@@ -568,7 +566,7 @@ int main (int argc, char ** argv)
     else
 	es_loop ();
 
-    free (samples);
+    a52_free (state);
     ao_close (output);
     print_fps (1);
     return 0;

@@ -11,6 +11,7 @@ Other contributors include:
 	Charles M. Hannum <root@ihack.net> - fixes
 	Michael Holzt <kju@flummi.de> - OSS output.c and misc errata
 	Angelos Keromytis <angelos@dsl.cis.upenn.edu> - OpenBSD fixes
+	David I. Lehn <dlehn@vt.edu> - API cleanup suggestion
 	Don Mahurin <dmahurin@dma.org> - stdin support for extract_a52
 	Jim Miller <jmiller@heli.engr.sgi.com> - IRIX output.c
 	Takefumi SAYO <stake@niagara.shiojiri.ne.jp> - FreeBSD tweak

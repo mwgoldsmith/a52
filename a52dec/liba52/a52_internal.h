@@ -21,6 +21,72 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+typedef struct a52_ba_s {
+    uint16_t fsnroffst;		/* fine SNR offset */
+    uint16_t fgaincod;		/* fast gain */
+    uint16_t deltbae;		/* delta bit allocation exists */
+    int8_t deltba[50];		/* per-band delta bit allocation */
+} a52_ba_t;
+
+struct a52_state_s {
+    uint8_t fscod;		/* sample rate */
+    uint8_t halfrate;		/* halfrate factor */
+    uint8_t acmod;		/* coded channels */
+    sample_t clev;		/* centre channel mix level */
+    sample_t slev;		/* surround channels mix level */
+    uint8_t lfeon;		/* coded lfe channel */
+
+    int output;			/* type of output */
+    sample_t level;		/* output level */
+    sample_t bias;		/* output bias */
+
+    int dynrnge;		/* apply dynamic range */
+    sample_t dynrng;		/* dynamic range */
+    void * dynrngdata;		/* dynamic range callback funtion and data */
+    sample_t (* dynrngcall) (sample_t range, void * dynrngdata);
+
+    uint16_t cplinu;		/* coupling in use */
+    uint16_t chincpl[5];	/* channel coupled */
+    uint16_t phsflginu;		/* phase flags in use (stereo only) */
+    uint16_t cplbndstrc[18];	/* coupling band structure */
+    uint16_t cplstrtmant;	/* coupling channel start mantissa */
+    uint16_t cplendmant;	/* coupling channel end mantissa */
+    sample_t cplco[5][18];	/* coupling coordinates */
+
+    /* derived information */
+    uint16_t cplstrtbnd;	/* coupling start band (for bit allocation) */
+    uint16_t ncplbnd;		/* number of coupling bands */
+
+    uint16_t rematflg[4];	/* stereo rematrixing */
+
+    uint16_t endmant[5];	/* channel end mantissa */
+
+    uint8_t cpl_exp[256];	/* decoded coupling channel exponents */
+    uint8_t fbw_exp[5][256];	/* decoded channel exponents */
+    uint8_t lfe_exp[7];		/* decoded lfe channel exponents */
+
+    uint16_t sdcycod;		/* slow decay */
+    uint16_t fdcycod;		/* fast decay */
+    uint16_t sgaincod;		/* slow gain */
+    uint16_t dbpbcod;		/* dB per bit - encodes the dbknee value */
+    uint16_t floorcod;		/* masking floor */
+
+    uint16_t csnroffst;		/* coarse SNR offset */
+    a52_ba_t cplba;		/* coupling bit allocation parameters */
+    a52_ba_t ba[5];		/* channel bit allocation parameters */
+    a52_ba_t lfeba;		/* lfe bit allocation parameters */
+
+    uint16_t cplfleak;		/* coupling fast leak init */
+    uint16_t cplsleak;		/* coupling slow leak init */
+
+    /* derived bit allocation information */
+    int8_t fbw_bap[5][256];
+    int8_t cpl_bap[256];
+    int8_t lfe_bap[7];
+
+    sample_t * samples;
+};
+
 #define LEVEL_PLUS6DB 2.0
 #define LEVEL_PLUS3DB 1.4142135623730951
 #define LEVEL_3DB 0.7071067811865476

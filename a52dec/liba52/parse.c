@@ -51,21 +51,32 @@ typedef struct {
 
 static uint8_t halfrate[12] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3};
 
-sample_t * a52_init (uint32_t mm_accel)
+a52_state_t * a52_init (uint32_t mm_accel)
 {
-    sample_t * samples;
+    a52_state_t * state;
     int i;
+
+    state = malloc (sizeof (a52_state_t));
+    if (state == NULL)
+	return NULL;
+
+    state->samples = memalign (16, 256 * 12 * sizeof (sample_t));
+    if (state->samples == NULL) {
+	free (state);
+	return NULL;
+    }
+
+    for (i = 0; i < 256 * 12; i++)
+	state->samples[i] = 0;
 
     a52_imdct_init (mm_accel);
 
-    samples = memalign (16, 256 * 12 * sizeof (sample_t));
-    if (samples == NULL)
-	return NULL;
+    return state;
+}
 
-    for (i = 0; i < 256 * 12; i++)
-	samples[i] = 0;
-
-    return samples;
+sample_t * a52_samples (a52_state_t * state)
+{
+    return state->samples;
 }
 
 int a52_syncinfo (uint8_t * buf, int * flags,
@@ -495,7 +506,7 @@ static void coeff_get_coupling (a52_state_t * state, int nfchans,
     }
 }
 
-int a52_block (a52_state_t * state, sample_t * samples)
+int a52_block (a52_state_t * state)
 {
     static const uint8_t nfchans_tbl[] = {2, 1, 2, 3, 3, 4, 4, 5, 1, 1, 2};
     static int rematrix_band[4] = {25, 37, 61, 253};
@@ -505,6 +516,7 @@ int a52_block (a52_state_t * state, sample_t * samples)
     sample_t coeff[5];
     int chanbias;
     quantizer_t quantizer;
+    sample_t * samples;
 
     nfchans = nfchans_tbl[state->acmod];
 
@@ -737,6 +749,7 @@ int a52_block (a52_state_t * state, sample_t * samples)
 	    bitstream_get (8);
     }
 
+    samples = state->samples;
     if (state->output & A52_LFE)
 	samples += 256;	/* shift for LFE channel */
 
@@ -867,4 +880,10 @@ int a52_block (a52_state_t * state, sample_t * samples)
     }
 
     return 0;
+}
+
+void a52_free (a52_state_t * state)
+{
+    free (state->samples);
+    free (state);
 }
