@@ -39,26 +39,3 @@ typedef struct ao_driver_s {
 
 /* return NULL terminated array of all drivers */
 ao_driver_t * ao_drivers (void);
-
-static inline ao_instance_t * ao_open (ao_open_t * open)
-{
-    return open ();
-}
-
-static inline int ao_setup (ao_instance_t * instance, int sample_rate,
-			    int * flags, level_t * level, sample_t * bias)
-{
-    return instance->setup (instance, sample_rate, flags, level, bias);
-}
-
-static inline int ao_play (ao_instance_t * instance, int flags,
-			   sample_t * samples)
-{
-    return instance->play (instance, flags, samples);
-}
-
-static inline void ao_close (ao_instance_t * instance)
-{
-    if (instance->close)
-	instance->close (instance);
-}

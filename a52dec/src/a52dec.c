@@ -276,7 +276,7 @@ void a52_decode_data (uint8_t * start, uint8_t * end)
 		sample_t bias;
 		int i;
 
-		if (ao_setup (output, sample_rate, &flags, &level, &bias))
+		if (output->setup (output, sample_rate, &flags, &level, &bias))
 		    goto error;
 		if (!disable_adjust)
 		    flags |= A52_ADJUST_LEVEL;
@@ -288,7 +288,7 @@ void a52_decode_data (uint8_t * start, uint8_t * end)
 		for (i = 0; i < 6; i++) {
 		    if (a52_block (state))
 			goto error;
-		    if (ao_play (output, flags, a52_samples (state)))
+		    if (output->play (output, flags, a52_samples (state)))
 			goto error;
 		}
 		bufptr = buf;
@@ -606,7 +606,7 @@ int main (int argc, char ** argv)
 
     accel = disable_accel ? 0 : MM_ACCEL_DJBFFT;
 
-    output = ao_open (output_open);
+    output = output_open ();
     if (output == NULL) {
 	fprintf (stderr, "Can not open output\n");
 	return 1;
@@ -627,6 +627,7 @@ int main (int argc, char ** argv)
 
     a52_free (state);
     print_fps (1);
-    ao_close (output);
+    if (output->close)
+	output->close (output);
     return 0;
 }
