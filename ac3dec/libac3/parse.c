@@ -270,7 +270,7 @@ static int q_4_pointer;
 
 static uint16_t lfsr_state = 1;
 
-static inline int16_t dither_gen(void)
+static inline int16_t dither_gen (void)
 {
     int16_t state;
 
@@ -278,7 +278,7 @@ static inline int16_t dither_gen(void)
 	
     lfsr_state = (uint16_t) state;
 
-    return ((state * (int) (LEVEL_3DB * 256)) >> 8);
+    return state;
 }
 
 static void coeff_get (sample_t * coeff, uint8_t * exp, int8_t * bap,
@@ -291,7 +291,7 @@ static void coeff_get (sample_t * coeff, uint8_t * exp, int8_t * bap,
     switch (bap[i]) {
     case 0:
 	if (dither) {
-	    coeff[i++] = dither_gen() * scale_factor[exp[i]];
+	    coeff[i++] = dither_gen() * LEVEL_3DB * scale_factor[exp[i]];
 	    continue;
 	} else {
 	    coeff[i++] = 0;
@@ -380,7 +380,7 @@ static void coeff_get_coupling (ac3_state_t * state, int nfchans,
 	while (i < i_end) {
 	    switch (bap[i]) {
 	    case 0:
-		cplcoeff = scale_factor[exp[i]];
+		cplcoeff = LEVEL_3DB * scale_factor[exp[i]];
 		for (ch = 0; ch < nfchans; ch++)
 		    if (state->chincpl[ch]) {
 			if (dithflag[ch])
