@@ -104,7 +104,7 @@ typedef struct audblk_s {
     uint16_t cplstrtmant;	// coupling channel start mantissa
     uint16_t cplendmant;	// coupling channel end mantissa
     uint16_t cplstrtbnd;	// coupling start band (for bit allocation)
-    uint16_t ncplsubnd;		// number of coupling sub-bands
+    int16_t ncplsubnd;		// number of coupling sub-bands
     uint16_t ncplbnd;		// number of coupling bands
     float cplco[5][18];		// coupling coordinates
 

@@ -117,8 +117,8 @@ ac3_decode_frame(uint8_t * buf)
     return &frame;	
 
 error:
-    //mute the frame
-    memset(s16_samples,0,sizeof(int16_t) * 256 * 2 * 6);
+    printf ("error\n");
+    memset(s16_samples,0,sizeof(int16_t) * 256 * 2 * 6);	//mute frame
 
     error_flag = 0;
     return &frame;
