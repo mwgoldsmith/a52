@@ -310,15 +310,15 @@ void a52_imdct_512 (sample_t * data, sample_t * delay, sample_t bias)
 
 	w_1 = window[2*i];
 	w_2 = window[255-2*i];
-	data[2*i]     = -a_r * w_1 + delay[2*i] * w_2 + bias;
-	data[255-2*i] =  a_r * w_2 + delay[2*i] * w_1 + bias;
-	delay[2*i]    =  a_i;
+	data[2*i]     = delay[2*i] * w_2 - a_r * w_1 + bias;
+	data[255-2*i] = delay[2*i] * w_1 + a_r * w_2 + bias;
+	delay[2*i] = a_i;
 
 	w_1 = window[2*i+1];
 	w_2 = window[254-2*i];
-	data[2*i+1]   =  b_r * w_1 + delay[2*i+1] * w_2 + bias;
-	data[254-2*i] = -b_r * w_2 + delay[2*i+1] * w_1 + bias;
-	delay[2*i+1]  =  b_i;
+	data[2*i+1]   = delay[2*i+1] * w_2 + b_r * w_1 + bias;
+	data[254-2*i] = delay[2*i+1] * w_1 - b_r * w_2 + bias;
+	delay[2*i+1] = b_i;
     }
 }
 
@@ -370,26 +370,26 @@ void a52_imdct_256(sample_t data[],sample_t delay[],sample_t bias)
 
 	w_1 = window[2*i];
 	w_2 = window[255-2*i];
-	data[2*i]     = -a_r * w_1 + delay[2*i] * w_2 + bias;
-	data[255-2*i] =  a_r * w_2 + delay[2*i] * w_1 + bias;
-	delay[2*i]     = c_i;
+	data[2*i]     = delay[2*i] * w_2 - a_r * w_1 + bias;
+	data[255-2*i] = delay[2*i] * w_1 + a_r * w_2 + bias;
+	delay[2*i] = c_i;
 
 	w_1 = window[128+2*i];
 	w_2 = window[127-2*i];
-	data[128+2*i] =  a_i * w_1 + delay[127-2*i] * w_2 + bias;
-	data[127-2*i] = -a_i * w_2 + delay[127-2*i] * w_1 + bias;
+	data[128+2*i] = delay[127-2*i] * w_2 + a_i * w_1 + bias;
+	data[127-2*i] = delay[127-2*i] * w_1 - a_i * w_2 + bias;
 	delay[127-2*i] = c_r;
 
 	w_1 = window[2*i+1];
 	w_2 = window[254-2*i];
-	data[2*i+1]   = -b_i * w_1 + delay[2*i+1] * w_2  + bias;
-	data[254-2*i] =  b_i * w_2 + delay[2*i+1] * w_1 + bias;
-	delay[2*i+1]   = d_r;
+	data[2*i+1]   = delay[2*i+1] * w_2 - b_i * w_1 + bias;
+	data[254-2*i] = delay[2*i+1] * w_1 + b_i * w_2 + bias;
+	delay[2*i+1] = d_r;
 
 	w_1 = window[129+2*i];
 	w_2 = window[126-2*i];
-	data[129+2*i] =  b_r * w_1 + delay[126-2*i] * w_2 + bias;
-	data[126-2*i] = -b_r * w_2 + delay[126-2*i] * w_1 + bias;
+	data[129+2*i] = delay[126-2*i] * w_2 + b_r * w_1 + bias;
+	data[126-2*i] = delay[126-2*i] * w_1 - b_r * w_2 + bias;
 	delay[126-2*i] = d_i;
     }
 }
