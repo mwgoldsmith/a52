@@ -34,7 +34,9 @@
 #include "downmix.h"
 #include "downmix_c.h"
 #include "downmix_i386.h"
+#ifdef HAVE_KNI
 #include "downmix_kni.h"
+#endif
 
 void (*downmix_3f_2r_to_2ch)(float *samples, dm_par_t * dm_par);
 void (*downmix_3f_1r_to_2ch)(float *samples, dm_par_t * dm_par);
@@ -48,6 +50,7 @@ void (*stream_sample_1ch_to_s16)(int16_t *s16_samples, float *center);
 void downmix_init()
 {
 #ifdef __i386__
+#ifdef HAVE_KNI
 	uint32_t accel = mm_accel ();
 
 // other dowmixing should go here too
@@ -62,6 +65,7 @@ void downmix_init()
 		stream_sample_1ch_to_s16 = stream_sample_1ch_to_s16_kni;
 	} else if (accel & MM_ACCEL_X86_3DNOW) {
 	} else
+#endif
 #endif
 	{
 		downmix_3f_2r_to_2ch = downmix_3f_2r_to_2ch_c;

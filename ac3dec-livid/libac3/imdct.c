@@ -31,7 +31,9 @@
 #include "downmix.h"
 #include "imdct.h"
 #include "imdct_c.h"
+#ifdef HAVE_KNI
 #include "imdct_kni.h"
+#endif
 #include "srfft.h"
 
 
@@ -134,8 +136,10 @@ void imdct_init (void)
 	float scale = 255.99609372;
 
 #ifdef __i386__
+#ifdef HAVE_KNI
 	if (!imdct_init_kni ());
 	else
+#endif
 #endif
 	if (!imdct_init_c ());
 
