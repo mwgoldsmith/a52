@@ -87,7 +87,8 @@ ac3_decode_frame(uint8_t * buf)
 
     dprintf("(decode) begin frame %d\n",frame_count++);
 
-    parse_bsi(&bsi, buf);
+    if (parse_bsi(&bsi, buf))
+	goto error;
 
     if(!done_banner) {
 	stats_print_banner(&bsi);
