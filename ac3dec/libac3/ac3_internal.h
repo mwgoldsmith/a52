@@ -112,53 +112,29 @@ typedef struct audblk_s
 
     uint16_t rematflg[4];	// stereo rematrixing
 
-    uint8_t cplexpstr;		// coupling exponent strategy
-    uint8_t chexpstr[5];	// channel exponent strategy
-    uint8_t lfeexpstr;		// lfe exponent strategy
     uint16_t chbwcod[5];	// channel bandwidth for independant channels
 
     uint32_t	magic2;
 
+    int do_bit_alloc;
 
-	/* Bit allocation info */
-	uint16_t baie;
-		/* Slow decay code */
-		uint16_t sdcycod;
-		/* Fast decay code */
-		uint16_t fdcycod;
-		/* Slow gain code */
-		uint16_t sgaincod;
-		/* dB per bit code */
-		uint16_t dbpbcod;
-		/* masking floor code */
-		uint16_t floorcod;
+    uint16_t sdcycod;		// slow decay
+    uint16_t fdcycod;		// fast decay
+    uint16_t sgaincod;		// slow gain
+    uint16_t dbpbcod;		// dB per bit - encodes the dbknee value
+    uint16_t floorcod;		// masking floor
 
-	/* SNR offset info */
-	uint16_t snroffste;
-		/* coarse SNR offset */
-		uint16_t csnroffst;
-		/* coupling fine SNR offset */
-		uint16_t cplfsnroffst;
-		/* coupling fast gain code */
-		uint16_t cplfgaincod;
-		/* fbw fine SNR offset */
-		uint16_t fsnroffst[5];
-		/* fbw fast gain code */
-		uint16_t fgaincod[5];
-		/* lfe fine SNR offset */
-		uint16_t lfefsnroffst;
-		/* lfe fast gain code */
-		uint16_t lfefgaincod;
+    uint16_t csnroffst;		// coarse SNR offset
+    uint16_t cplfsnroffst;	// coupling fine SNR offset
+    uint16_t cplfgaincod;	// coupling fast gain
+    uint16_t fsnroffst[5];	// channel fine SNR offset
+    uint16_t fgaincod[5];	// channel fast gain
+    uint16_t lfefsnroffst;	// lfe fast SNR offset
+    uint16_t lfefgaincod;	// lfe fast gain
 	
-	/* Coupling leak info */
-	uint16_t cplleake;
-		/* coupling fast leak initialization */
-		uint16_t cplfleak;
-		/* coupling slow leak initialization */
-		uint16_t cplsleak;
+    uint16_t cplfleak;		// coupling fast leak init
+    uint16_t cplsleak;		// coupling slow leak init
 	
-	/* delta bit allocation info */
-	uint16_t deltbaie;
 		/* coupling delta bit allocation exists */
 		uint16_t cpldeltbae;
 		/* fbw delta bit allocation exists */
@@ -180,10 +156,6 @@ typedef struct audblk_s
 			/* fbw delta bit allocation length */
 			uint16_t deltba[5][8];
 
-	/* skip length exists */
-	uint16_t skiple;
-		/* skip length */
-		uint16_t skipl;
 
 
 	/* coupling mantissas */

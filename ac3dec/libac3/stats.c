@@ -97,13 +97,7 @@ void stats_print_audblk(ac3_state_t * state,audblk_t *audblk)
 
 	dprintf("(audblk) ");
 	dprintf("%s ",audblk->cplinu ? "cpl on " : "cpl off");
-	dprintf("%s ",audblk->baie? "bai " : "    ");
-	dprintf("%s ",audblk->snroffste? "snroffst " : "         ");
-	dprintf("%s ",audblk->deltbaie? "deltba " : "       ");
 	dprintf("%s ",audblk->phsflginu? "phsflg " : "       ");
-	dprintf("(%s %s %s %s %s) ",exp_strat_tbl[audblk->chexpstr[0]],
-		exp_strat_tbl[audblk->chexpstr[1]],exp_strat_tbl[audblk->chexpstr[2]],
-		exp_strat_tbl[audblk->chexpstr[3]],exp_strat_tbl[audblk->chexpstr[4]]);
 	dprintf("[");
 	for(i=0;i<state->nfchans;i++)
 		dprintf("%1d",audblk->blksw[i]);

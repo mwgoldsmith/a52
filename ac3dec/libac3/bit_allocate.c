@@ -198,11 +198,7 @@ void bit_allocate(ac3_state_t * state, audblk_t *audblk)
 
     /* Only perform bit_allocation if the exponents have changed or we
      * have new sideband information */
-    if (audblk->chexpstr[0]  == 0 && audblk->chexpstr[1] == 0 &&
-	audblk->chexpstr[2]  == 0 && audblk->chexpstr[3] == 0 &&
-	audblk->chexpstr[4]  == 0 && audblk->cplexpstr   == 0 &&
-	audblk->lfeexpstr    == 0 && audblk->baie        == 0 &&
-	audblk->snroffste    == 0 && audblk->deltbaie    == 0)
+    if (audblk->do_bit_alloc == 0)
 	return;
 
     /* Do some setup before we do the bit alloc */

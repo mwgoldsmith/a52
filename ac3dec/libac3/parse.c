@@ -183,11 +183,10 @@ static int parse_exponents (int expstr, int ngrps, uint8_t exponent,
     return 0;
 }
 
-
-
 int parse_audblk (ac3_state_t * state, audblk_t * audblk)
 {
     int i, chaninfo;
+    uint8_t cplexpstr, chexpstr[5], lfeexpstr;
 
     for (i = 0; i < state->nfchans; i++)
 	audblk->blksw[i] = bitstream_get (1);
@@ -203,10 +202,10 @@ int parse_audblk (ac3_state_t * state, audblk_t * audblk)
 
     if (bitstream_get (1)) {	// cplstre
 	audblk->cplinu = bitstream_get (1);
-	if(audblk->cplinu) {
-	    for(i = 0; i < state->nfchans; i++)
+	if (audblk->cplinu) {
+	    for (i = 0; i < state->nfchans; i++)
 		audblk->chincpl[i] = bitstream_get (1);
-	    if(state->acmod == 0x2)
+	    if (state->acmod == 0x2)
 		audblk->phsflginu = bitstream_get (1);
 	    audblk->cplbegf = bitstream_get (4);
 	    audblk->cplendf = bitstream_get (4);
@@ -242,29 +241,29 @@ int parse_audblk (ac3_state_t * state, audblk_t * audblk)
 		audblk->phsflg[j] = bitstream_get (1);
     }
 
-    if (state->acmod == 0x2) {	// stereo mode
-	if (bitstream_get (1)) {	// rematstr
-	    if ((audblk->cplbegf > 2) || (audblk->cplinu == 0))
-		for (i = 0; i < 4; i++) 
-		    audblk->rematflg[i] = bitstream_get (1);
-	    else if ((audblk->cplbegf == 0) && audblk->cplinu)
-		for (i = 0; i < 2; i++)
-		    audblk->rematflg[i] = bitstream_get (1);
-	    else if ((audblk->cplbegf <= 2) && audblk->cplinu)
-		for(i = 0; i < 3; i++)
-		    audblk->rematflg[i] = bitstream_get (1);
-	}
+    if ((state->acmod == 0x2) && (bitstream_get (1))) {	// rematstr
+	if ((audblk->cplbegf > 2) || (audblk->cplinu == 0))
+	    for (i = 0; i < 4; i++) 
+		audblk->rematflg[i] = bitstream_get (1);
+	else if ((audblk->cplbegf == 0) && audblk->cplinu)
+	    for (i = 0; i < 2; i++)
+		audblk->rematflg[i] = bitstream_get (1);
+	else if ((audblk->cplbegf <= 2) && audblk->cplinu)
+	    for(i = 0; i < 3; i++)
+		audblk->rematflg[i] = bitstream_get (1);
     }
 
+    cplexpstr = EXP_REUSE;
+    lfeexpstr = EXP_REUSE;
     if (audblk->cplinu)
-	audblk->cplexpstr = bitstream_get (2);
+	cplexpstr = bitstream_get (2);
     for (i = 0; i < state->nfchans; i++)
-	audblk->chexpstr[i] = bitstream_get (2);
+	chexpstr[i] = bitstream_get (2);
     if (state->lfeon) 
-	audblk->lfeexpstr = bitstream_get (1);
+	lfeexpstr = bitstream_get (1);
 
-    for (i = 0; i < state->nfchans; i++) { 
-	if (audblk->chexpstr[i] != EXP_REUSE) {
+    for (i = 0; i < state->nfchans; i++)
+	if (chexpstr[i] != EXP_REUSE) {
 	    if (audblk->cplinu && audblk->chincpl[i])
 		audblk->endmant[i] = audblk->cplstrtmant;
 	    else {
@@ -272,107 +271,90 @@ int parse_audblk (ac3_state_t * state, audblk_t * audblk)
 		audblk->endmant[i] = ((audblk->chbwcod[i] + 12) * 3) + 37;
 	    }
 	}
-    }
 
-    if (audblk->cplinu && (audblk->cplexpstr != EXP_REUSE)) {
+    audblk->do_bit_alloc = 0;
+
+    if (cplexpstr != EXP_REUSE) {
 	int cplabsexp, ncplgrps;
 
+	audblk->do_bit_alloc = 1;
 	ncplgrps = ((audblk->cplendmant - audblk->cplstrtmant) /
-		    (3 << (audblk->cplexpstr - 1)));
+		    (3 << (cplexpstr - 1)));
 	cplabsexp = bitstream_get (4) << 1;
-	if (parse_exponents (audblk->cplexpstr, ncplgrps, cplabsexp,
+	if (parse_exponents (cplexpstr, ncplgrps, cplabsexp,
 			     audblk->cpl_exp + audblk->cplstrtmant))
 	    return 1;
     }
-    for (i = 0; i < state->nfchans; i++) {
-	if (audblk->chexpstr[i] != EXP_REUSE) {
+    for (i = 0; i < state->nfchans; i++)
+	if (chexpstr[i] != EXP_REUSE) {
 	    int grp_size, nchgrps;
 
-	    grp_size = 3 * (1 << (audblk->chexpstr[i] - 1));
+	    audblk->do_bit_alloc = 1;
+	    grp_size = 3 * (1 << (chexpstr[i] - 1));
 	    nchgrps = (audblk->endmant[i] - 1 + (grp_size - 3)) / grp_size;
 	    audblk->fbw_exp[i][0] = bitstream_get (4);
-	    if (parse_exponents (audblk->chexpstr[i], nchgrps,
-				 audblk->fbw_exp[i][0],
+	    if (parse_exponents (chexpstr[i], nchgrps, audblk->fbw_exp[i][0],
 				 audblk->fbw_exp[i] + 1))
 		return 1;
 	    bitstream_get (2);	// gainrng
 	}
-    }
-    if (state->lfeon && (audblk->lfeexpstr != EXP_REUSE)) {
+    if (lfeexpstr != EXP_REUSE) {
+	audblk->do_bit_alloc = 1;
 	audblk->lfe_exp[0] = bitstream_get (4);
-	if (parse_exponents (audblk->lfeexpstr, 2,
-			     audblk->lfe_exp[0], audblk->lfe_exp + 1))
+	if (parse_exponents (lfeexpstr, 2, audblk->lfe_exp[0],
+			     audblk->lfe_exp + 1))
 	    return 1;
     }
 
-
-
-
-
-
-
-    /* Get the parametric bit allocation parameters */
-    audblk->baie = bitstream_get (1);
-    if(audblk->baie) {
+    if (bitstream_get (1)) {	// baie
+	audblk->do_bit_alloc = 1;
 	audblk->sdcycod = bitstream_get (2);
 	audblk->fdcycod = bitstream_get (2);
 	audblk->sgaincod = bitstream_get (2);
 	audblk->dbpbcod = bitstream_get (2);
 	audblk->floorcod = bitstream_get (3);
     }
-
-    /* Get the SNR off set info if it exists */
-    audblk->snroffste = bitstream_get (1);
-    if(audblk->snroffste) {
+    if (bitstream_get (1)) {	//snroffste
+	audblk->do_bit_alloc = 1;
 	audblk->csnroffst = bitstream_get (6);
-
-	if(audblk->cplinu) {
+	if (audblk->cplinu) {
 	    audblk->cplfsnroffst = bitstream_get (4);
 	    audblk->cplfgaincod = bitstream_get (3);
 	}
-
-	for(i = 0;i < state->nfchans; i++) {
+	for (i = 0; i < state->nfchans; i++) {
 	    audblk->fsnroffst[i] = bitstream_get (4);
 	    audblk->fgaincod[i] = bitstream_get (3);
 	}
-	if(state->lfeon) {
+	if (state->lfeon) {
 	    audblk->lfefsnroffst = bitstream_get (4);
 	    audblk->lfefgaincod = bitstream_get (3);
 	}
     }
-
-    /* Get coupling leakage info if it exists */
-    if(audblk->cplinu) {
-	audblk->cplleake = bitstream_get (1);
-	if(audblk->cplleake) {
-	    audblk->cplfleak = bitstream_get (3);
-	    audblk->cplsleak = bitstream_get (3);
-	}
+    if ((audblk->cplinu) && (bitstream_get (1))) {	// cplleake
+	audblk->do_bit_alloc = 1;
+	audblk->cplfleak = bitstream_get (3);
+	audblk->cplsleak = bitstream_get (3);
     }
-	
-    /* Get the delta bit alloaction info */
-    audblk->deltbaie = bitstream_get (1);
-    if(audblk->deltbaie) {
-	if(audblk->cplinu)
+
+    if (bitstream_get (1)) {	// deltbaie
+	audblk->do_bit_alloc = 1;
+	if (audblk->cplinu)
 	    audblk->cpldeltbae = bitstream_get (2);
-
-	for(i = 0;i < state->nfchans; i++)
+	for (i = 0; i < state->nfchans; i++)
 	    audblk->deltbae[i] = bitstream_get (2);
-
 	if (audblk->cplinu && (audblk->cpldeltbae == DELTA_BIT_NEW)) {
 	    audblk->cpldeltnseg = bitstream_get (3);
-	    for(i = 0;i < audblk->cpldeltnseg + 1; i++) {
+	    for (i = 0; i < audblk->cpldeltnseg + 1; i++) {
 		audblk->cpldeltoffst[i] = bitstream_get (5);
 		audblk->cpldeltlen[i] = bitstream_get (4);
 		audblk->cpldeltba[i] = bitstream_get (3);
 	    }
 	}
-
-	for(i = 0;i < state->nfchans; i++) {
+	for (i = 0; i < state->nfchans; i++) {
 	    if (audblk->deltbae[i] == DELTA_BIT_NEW) {
 		int j;
 		audblk->deltnseg[i] = bitstream_get (3);
-		for(j = 0; j < audblk->deltnseg[i] + 1; j++) {
+		for (j = 0; j < audblk->deltnseg[i] + 1; j++) {
 		    audblk->deltoffst[i][j] = bitstream_get (5);
 		    audblk->deltlen[i][j] = bitstream_get (4);
 		    audblk->deltba[i][j] = bitstream_get (3);
@@ -381,12 +363,10 @@ int parse_audblk (ac3_state_t * state, audblk_t * audblk)
 	}
     }
 
-    /* Check to see if there's any dummy info to get */
-    if((audblk->skiple =  bitstream_get (1))) {
-	audblk->skipl = bitstream_get (9);
-	for(i = 0; i < audblk->skipl ; i++) {
+    if (bitstream_get (1)) {	// skiple
+	i = bitstream_get (9);	// skipl
+	while (i--)
 	    bitstream_get (8);
-	}
     }
 
     stats_print_audblk(state,audblk);
