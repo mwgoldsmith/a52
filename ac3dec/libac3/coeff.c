@@ -209,15 +209,12 @@ static int q_4_pointer;
 //Conversion from bap to number of bits in the mantissas
 static uint16_t qnttztab[10] = {5, 6, 7, 8, 9, 10, 11, 12, 14, 16};
 
-static void coeff_uncouple_ch (float * samples, ac3_state_t * state,
-			       audblk_t * audblk, int ch);
-
 static void coeff_get (float * coeff, uint8_t * exp, int8_t * bap,
 		       int dither, int start, int end)
 {
     int i;
 
-    i = 0;
+    i = start;	// FIXME =0 except in coupling
     while (i < end)
 	switch (bap[i]) {
 	case 0:
@@ -291,6 +288,48 @@ static void coeff_get (float * coeff, uint8_t * exp, int8_t * bap,
 	}
 }
 
+static void coeff_get_cpl (ac3_state_t * state, audblk_t * audblk,
+			   stream_samples_t samples)
+{
+    int i, j, ch, bnd, sub_bnd;
+    float cpl_coord[5];
+
+    sub_bnd = bnd = 0;
+    for (i = audblk->cplstrtmant; i < audblk->cplendmant; i += 12) {
+	if (!audblk->cplbndstrc[sub_bnd++]) {
+	    for (ch = 0; ch < state->nfchans; ch++)
+		if (audblk->chincpl[ch]) {
+		    int cpl_exp_tmp, cpl_mant_tmp;
+
+		    cpl_exp_tmp = audblk->cplcoexp[ch][bnd] + 3 * audblk->mstrcplco[ch];
+		    if (audblk->cplcoexp[ch][bnd] == 15)
+			cpl_mant_tmp = (audblk->cplcomant[ch][bnd]) << 11;
+		    else
+			cpl_mant_tmp = ((0x10) | audblk->cplcomant[ch][bnd]) << 10;
+
+		    cpl_coord[ch] = cpl_mant_tmp * scale_factor[cpl_exp_tmp] * 8.0f;
+
+		    //Invert the phase for the right channel if necessary
+		    if (state->acmod == 0x2 && audblk->phsflginu && ch == 1 && audblk->phsflg[bnd])
+			cpl_coord[ch] *= -1;
+		}
+	    bnd++;
+	}
+
+	coeff_get (audblk->cplcoeff, audblk->cpl_exp, audblk->cpl_bap,
+		   0, i, i + 12);
+
+	for (ch = 0; ch < state->nfchans; ch++)
+	    if (audblk->chincpl[ch])
+		for (j = i; j < i + 12; j++) {
+		    if (audblk->dithflag[ch] && audblk->cpl_bap[j] == 0)
+			samples[ch][j] = cpl_coord[ch] * dither_gen() * scale_factor[audblk->cpl_exp[j]];
+		    else
+			samples[ch][j] = cpl_coord[ch] * audblk->cplcoeff[j];
+		}
+    }
+}
+
 void
 coeff_unpack(ac3_state_t *state, audblk_t *audblk, stream_samples_t samples)
 {
@@ -304,57 +343,11 @@ coeff_unpack(ac3_state_t *state, audblk_t *audblk, stream_samples_t samples)
 		   audblk->dithflag[i], 0, audblk->endmant[i]);
 
 	if (audblk->cplinu && audblk->chincpl[i] && !done_cpl) {
-	    coeff_get (audblk->cplcoeff, audblk->cpl_exp, audblk->cpl_bap,
-		       0, audblk->cplstrtmant, audblk->cplendmant);
+	    coeff_get_cpl (state, audblk, samples);
 	    done_cpl = 1;
 	}
     }
 
-    if (audblk->cplinu)
-	for (i = 0; i < state->nfchans; i++)
-	    if (audblk->chincpl[i])
-		coeff_uncouple_ch (samples[i], state, audblk, i);
-
     if (state->lfeon)
 	coeff_get (samples[5], audblk->lfe_exp, audblk->lfe_bap, 0, 0, 7);
-}
-
-static void
-coeff_uncouple_ch(float samples[],ac3_state_t *state,audblk_t *audblk,int ch)
-{
-    uint32_t bnd = 0;
-    uint32_t sub_bnd = 0;
-    uint32_t i,j;
-    float cpl_coord = 1.0;
-    uint32_t cpl_exp_tmp;
-    uint32_t cpl_mant_tmp;
-
-    for(i=audblk->cplstrtmant;i<audblk->cplendmant;) {
-	if(!audblk->cplbndstrc[sub_bnd++]) {
-	    cpl_exp_tmp = audblk->cplcoexp[ch][bnd] + 3 * audblk->mstrcplco[ch];
-	    if(audblk->cplcoexp[ch][bnd] == 15)
-		cpl_mant_tmp = (audblk->cplcomant[ch][bnd]) << 11;
-	    else
-		cpl_mant_tmp = ((0x10) | audblk->cplcomant[ch][bnd]) << 10;
-
-	    cpl_coord = cpl_mant_tmp * scale_factor[cpl_exp_tmp] * 8.0f;
-
-	    //Invert the phase for the right channel if necessary
-	    if(state->acmod == 0x2 && audblk->phsflginu && ch == 1 && audblk->phsflg[bnd])
-		cpl_coord *= -1;
-
-	    bnd++;
-	}
-
-	for(j=0;j < 12; j++) {
-	    //Get new dither values for each channel if necessary, so
-	    //the channels are uncorrelated
-	    if(audblk->dithflag[ch] && audblk->cpl_bap[i] == 0)
-		samples[i]  = cpl_coord * dither_gen() * scale_factor[audblk->cpl_exp[i]];
-	    else
-		samples[i]  = cpl_coord * audblk->cplcoeff[i];
-
-	    i++;
-	}
-    }
 }
