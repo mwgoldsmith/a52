@@ -137,8 +137,9 @@ typedef struct audblk_s {
 
 
 
-	/* coupling mantissas */
-	uint16_t cplmant[256];
+    /* coupling mantissas */
+    //uint16_t cplmant[256];
+    float cplcoeff[256];
 
 
 	/*  -- Information not in the bitstream, but derived thereof  -- */

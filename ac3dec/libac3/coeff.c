@@ -113,48 +113,30 @@ static uint16_t m_4_pointer;
 
 //Conversion from bap to number of bits in the mantissas
 //zeros account for cases 0,1,2,4 which are special cased
-static uint16_t qnttztab[16] = { 0, 0, 0, 3, 0 , 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 16};
+static uint16_t qnttztab[10] = {5, 6, 7, 8, 9, 10, 11, 12, 14, 16};
 
 static void    coeff_reset(void);
-static int16_t coeff_get_mantissa(uint16_t bap, uint16_t dithflag);
+static float coeff_get_float(uint16_t bap, uint16_t dithflag, int exp);
 static void    coeff_uncouple_ch(float samples[],ac3_state_t *state,audblk_t *audblk,uint32_t ch);
-
-//
-// Convert a 0.15 fixed point number into IEEE single
-// precision floating point and scale by 2^-exp
-//
-static inline float
-convert_to_float(uint16_t exp, int16_t mantissa)
-{
-    float x;
-
-    //the scale by 2^-15 is built into the scale factor table
-    x = mantissa * scale_factor[exp];
-
-    return x;
-}
 
 void
 coeff_unpack(ac3_state_t *state, audblk_t *audblk, stream_samples_t samples)
 {
     uint16_t i,j;
     uint32_t done_cpl = 0;
-    int16_t mantissa;
 
     coeff_reset();
 
     for(i=0; i< state->nfchans; i++) {
-	for(j=0; j < audblk->endmant[i]; j++) {
-	    mantissa = coeff_get_mantissa(audblk->fbw_bap[i][j],audblk->dithflag[i]);
-	    samples[i][j] = convert_to_float(audblk->fbw_exp[i][j],mantissa);
-	}
+	for(j=0; j < audblk->endmant[i]; j++)
+	    samples[i][j] = coeff_get_float(audblk->fbw_bap[i][j],audblk->dithflag[i], audblk->fbw_exp[i][j]);
 
 	if(audblk->cplinu && audblk->chincpl[i] && !(done_cpl)) {
 	    // ncplmant is equal to 12 * ncplsubnd
 	    // Don't dither coupling channel until channel separation so that
 	    // interchannel noise is uncorrelated 
 	    for(j=audblk->cplstrtmant; j < audblk->cplendmant; j++)
-		audblk->cplmant[j] = coeff_get_mantissa(audblk->cpl_bap[j],0);
+		audblk->cplcoeff[j] = coeff_get_float(audblk->cpl_bap[j],0,audblk->cpl_exp[j]);
 	    done_cpl = 1;
 	}
     }
@@ -169,32 +151,34 @@ coeff_unpack(ac3_state_t *state, audblk_t *audblk, stream_samples_t samples)
 
     if(state->lfeon) {
 	// There are always 7 mantissas for lfe, no dither for lfe 
-	for(j=0; j < 7 ; j++) {
-	    mantissa = coeff_get_mantissa(audblk->lfe_bap[j],0);
-	    samples[5][j] = convert_to_float(audblk->lfe_exp[j],mantissa);
-	}
+	for(j=0; j < 7 ; j++)
+	    samples[5][j] = coeff_get_float(audblk->lfe_bap[j],0,audblk->lfe_exp[j]);
     }
 }
 
-//
-//Fetch a mantissa from the bitstream
-//
-//The mantissa returned is a signed 0.15 fixed point number
-//
-static int16_t
-coeff_get_mantissa(uint16_t bap, uint16_t dithflag)
+static inline float
+convert_to_float(uint16_t exp, int16_t mantissa)
 {
-    uint16_t mantissa;
-    uint16_t group_code;
+    float x;
+
+        //the scale by 2^-15 is built into the scale factor table
+        x = mantissa * scale_factor[exp];
+	
+	return x;
+}
+
+static float
+coeff_get_float(uint16_t bap, uint16_t dithflag, int exp)
+{
+    int group_code;
 
     //If the bap is 0-5 then we have special cases to take care of
     switch(bap) {
     case 0:
 	if(dithflag)
-	    mantissa = dither_gen();
+	    return convert_to_float (exp, dither_gen ());
 	else
-	    mantissa = 0;
-	break;
+	    return 0;
 
     case 1:
 	if(m_1_pointer > 2) {
@@ -208,9 +192,7 @@ coeff_get_mantissa(uint16_t bap, uint16_t dithflag)
 	    m_1[2] = (group_code % 9) % 3; 
 	    m_1_pointer = 0;
 	}
-	mantissa = m_1[m_1_pointer++];
-	mantissa = q_1[mantissa];
-	break;
+	return convert_to_float (exp, q_1[m_1[m_1_pointer++]]);
     case 2:
 
 	if(m_2_pointer > 2) {
@@ -224,18 +206,15 @@ coeff_get_mantissa(uint16_t bap, uint16_t dithflag)
 	    m_2[2] = (group_code % 25) % 5 ; 
 	    m_2_pointer = 0;
 	}
-	mantissa = m_2[m_2_pointer++];
-	mantissa = q_2[mantissa];
-	break;
+	return convert_to_float (exp, q_2[m_2[m_2_pointer++]]);
 
     case 3:
-	mantissa = bitstream_get(3);
+	group_code = bitstream_get(3);
 
-	if(mantissa > 6)
+	if(group_code > 6)
 	    goto error;
 
-	mantissa = q_3[mantissa];
-	break;
+	return convert_to_float (exp, q_3[group_code]);
 
     case 4:
 	if(m_4_pointer > 1) {
@@ -248,25 +227,20 @@ coeff_get_mantissa(uint16_t bap, uint16_t dithflag)
 	    m_4[1] = group_code % 11;
 	    m_4_pointer = 0;
 	}
-	mantissa = m_4[m_4_pointer++];
-	mantissa = q_4[mantissa];
-	break;
+	return convert_to_float (exp, q_4[m_4[m_4_pointer++]]);
 
     case 5:
-	mantissa = bitstream_get(4);
+	group_code = bitstream_get(4);
 
-	if(mantissa > 14)
+	if(group_code > 14)
 	    goto error;
 
-	mantissa = q_5[mantissa];
-	break;
+	return convert_to_float (exp, q_5[group_code]);
 
     default:
-	mantissa = bitstream_get(qnttztab[bap]);
-	mantissa <<= 16 - qnttztab[bap];
+	return convert_to_float (exp, bitstream_get((qnttztab-6)[bap]) << (16 - (qnttztab-6)[bap]));
     }
 
-    return mantissa;
 
 
 
@@ -302,7 +276,6 @@ coeff_uncouple_ch(float samples[],ac3_state_t *state,audblk_t *audblk,uint32_t c
     float cpl_coord = 1.0;
     uint32_t cpl_exp_tmp;
     uint32_t cpl_mant_tmp;
-    int16_t mantissa;
 
     for(i=audblk->cplstrtmant;i<audblk->cplendmant;) {
 	if(!audblk->cplbndstrc[sub_bnd++]) {
@@ -325,11 +298,9 @@ coeff_uncouple_ch(float samples[],ac3_state_t *state,audblk_t *audblk,uint32_t c
 	    //Get new dither values for each channel if necessary, so
 	    //the channels are uncorrelated
 	    if(audblk->dithflag[ch] && audblk->cpl_bap[i] == 0)
-		mantissa = dither_gen();
+		samples[i]  = cpl_coord * convert_to_float(audblk->cpl_exp[i],dither_gen());
 	    else
-		mantissa = audblk->cplmant[i];
-
-	    samples[i]  = cpl_coord * convert_to_float(audblk->cpl_exp[i],mantissa);
+		samples[i]  = cpl_coord * audblk->cplcoeff[i];
 
 	    i++;
 	}

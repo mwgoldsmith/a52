@@ -25,7 +25,7 @@
 extern uint16_t lfsr_state;
 extern const uint16_t dither_lut[256]; 
 
-static inline uint16_t dither_gen(void)
+static inline int16_t dither_gen(void)
 {
     int16_t state;
 

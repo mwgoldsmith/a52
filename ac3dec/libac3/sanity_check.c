@@ -91,10 +91,10 @@ sanity_check(ac3_state_t * state, audblk_t *audblk)
 		error_flag = 1;
 	}
 
-	if (audblk->cplmant[255] !=0 || audblk->cplmant[254] !=0 || 
-			audblk->cplmant[253] !=0)
+	if (audblk->cplcoeff[255] !=0 || audblk->cplcoeff[254] !=0 || 
+			audblk->cplcoeff[253] !=0)
 	{
-		fprintf(stderr,"\n** Sanity check failed -- cpl_mant out of bounds **"); 
+		fprintf(stderr,"\n** Sanity check failed -- cplcoeff out of bounds **"); 
 		error_flag = 1;
 	}
 
