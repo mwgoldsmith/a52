@@ -126,10 +126,10 @@ int main(int argc,char *argv[])
 	ac3_config.num_output_ch = 2;
 	ac3_config.flags = 0;
 
-	ac3_init();
+	ac3dec_init();
 
 	while((bytes_read = fread(buf,1,BLOCK_SIZE,in_file)) == BLOCK_SIZE)
-		ac3_decode_data(&ac3_config, audio_out, buf,buf + BLOCK_SIZE);
+		ac3dec_decode_data(&ac3_config, audio_out, buf,buf + BLOCK_SIZE);
 
 	fclose(in_file);
 	return 0;
