@@ -42,8 +42,8 @@ typedef struct al_instance_s {
     int flags;
 } al_instance_t;
 
-int al_setup (ao_instance_t * _instance, int sample_rate, int * flags,
-	      sample_t * level, sample_t * bias)
+static int al_setup (ao_instance_t * _instance, int sample_rate, int * flags,
+		     sample_t * level, sample_t * bias)
 {
     al_instance_t * instance = (al_instance_t *) _instance;
 
@@ -58,7 +58,7 @@ int al_setup (ao_instance_t * _instance, int sample_rate, int * flags,
     return 0;
 }
 
-int al_play (ao_instance_t * _instance, int flags, sample_t * _samples)
+static int al_play (ao_instance_t * _instance, int flags, sample_t * _samples)
 {
     al_instance_t * instance = (al_instance_t *) _instance;
     int16_t int16_samples[256*6];
@@ -122,14 +122,14 @@ int al_play (ao_instance_t * _instance, int flags, sample_t * _samples)
     return 0;
 }
 
-void al_close (ao_instance_t * _instance)
+static void al_close (ao_instance_t * _instance)
 {
     al_instance_t * instance = (al_instance_t *) _instance;
 
     alClosePort (instance->port);
 }
 
-ao_instance_t * al_open (int flags)
+static ao_instance_t * al_open (int flags)
 {
     al_instance_t * instance;
     int format;

@@ -39,6 +39,8 @@ extern ao_open_t ao_al_open;
 extern ao_open_t ao_aldolby_open;
 extern ao_open_t ao_al4_open;
 extern ao_open_t ao_al6_open;
+extern ao_open_t ao_win_open;
+extern ao_open_t ao_windolby_open;
 extern ao_open_t ao_wav_open;
 extern ao_open_t ao_wavdolby_open;
 extern ao_open_t ao_aif_open;
@@ -64,6 +66,10 @@ static ao_driver_t audio_out_drivers[] = {
     {"aldolby", ao_aldolby_open},
     {"al4", ao_al4_open},
     {"al6", ao_al6_open},
+#endif
+#ifdef LIBAO_WIN
+    {"win", ao_win_open},
+    {"windolby", ao_windolby_open},
 #endif
     {"wav", ao_wav_open},
     {"wavdolby", ao_wavdolby_open},

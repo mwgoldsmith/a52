@@ -60,8 +60,8 @@ typedef struct oss_instance_s {
     int flags;
 } oss_instance_t;
 
-int oss_setup (ao_instance_t * _instance, int sample_rate, int * flags,
-	       sample_t * level, sample_t * bias)
+static int oss_setup (ao_instance_t * _instance, int sample_rate, int * flags,
+		      sample_t * level, sample_t * bias)
 {
     oss_instance_t * instance = (oss_instance_t *) _instance;
 
@@ -76,7 +76,7 @@ int oss_setup (ao_instance_t * _instance, int sample_rate, int * flags,
     return 0;
 }
 
-int oss_play (ao_instance_t * _instance, int flags, sample_t * _samples)
+static int oss_play (ao_instance_t * _instance, int flags, sample_t * _samples)
 {
     oss_instance_t * instance = (oss_instance_t *) _instance;
     int16_t int16_samples[256*6];
@@ -129,14 +129,14 @@ int oss_play (ao_instance_t * _instance, int flags, sample_t * _samples)
     return 0;
 }
 
-void oss_close (ao_instance_t * _instance)
+static void oss_close (ao_instance_t * _instance)
 {
     oss_instance_t * instance = (oss_instance_t *) _instance;
 
     close (instance->fd);
 }
 
-ao_instance_t * oss_open (int flags)
+static ao_instance_t * oss_open (int flags)
 {
     oss_instance_t * instance;
     int format;

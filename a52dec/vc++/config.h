@@ -6,6 +6,9 @@
 /* Define to 1 if you have the <dlfcn.h> header file. */
 /* #undef HAVE_DLFCN_H */
 
+/* Define to 1 if you have the `gettimeofday' function. */
+/* #undef HAVE_GETTIMEOFDAY */
+
 /* Define to 1 if you have the <inttypes.h> header file. */
 /* #undef HAVE_INTTYPES_H */
 
@@ -56,6 +59,9 @@
 
 /* libao solaris support */
 /* #undef LIBAO_SOLARIS */
+
+/* libao win support */
+#define LIBAO_WIN
 
 /* Name of package */
 #define PACKAGE "a52dec"
