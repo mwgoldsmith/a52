@@ -65,7 +65,7 @@ int main(int argc,char *argv[])
 	/* FIXME check for end of stream and exit */
 
 
-	while(j++ < 500)
+	while(j++ < 5000)
 	{
 		decode_find_sync(bs);
 
@@ -125,7 +125,7 @@ int main(int argc,char *argv[])
 			//FIXME remove
 			//fprintf(stderr,"%ld bits for this audblk\n",
 			//		bs->total_bits_read - bits_per_audblk );
-		fprintf(stderr,"%lld ns\n",gethrtime() - start);
+	fprintf(stderr,"%lld ns\n",gethrtime() - start);
 
 		}
 		parse_auxdata(bs);

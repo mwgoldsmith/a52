@@ -28,20 +28,18 @@
 #include "ring_buffer.h"
 
 
+#define BUFFER_SIZE 1024 
+
 /* Global to keep track of old state */
 static char dev[] = "/dev/audio";
 static audio_info_t info;
 static int fd;
+static int full = 0;
+//FIXME remove
+#include "matlab.h"
+static matlab_file_t *foo;
+//
 
-static void sig_handler(int foo)
-{
-	sint_16 *out_buf;
-
-	out_buf = rb_begin_read();
-	write(fd, out_buf,2048);
-	rb_end_read();
-	printf("foo\n");
-}
 
 /*
  * open the audio device for writing to
@@ -50,18 +48,19 @@ int output_open(int bits, int rate, int channels)
 {
 
   /*
-   * Open the device driver:
+   * Open the device driver
    */
 
-	fd=open(dev,O_WRONLY );
+	fd=open(dev,O_WRONLY | O_NDELAY);
   if(fd < 0) 
   {
-    printf("%s: Opening audio device %s\n",
+    fprintf(stderr,"%s: Opening audio device %s\n",
         strerror(errno), dev);
     goto ERR;
   }
-	printf("Opened audio device \"%s\"\n",dev);
+	fprintf(stderr,"Opened audio device \"%s\"\n",dev);
 
+	fcntl(fd,F_SETFL,O_NONBLOCK);
 
 	/* Setup our parameters */
 	AUDIO_INITINFO(&info);
@@ -72,6 +71,7 @@ int output_open(int bits, int rate, int channels)
 	info.play.buffer_size = 2048;
 	info.play.encoding = AUDIO_ENCODING_LINEAR;
 	info.play.port = AUDIO_SPEAKER;
+	info.play.gain = 180;
 
 	/* Write our configuration */
 	/* An implicit GETINFO is also performed so we can get
@@ -83,43 +83,57 @@ int output_open(int bits, int rate, int channels)
     goto ERR;
   }
 
-	printf("buffer_size = %d\n",info.play.buffer_size);
+	fprintf(stderr,"buffer_size = %d\n",info.play.buffer_size);
 
 	/* Initialize the ring buffer */
 	rb_init();
 
-	/* Setup asynchronous io */
-
-  if(ioctl(fd,I_SETSIG , S_OUTPUT | S_WRBAND) < 0)
-  {
-    fprintf(stderr, "%s: Error setting up async I/O\n",strerror(errno));
-    goto ERR;
-  }
-
-	if (signal(SIGPOLL,sig_handler) == SIG_ERR)
-  {
-    fprintf(stderr, "%s: Error setting up async I/O\n",strerror(errno));
-    goto ERR;
-  }
-	
+	//FIXME remove
+//	foo = matlab_open("foo.m");
+	//
 	
 
-return 1;
+	return 1;
 
 ERR:
   if(fd >= 0) { close(fd); }
   return 0;
 }
 
-int first = 4;
+static void
+output_flush(void)
+{
+	int i,j = 0;
+	sint_16 *out_buf = 0;
+
+	i = 0;
+
+	do
+	{
+		out_buf = rb_begin_read();
+		if(out_buf)
+			i = write(fd, out_buf,BUFFER_SIZE);
+		else
+			break;
+
+		if(i == BUFFER_SIZE)
+		{
+			rb_end_read();
+			j++;
+		}
+	}
+	while(i == BUFFER_SIZE);
+	
+	//FIXME remove
+	//fprintf(stderr,"(output) Flushed %d blocks, wrote %d bytes last frame\n",j,i);
+}
+
 /*
  * play the sample to the already opened file descriptor
  */
 void output_play(stream_samples_t *samples)
 {
   int i;
-	float max_left = 0.0;
-	float max_right =  0.0;
 	float left_sample;
 	float right_sample;
 	sint_16 *out_buf;
@@ -127,43 +141,39 @@ void output_play(stream_samples_t *samples)
 	if(fd < 0)
 		return;
 
+	out_buf = rb_begin_write();
+
+	/* Keep trying to dump frames from the ring buffer until we get a 
+	 * write slot available */
+	while(!out_buf)
+	{
+		output_flush();
+		usleep(1000);
+		out_buf = rb_begin_write();
+	} 
+
+	//FIXME remove
+//	matlab_write(foo,samples->channel[0],512);
+	
 	/* Take the floating point audio data and convert it into
 	 * 16 bit signed PCM data */
 
-
-	out_buf = rb_begin_write();
-
-	for(i=0; i < 512; i++)
+	for(i=0; i < 256; i++)
 	{
 		sint_16 left_pcm;
 		sint_16 right_pcm;
 
 		left_sample = samples->channel[0][i];
 		right_sample = samples->channel[1][i];
-		max_left = left_sample > max_left ? left_sample : max_left;
-		max_right = right_sample > max_right ? right_sample : max_right;
 
-		//FIXME gain too high
-		left_pcm = left_sample * 60000.0;
+		left_pcm = left_sample * 32000.0;
 		out_buf[i * 2 ] = left_pcm;
-		right_pcm = right_sample * 60000.0;
+		right_pcm = right_sample * 32000.0;
 		out_buf[i * 2 + 1] = right_pcm;
-
-		//fprintf(stderr,"lsample = %1.6e rsample = %1.6e\n",left_sample,right_sample);
 	}
-
 	rb_end_write();
 
-	//FIXME remove
-	//printf("max_left = %f max_right = %f\n",max_left,max_right);
-
-	if(first)
-	{
-		out_buf = rb_begin_read();
-		write(fd, out_buf,2048);
-		rb_end_read();
-		first--;
-	}
+	output_flush();
 }
 
 
@@ -178,5 +188,4 @@ output_close(void)
   }
 
 	close(fd);
-
 }

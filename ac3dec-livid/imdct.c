@@ -208,6 +208,10 @@ imdct_do_512(float x[],float y[],float delay[])
 	float tmp_b_i;
 	float tmp_b_r;
 
+	//FIXME remove
+	complex_t dft_buf[128];
+	//
+
 	/* Pre IFFT complex multiply */
 	for( i=0; i < N/4; i++)
 	{
@@ -216,8 +220,25 @@ imdct_do_512(float x[],float y[],float delay[])
 	  buf[i].imag =(x[2*i]       * xcos1[i])  +  (x[N/2-2*i-1] * xsin1[i]);
 	}
 
-	/* IFFT cmplx conjugate and shuffle */
+	//FIXME remove
+#if 0
+ for(i=0; i<N/4; i++) 
+ {
+	 dft_buf[i].real = 0.0;
+	 dft_buf[i].imag = 0.0;
+
+    for(k=0; k<N/4; k++)
+    {
+			tmp_a_r = buf[k].real;
+			tmp_a_i = buf[k].imag;
+      dft_buf[i].real += (tmp_a_r * cos(8*M_PI*k*i/N)) - (tmp_a_i * sin(8*M_PI*k*i/N));
+      dft_buf[i].imag += (tmp_a_r * sin(8*M_PI*k*i/N)) + (tmp_a_i * cos(8*M_PI*k*i/N));
+    }
+  }
+ 	memcpy(buf,dft_buf,128 * sizeof(complex_t));
+#endif
 	
+	/* IFFT cmplx conjugate and shuffle */
 	//cmplx conjugate
 	for(i=0; i<N/4; i++) 
 		buf[i].imag *= -1;
@@ -272,22 +293,23 @@ imdct_do_512(float x[],float y[],float delay[])
 	}
 	
 	/* Window and convert to real valued signal */
-	for(i=0; i<N/8; i++) { 
-		y[2*i]         = -buf[N/8+i].imag   * window[2*i]; 
-		y[2*i+1]       =  buf[N/8-i-1].real * window[2*i+1]; 
-		y[N/4+2*i]     = -buf[i].real       * window[N/4+2*i]; 
-		y[N/4+2*i+1]   =  buf[N/4-i-1].imag * window[N/4+2*i+1]; 
-		y[N/2+2*i]     = -buf[N/8+i].real   * window[N/2-2*i-1];
-		y[N/2+2*i+1]   =  buf[N/8-i-1].imag * window[N/2-2*i-2];
-		y[3*N/4+2*i]   =  buf[i].imag       * window[N/4-2*i-1];
-		y[3*N/4+2*i+1] = -buf[N/4-i-1].real * window[N/4-2*i-2];
+	for(i=0; i<N/8; i++) 
+	{ 
+		y[0   + 2*i]   = -buf[N/8+i].imag   * window[0   + 2*i]; 
+		y[0   + 2*i+1] =  buf[N/8-i-1].real * window[0   + 2*i+1]; 
+		y[128 + 2*i]   = -buf[i].real       * window[128 + 2*i]; 
+		y[128 + 2*i+1] =  buf[N/4-i-1].imag * window[128 + 2*i+1]; 
+		y[256 + 2*i]   = -buf[N/8+i].real   * window[256 - 2*i-1];
+		y[256 + 2*i+1] =  buf[N/8-i-1].imag * window[256 - 2*i-2];
+		y[384 + 2*i]   =  buf[i].imag       * window[128 - 2*i-1];
+		y[384 + 2*i+1] = -buf[N/4-i-1].real * window[128 - 2*i-2];
 	}
 
 	/* Overlap and add */
-	for(i=0; i<N/2; i++) 
+	for(i=0; i< 256; i++) 
 	{ 
 		y[i] = 2 * (y[i] + delay[i]); 
-		delay[i] = y[N/2+i]; 
+		delay[i] = y[256 +i]; 
 	}
 }
 

@@ -14,9 +14,8 @@ typedef signed short sint_16;
 #include <unistd.h>
 #include "ring_buffer.h"
 
-#define BUFFER_SIZE 2048
-#define NUM_BUFFERS 64
-#define SLEEP_USECS 1000
+#define BUFFER_SIZE 1024
+#define NUM_BUFFERS 128 
 #define INC_INDEX(x) (((x) + 1) % NUM_BUFFERS)
 
 // The buffer that was just written into
@@ -35,7 +34,7 @@ rb_init(void)
 sint_16* rb_begin_read(void)
 {
 	while(read_index == write_index)
-		usleep(SLEEP_USECS);
+		return 0;
 	return ring_buf[INC_INDEX(read_index)];
 }
 
@@ -47,7 +46,7 @@ void rb_end_read(void)
 sint_16* rb_begin_write(void)
 {
 	while(read_index == INC_INDEX(write_index))
-		usleep(SLEEP_USECS);
+		return 0;
 	return ring_buf[INC_INDEX(write_index)];
 }
 
