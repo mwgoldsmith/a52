@@ -104,12 +104,12 @@ static const uint32_t u32_scale_factors[25] =
 static float *scale_factor = (float*)u32_scale_factors;
 
 //These store the persistent state of the packed mantissas
-static uint16_t m_1[3];
-static uint16_t m_2[3];
-static uint16_t m_4[2];
-static uint16_t m_1_pointer;
-static uint16_t m_2_pointer;
-static uint16_t m_4_pointer;
+static float q_1_[2];
+static float q_2_[2];
+static float q_4_;
+static int q_1_pointer;
+static int q_2_pointer;
+static int q_4_pointer;
 
 //Conversion from bap to number of bits in the mantissas
 //zeros account for cases 0,1,2,4 which are special cased
@@ -170,75 +170,50 @@ coeff_get_float(uint16_t bap, uint16_t dithflag, int exp)
 	    return 0;
 
     case 1:
-	if(m_1_pointer > 2) {
-	    group_code = bitstream_get(5);
+	if (q_1_pointer >= 0)
+	    return q_1_[q_1_pointer--] * scale_factor[exp];
 
-	    if(group_code > 26)
-		goto error;
+	group_code = bitstream_get(5);
 
-	    m_1[0] = group_code / 9; 
-	    m_1[1] = (group_code % 9) / 3; 
-	    m_1[2] = (group_code % 9) % 3; 
-	    m_1_pointer = 0;
-	}
-	return q_1[m_1[m_1_pointer++]] * scale_factor[exp];
+	q_1_pointer = 1;
+	q_1_[1] = q_1[(group_code % 9) / 3];
+	q_1_[0] = q_1[(group_code % 9) % 3];
+	return q_1[group_code / 9] * scale_factor[exp];
+
     case 2:
+	if (q_2_pointer >= 0)
+	    return q_2_[q_2_pointer--] * scale_factor[exp];
 
-	if(m_2_pointer > 2) {
-	    group_code = bitstream_get(7);
+	group_code = bitstream_get(7);
 
-	    if(group_code > 124)
-		goto error;
-	    
-	    m_2[0] = group_code / 25;
-	    m_2[1] = (group_code % 25) / 5 ;
-	    m_2[2] = (group_code % 25) % 5 ; 
-	    m_2_pointer = 0;
-	}
-	return q_2[m_2[m_2_pointer++]] * scale_factor[exp];
+	q_2_pointer = 1;
+	q_2_[1] = q_2[(group_code % 25) / 5];
+	q_2_[0] = q_2[(group_code % 25) % 5];
+	return q_2[group_code / 25] * scale_factor[exp];
 
     case 3:
 	group_code = bitstream_get(3);
-
-	if(group_code > 6)
-	    goto error;
-
 	return q_3[group_code] * scale_factor[exp];
 
     case 4:
-	if(m_4_pointer > 1) {
-	    group_code = bitstream_get(7);
-
-	    if(group_code > 120)
-		goto error;
-
-	    m_4[0] = group_code / 11;
-	    m_4[1] = group_code % 11;
-	    m_4_pointer = 0;
+	if (q_4_pointer == 0) {
+	    q_4_pointer = -1;
+	    return q_4_ * scale_factor[exp];
 	}
-	return q_4[m_4[m_4_pointer++]] * scale_factor[exp];
+
+	group_code = bitstream_get(7);
+
+	q_4_pointer = 0;
+	q_4_ = q_4[group_code % 11];
+	return q_4[group_code / 11] * scale_factor[exp];
 
     case 5:
 	group_code = bitstream_get(4);
-
-	if(group_code > 14)
-	    goto error;
-
 	return q_5[group_code] * scale_factor[exp];
 
     default:
 	return ((int16_t)(bitstream_get((qnttztab-6)[bap]) << (16 - (qnttztab-6)[bap]))) * scale_factor[exp];
     }
-
-
-
-
-error:
-    if(!error_flag)
-	fprintf(stderr,"** Invalid mantissa - skipping frame **\n");
-    error_flag = 1;
-
-    return 0;
 }
 
 //
@@ -247,10 +222,7 @@ error:
 static void 
 coeff_reset(void)
 {
-    m_1[2] = m_1[1] = m_1[0] = 0;
-    m_2[2] = m_2[1] = m_2[0] = 0;
-    m_4[1] = m_4[0] = 0;
-    m_1_pointer = m_2_pointer = m_4_pointer = 3;
+    q_1_pointer = q_2_pointer = q_4_pointer = -1;
 }
 
 //
