@@ -76,6 +76,9 @@ projects, including:
       *	ffmpeg (http://ffmpeg.sourceforge.net/) - a nice audio/video
 	encoder and transcoder, uses liba52 for decoding A/52 streams.
 
+      *	Ogle (http://www.dtek.chalmers.se/groups/dvd/) - a good DVD
+	player with menu support
+
       *	OMS (http://www.linuxvideo.org/oms/)
 
       *	XMPS (http://xmps.sourceforge.net/)
