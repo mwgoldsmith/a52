@@ -85,10 +85,7 @@ typedef struct ac3_ba_s {
     uint16_t fsnroffst;	// fine SNR offset
     uint16_t fgaincod;	// fast gain
     uint16_t deltbae;	// delta bit allocation exists
-    uint16_t deltnseg;	// number of delta bit segments
-    uint16_t deltoffst[8];	// delta bit offset
-    uint16_t deltlen[8];	// delta bit length
-    uint16_t deltba[8];		// delta bit value
+    int8_t deltba[50];	// per-band delta bit allocation
 } ac3_ba_t;
 
 /* more pain */
