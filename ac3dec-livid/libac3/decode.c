@@ -63,7 +63,6 @@ static audblk_t audblk;
 static bsi_t bsi;
 static syncinfo_t syncinfo;
 #ifndef __OMS__
-static uint32_t frame_count = 0;
 static uint32_t done_banner;
 #endif
 static uint32_t is_output_initialized = 0;
