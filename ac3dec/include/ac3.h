@@ -29,59 +29,59 @@ typedef double sample_t;
 #endif
 
 typedef struct ac3_ba_s {
-    uint16_t fsnroffst;		// fine SNR offset
-    uint16_t fgaincod;		// fast gain
-    uint16_t deltbae;		// delta bit allocation exists
-    int8_t deltba[50];		// per-band delta bit allocation
+    uint16_t fsnroffst;		/* fine SNR offset */
+    uint16_t fgaincod;		/* fast gain */
+    uint16_t deltbae;		/* delta bit allocation exists */
+    int8_t deltba[50];		/* per-band delta bit allocation */
 } ac3_ba_t;
 
 typedef struct ac3_state_s {
-    uint8_t fscod;		// sample rate
-    uint8_t halfrate;		// halfrate factor
-    uint8_t acmod;		// coded channels
-    sample_t clev;		// centre channel mix level
-    sample_t slev;		// surround channels mix level
-    uint8_t lfeon;		// coded lfe channel
+    uint8_t fscod;		/* sample rate */
+    uint8_t halfrate;		/* halfrate factor */
+    uint8_t acmod;		/* coded channels */
+    sample_t clev;		/* centre channel mix level */
+    sample_t slev;		/* surround channels mix level */
+    uint8_t lfeon;		/* coded lfe channel */
 
-    int output;			// type of output
-    sample_t level;		// output level
-    sample_t bias;		// output bias
+    int output;			/* type of output */
+    sample_t level;		/* output level */
+    sample_t bias;		/* output bias */
 
-    uint16_t cplinu;		// coupling in use
-    uint16_t chincpl[5];	// channel coupled
-    uint16_t phsflginu;		// phase flags in use (stereo only)
-    uint16_t cplbndstrc[18];	// coupling band structure
-    uint16_t cplstrtmant;	// coupling channel start mantissa
-    uint16_t cplendmant;	// coupling channel end mantissa
-    sample_t cplco[5][18];	// coupling coordinates
+    uint16_t cplinu;		/* coupling in use */
+    uint16_t chincpl[5];	/* channel coupled */
+    uint16_t phsflginu;		/* phase flags in use (stereo only) */
+    uint16_t cplbndstrc[18];	/* coupling band structure */
+    uint16_t cplstrtmant;	/* coupling channel start mantissa */
+    uint16_t cplendmant;	/* coupling channel end mantissa */
+    sample_t cplco[5][18];	/* coupling coordinates */
 
-    // derived information
-    uint16_t cplstrtbnd;	// coupling start band (for bit allocation)
-    uint16_t ncplbnd;		// number of coupling bands
+    /* derived information */
+    uint16_t cplstrtbnd;	/* coupling start band (for bit allocation) */
+    uint16_t ncplbnd;		/* number of coupling bands */
 
-    uint16_t rematflg[4];	// stereo rematrixing
+    uint16_t rematflg[4];	/* stereo rematrixing */
 
-    uint16_t endmant[5];	// channel end mantissa
+    uint16_t endmant[5];	/* channel end mantissa */
 
-    uint8_t cpl_exp[256];	// decoded coupling channel exponents
-    uint8_t fbw_exp[5][256];	// decoded channel exponents
-    uint8_t lfe_exp[7];		// decoded lfe channel exponents
+    uint8_t cpl_exp[256];	/* decoded coupling channel exponents */
+    uint8_t fbw_exp[5][256];	/* decoded channel exponents */
+    uint8_t lfe_exp[7];		/* decoded lfe channel exponents */
 
-    uint16_t sdcycod;		// slow decay
-    uint16_t fdcycod;		// fast decay
-    uint16_t sgaincod;		// slow gain
-    uint16_t dbpbcod;		// dB per bit - encodes the dbknee value
-    uint16_t floorcod;		// masking floor
+    uint16_t sdcycod;		/* slow decay */
+    uint16_t fdcycod;		/* fast decay */
+    uint16_t sgaincod;		/* slow gain */
+    uint16_t dbpbcod;		/* dB per bit - encodes the dbknee value */
+    uint16_t floorcod;		/* masking floor */
 
-    uint16_t csnroffst;		// coarse SNR offset
-    ac3_ba_t cplba;		// coupling bit allocation parameters
-    ac3_ba_t ba[5];		// channel bit allocation parameters
-    ac3_ba_t lfeba;		// lfe bit allocation parameters
+    uint16_t csnroffst;		/* coarse SNR offset */
+    ac3_ba_t cplba;		/* coupling bit allocation parameters */
+    ac3_ba_t ba[5];		/* channel bit allocation parameters */
+    ac3_ba_t lfeba;		/* lfe bit allocation parameters */
 
-    uint16_t cplfleak;		// coupling fast leak init
-    uint16_t cplsleak;		// coupling slow leak init
+    uint16_t cplfleak;		/* coupling fast leak init */
+    uint16_t cplsleak;		/* coupling slow leak init */
 
-    // derived bit allocation information
+    /* derived bit allocation information */
     int8_t fbw_bap[5][256];
     int8_t cpl_bap[256];
     int8_t lfe_bap[7];

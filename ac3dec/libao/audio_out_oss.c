@@ -82,7 +82,7 @@ static inline int16_t convert (int32_t i)
 static inline void float_to_int (float * _f, int16_t * s16, int flags)
 {
     int i;
-    int32_t * f = (int32_t *) _f;	// XXX assumes IEEE float format
+    int32_t * f = (int32_t *) _f;
 
     switch (flags) {
     case AC3_MONO:
@@ -191,8 +191,8 @@ int oss_play (ao_instance_t * _instance, int flags, sample_t * _samples)
 
     if (flags & AC3_LFE)
 	chans = 6;
-    else if (flags & 1)
-	chans = 5;	// center channel
+    else if (flags & 1)	/* center channel */
+	chans = 5;
     else switch (flags) {
     case AC3_2F2R:
 	chans = 4;

@@ -161,18 +161,16 @@ imdct_do_512(sample_t data[],sample_t delay[])
     sample_t *delay_ptr;
     sample_t *window_ptr;
 	
-    //
-    // 512 IMDCT with source and dest data in 'data'
-    //
+    /* 512 IMDCT with source and dest data in 'data' */
 	
-    // Pre IFFT complex multiply plus IFFT cmplx conjugate 
+    /* Pre IFFT complex multiply plus IFFT cmplx conjugate */
     for( i=0; i < 128; i++) {
 	/* z[i] = (X[256-2*i-1] + j * X[2*i]) * (xcos1[i] + j * xsin1[i]) ; */ 
 	buf[i].real =         (data[256-2*i-1] * xcos1[i])  -  (data[2*i]       * xsin1[i]);
 	buf[i].imag = -1.0 * ((data[2*i]       * xcos1[i])  +  (data[256-2*i-1] * xsin1[i]));
     }
 
-    //Bit reversed shuffling
+    /* Bit reversed shuffling */
     for(i=0; i<128; i++) {
 	k = bit_reverse_512[i];
 	if (k < i)
@@ -281,7 +279,7 @@ imdct_do_256(sample_t data[],sample_t delay[])
 	buf_2[k].imag = -1.0f * ( data[q + 1] * xcos2[k] + data[p + 1] * xsin2[k]); 
     }
 
-    //IFFT Bit reversed shuffling
+    /* IFFT Bit reversed shuffling */
     for(i=0; i<64; i++) { 
 	k = bit_reverse_256[i];
 	if (k < i) {
@@ -295,7 +293,7 @@ imdct_do_256(sample_t data[],sample_t delay[])
 	two_m = (1 << m);
 	two_m_plus_one = (1 << (m+1));
 
-	//FIXME
+	/* FIXME */
 	if(m)
 	    two_m = (1 << m);
 	else
@@ -305,7 +303,7 @@ imdct_do_256(sample_t data[],sample_t delay[])
 	    for(i = 0; i < 64; i += two_m_plus_one) {
 		p = k + i;
 		q = p + two_m;
-		//Do block 1
+		/* Do block 1 */
 		tmp_a_r = buf_1[p].real;
 		tmp_a_i = buf_1[p].imag;
 		tmp_b_r = buf_1[q].real * w[m][k].real - buf_1[q].imag * w[m][k].imag;
@@ -315,7 +313,7 @@ imdct_do_256(sample_t data[],sample_t delay[])
 		buf_1[q].real = tmp_a_r - tmp_b_r;
 		buf_1[q].imag =  tmp_a_i - tmp_b_i;
 
-		//Do block 2
+		/* Do block 2 */
 		tmp_a_r = buf_2[p].real;
 		tmp_a_i = buf_2[p].imag;
 		tmp_b_r = buf_2[q].real * w[m][k].real - buf_2[q].imag * w[m][k].imag;

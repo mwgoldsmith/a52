@@ -91,7 +91,7 @@ int downmix_init (int input, int flags, sample_t * level,
 	case CONVERT (AC3_3F2R, AC3_2F1R):
 	    if (clev < LEVEL_PLUS3DB - 1)
 		goto level_3db;
-	    // break thru
+	    /* break thru */
 	case CONVERT (AC3_3F, AC3_STEREO):
 	case CONVERT (AC3_3F1R, AC3_2F1R):
 	case CONVERT (AC3_3F1R, AC3_2F2R):

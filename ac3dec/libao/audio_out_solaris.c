@@ -75,7 +75,7 @@ static inline int16_t convert (int32_t i)
 static inline void float_to_int (float * _f, int16_t * s16, int flags)
 {
     int i;
-    int32_t * f = (int32_t *) _f;	// XXX assumes IEEE float format
+    int32_t * f = (int32_t *) _f;
 
     for (i = 0; i < 256; i++) {
 	s16[2*i] = convert (f[i]);
@@ -106,10 +106,10 @@ int solaris_play (ao_instance_t * _instance, int flags, sample_t * _samples)
 	info.play.sample_rate = instance->sample_rate;
 	info.play.precision = 16;
 	info.play.channels = 2;
-	//info.play.buffer_size = 2048;
+	/* info.play.buffer_size = 2048; */
 	info.play.encoding = AUDIO_ENCODING_LINEAR;
-	//info.play.port = AUDIO_SPEAKER;
-	//info.play.gain = 110;
+	/* info.play.port = AUDIO_SPEAKER; */
+	/* info.play.gain = 110; */
 	
 	/* Write our configuration */
 	/* An implicit GETINFO is also performed. */

@@ -55,14 +55,14 @@ bitstream_fill_current()
     current_word = swab32 (tmp);
 }
 
-//
-// The fast paths for _get is in the
-// bitstream.h header file so it can be inlined.
-//
-// The "bottom half" of this routine is suffixed _bh
-//
-// -ah
-//
+/*
+ * The fast paths for _get is in the
+ * bitstream.h header file so it can be inlined.
+ *
+ * The "bottom half" of this routine is suffixed _bh
+ *
+ * -ah
+ */
 
 uint32_t
 bitstream_get_bh(uint32_t num_bits)

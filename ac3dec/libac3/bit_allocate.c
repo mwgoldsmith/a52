@@ -52,7 +52,7 @@ static int8_t baptab[305] = {
     16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
     16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
     16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
-    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,	// 93 padding entries
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,	/* 93 padding elems */
 
     16, 16, 16, 16, 16, 16, 16, 16, 16, 14, 14, 14, 14, 14, 14, 14,
     14, 12, 12, 12, 12, 11, 11, 11, 11, 10, 10, 10, 10,  9,  9,  9,
@@ -68,7 +68,7 @@ static int8_t baptab[305] = {
      0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
      0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
      0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
-     0,  0,  0,  0					// 148 padding entries
+     0,  0,  0,  0					/* 148 padding elems */
 };
 
 static int bndtab[30] = {21, 22,  23,  24,  25,  26,  27,  28,  31,  34,
@@ -155,7 +155,7 @@ void bit_allocate (ac3_state_t * state, ac3_ba_t * ba, int bndstart,
 
     i = bndstart;
     j = start;
-    if (start == 0) {	// not the coupling channel
+    if (start == 0) {	/* not the coupling channel */
 	int lowcomp;
 
 	lowcomp = 0;
@@ -190,7 +190,7 @@ void bit_allocate (ac3_state_t * state, ac3_ba_t * ba, int bndstart,
 	    bap[i++] = (baptab+156)[mask + 4 * exp[i]];
 	}
 
-	if (end == 7)	// lfe channel
+	if (end == 7)	/* lfe channel */
 	    return;
 
 	do {
@@ -206,7 +206,7 @@ void bit_allocate (ac3_state_t * state, ac3_ba_t * ba, int bndstart,
 	    bap[i++] = (baptab+156)[mask + 4 * exp[i]];
 	} while (i < 20);
 
-	while (lowcomp > 128) {		// two iterations maximum
+	while (lowcomp > 128) {		/* two iterations maximum */
 	    lowcomp -= 128;
 	    psd = 128 * exp[i];
 	    UPDATE_LEAK ();
@@ -241,15 +241,15 @@ void bit_allocate (ac3_state_t * state, ac3_ba_t * ba, int bndstart,
 		break;
 	    }
 	}
-	// minpsd = -289
+	/* minpsd = -289 */
 	UPDATE_LEAK ();
 	mask = (fastleak < slowleak) ? fastleak : slowleak;
 	COMPUTE_MASK ();
 	i++;
 	j = startband;
 	do {
-	    // max(mask+4*exp)=147=-(minpsd+fgain-deltba-snroffset)>>5+4*exp
-	    // min(mask+4*exp)=-156=-(sgain-deltba-snroffset)>>5
+	    /* max(mask+4*exp)=147=-(minpsd+fgain-deltba-snroffset)>>5+4*exp */
+	    /* min(mask+4*exp)=-156=-(sgain-deltba-snroffset)>>5 */
 	    bap[j++] = (baptab+156)[mask + 4 * exp[j]];
 	} while (j < endband);
     } while (j < end);
