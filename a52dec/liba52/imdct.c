@@ -45,8 +45,6 @@ typedef struct complex_s {
     sample_t imag;
 } complex_t;
 
-static complex_t buf[128];
-
 static uint8_t fftorder[] = {
       0,128, 64,192, 32,160,224, 96, 16,144, 80,208,240,112, 48,176,
       8,136, 72,200, 40,168,232,104,248,120, 56,184, 24,152,216, 88,
@@ -248,6 +246,7 @@ void a52_imdct_512 (sample_t * data, sample_t * delay, sample_t bias)
     int i, k;
     sample_t t_r, t_i, a_r, a_i, b_r, b_i, w_1, w_2;
     const sample_t * window = a52_imdct_window;
+    complex_t buf[128];
 	
     for (i = 0; i < 128; i++) {
 	k = fftorder[i];
@@ -286,15 +285,12 @@ void a52_imdct_512 (sample_t * data, sample_t * delay, sample_t bias)
     }
 }
 
-void a52_imdct_256(sample_t data[],sample_t delay[],sample_t bias)
+void a52_imdct_256(sample_t * data, sample_t * delay, sample_t bias)
 {
     int i, k;
     sample_t t_r, t_i, a_r, a_i, b_r, b_i, c_r, c_i, d_r, d_i, w_1, w_2;
-    complex_t * buf1, * buf2;
     const sample_t * window = a52_imdct_window;
-
-    buf1 = &buf[0];
-    buf2 = &buf[64];
+    complex_t buf1[64], buf2[64];
 
     /* Pre IFFT complex multiply plus IFFT cmplx conjugate */
     for (i = 0; i < 64; i++) {
