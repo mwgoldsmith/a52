@@ -568,20 +568,3 @@ int downmix (float * samples, int acmod, int output,
 	return -1;
     }
 }
-
-#if 0
-//Pre-scaled downmix coefficients
-static float cmixlev_lut[4] = { 0.2928, 0.2468, 0.2071, 0.2468 };
-static float smixlev_lut[4] = { 0.2928, 0.2071, 0.0   , 0.2071 };
-
-static void float_to_int (float * f, int16_t * s16)
-{
-    int i;
-
-    for (i = 0; i < 256; i++) {
-	s16[2*i] = f[i];
-	s16[2*i+1] = f[i+256];
-    }
-}
-
-#endif
