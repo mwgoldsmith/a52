@@ -13,7 +13,7 @@ HEADER_X86 = downmix_i386.h
 lib_LTLIBRARIES = dec_ac3.la
 
 dec_ac3 = @MM_CFLAGS@
-dec_ac3_la_LDFLAGS = -avoid-version -module Wl,-soname,dec_ac3.so -lm @MM_LIBS@
+dec_ac3_la_LDFLAGS = -avoid-version -module Wl,-soname,dec_ac3.so -lm -L$(top_builddir)/src/oms/.libs -loms @MM_LIBS@
 dec_ac3_la_SOURCES = dec_ac3.c bitstream.c bit_allocate.c decode.c coeff.c exponent.c stats.c parse.c crc.c debug.c rematrix.c dither.c sanity_check.c srfft.c imdct.c imdct_c.c downmix.c downmix_c.c ${SOURCE_X86}
 
 noinst_HEADERS = ac3_internal.h bitstream.h imdct.h imdct_c.h stats.h coeff.h exponent.h bit_allocate.h parse.h crc.h debug.h rematrix.h downmix.h downmix_c.h dither.h sanity_check.h ac3.h srfft.h srfftp.h mm_accel.h cmplx.h decode.h bswap.h ${HEADER_X86}
