@@ -123,7 +123,7 @@ typedef struct audblk_s
 		/* The absolute coupling exponent */
 		uint16_t cplabsexp;
 		/* Coupling channel exponents (D15 mode gives 18 * 12 /3  encoded exponents */
-		uint16_t cplexps[18 * 12 / 3];
+		//uint16_t cplexps[18 * 12 / 3];
 	/* Sanity checking constant */
 	uint32_t	magic2;
 	/* fbw channel exponents */

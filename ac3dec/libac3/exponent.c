@@ -46,10 +46,12 @@ exponent_unpack(ac3_state_t * state, audblk_t *audblk)
 		      audblk->exps[i][0], &audblk->exps[i][1],
 		      audblk->fbw_exp[i]);
 
+#if 0
     if(audblk->cplinu)
 	exp_unpack_ch(UNPACK_CPL, audblk->cplexpstr, audblk->ncplgrps,
 		      audblk->cplabsexp << 1, audblk->cplexps,
 		      &audblk->cpl_exp[audblk->cplstrtmant]);
+#endif
 
     if(state->lfeon)
 	exp_unpack_ch(UNPACK_LFE, audblk->lfeexpstr, 2, audblk->lfeexps[0], 

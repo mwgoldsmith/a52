@@ -27,14 +27,13 @@
 #include "ac3.h"
 #include "ac3_internal.h"
 
-
 #include "bitstream.h"
 #include "stats.h"
 #include "debug.h"
 #include "parse.h"
+#include "exponent.h"
 
-/* Misc LUT */
-static const uint16_t nfchans[8] = {2,1,2,3,3,4,4,5};
+static const uint8_t nfchans[8] = {2, 1, 2, 3, 3, 4, 4, 5};
 
 int parse_syncinfo (uint8_t * buf, int * sample_rate, int * bit_rate)
 {
@@ -67,11 +66,7 @@ int parse_syncinfo (uint8_t * buf, int * sample_rate, int * bit_rate)
     }
 }
 
-/*
- * This routine fills a bsi struct from the AC3 stream
- */
-
-int parse_bsi (ac3_state_t *state, uint8_t * buf)
+int parse_bsi (ac3_state_t * state, uint8_t * buf)
 {
     int chaninfo;
 
@@ -127,6 +122,78 @@ int parse_bsi (ac3_state_t *state, uint8_t * buf)
     stats_print_bsi(state);
     return 0;
 }
+
+
+
+static int parse_exponents (uint16_t type,uint16_t expstr,uint16_t ngrps,
+	      uint16_t initial_exp, uint16_t *dest)
+{
+    uint16_t i,j;
+    int16_t exp_acc;
+    int16_t exp_1,exp_2,exp_3;
+
+    /* Handle the initial absolute exponent */
+    exp_acc = initial_exp;
+    j = 0;
+
+    /* In the case of a fbw channel then the initial absolute values is 
+     * also an exponent */
+    if(type != UNPACK_CPL)
+	dest[j++] = exp_acc;
+
+    /* Loop through the groups and fill the dest array appropriately */
+    for(i=0; i< ngrps; i++) {
+	int exps;
+
+	exps = bitstream_get (7);
+	if(exps > 124)
+	    return 1;
+
+	exp_1 = exps / 25;
+	exp_2 = (exps - (exp_1 * 25)) / 5;
+	exp_3 = exps - (exp_1 * 25) - (exp_2 * 5) ;
+
+	exp_acc += (exp_1 - 2);
+
+	switch(expstr) {
+	case EXP_D45:
+	    dest[j++] = exp_acc;
+	    dest[j++] = exp_acc;
+	case EXP_D25:
+	    dest[j++] = exp_acc;
+	case EXP_D15:
+	    dest[j++] = exp_acc;
+	}
+
+	exp_acc += (exp_2 - 2);
+
+	switch(expstr) {
+	case EXP_D45:
+	    dest[j++] = exp_acc;
+	    dest[j++] = exp_acc;
+	case EXP_D25:
+	    dest[j++] = exp_acc;
+	case EXP_D15:
+	    dest[j++] = exp_acc;
+	}
+
+	exp_acc += (exp_3 - 2);
+
+	switch(expstr) {
+	case EXP_D45:
+	    dest[j++] = exp_acc;
+	    dest[j++] = exp_acc;
+	case EXP_D25:
+	    dest[j++] = exp_acc;
+	case EXP_D15:
+	    dest[j++] = exp_acc;
+	}
+    }	
+
+    return 0;
+}
+
+
 
 void parse_audblk (ac3_state_t * state, audblk_t * audblk)
 {
@@ -185,7 +252,7 @@ void parse_audblk (ac3_state_t * state, audblk_t * audblk)
 		audblk->phsflg[j] = bitstream_get (1);
     }
 
-    if(state->acmod == 0x2) {	// stereo mode
+    if (state->acmod == 0x2) {	// stereo mode
 	if (bitstream_get (1)) {	// rematstr
 	    if ((audblk->cplbegf > 2) || (audblk->cplinu == 0))
 		for (i = 0; i < 4; i++) 
@@ -205,47 +272,43 @@ void parse_audblk (ac3_state_t * state, audblk_t * audblk)
 
 
 
-
-
-
-
     if (audblk->cplinu) {
-	/* Get the coupling channel exponent strategy */
 	audblk->cplexpstr = bitstream_get (2);
-	audblk->ncplgrps = (audblk->cplendmant - audblk->cplstrtmant) / 
+	audblk->ncplgrps = (audblk->cplendmant - audblk->cplstrtmant) /
 	    (3 << (audblk->cplexpstr-1));
     }
-
-    for(i = 0; i < state->nfchans; i++)
+    for (i = 0; i < state->nfchans; i++)
 	audblk->chexpstr[i] = bitstream_get (2);
-
-    /* Get the exponent strategy for lfe channel */
-    if(state->lfeon) 
+    if (state->lfeon) 
 	audblk->lfeexpstr = bitstream_get (1);
 
-    /* Determine the bandwidths of all the fbw channels */
-    for(i = 0; i < state->nfchans; i++) { 
-	uint16_t grp_size;
+    for (i = 0; i < state->nfchans; i++) { 
+	int grp_size;
 
-	if(audblk->chexpstr[i] != EXP_REUSE) { 
-	    if (audblk->cplinu && audblk->chincpl[i]) 
+	if (audblk->chexpstr[i] != EXP_REUSE) {
+	    if (audblk->cplinu && audblk->chincpl[i])
 		audblk->endmant[i] = audblk->cplstrtmant;
 	    else {
-		audblk->chbwcod[i] = bitstream_get (6); 
+		audblk->chbwcod[i] = bitstream_get (6);
 		audblk->endmant[i] = ((audblk->chbwcod[i] + 12) * 3) + 37;
 	    }
 
 	    /* Calculate the number of exponent groups to fetch */
 	    grp_size =  3 * (1 << (audblk->chexpstr[i] - 1));
-	    audblk->nchgrps[i] = (audblk->endmant[i] - 1 + (grp_size - 3)) / grp_size;
+	    audblk->nchgrps[i] = (audblk->endmant[i] - 1 + (grp_size - 3)) /
+		grp_size;
 	}
     }
 
-    /* Get the coupling exponents if they exist */
-    if(audblk->cplinu && (audblk->cplexpstr != EXP_REUSE)) {
+
+
+
+
+    if (audblk->cplinu && (audblk->cplexpstr != EXP_REUSE)) {
 	audblk->cplabsexp = bitstream_get (4);
-	for(i=0;i< audblk->ncplgrps;i++)
-	    audblk->cplexps[i] = bitstream_get (7);
+	parse_exponents (UNPACK_CPL, audblk->cplexpstr, audblk->ncplgrps,
+			 audblk->cplabsexp << 1,
+			 audblk->cpl_exp + audblk->cplstrtmant);
     }
 
     /* Get the fwb channel exponents */
