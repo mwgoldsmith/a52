@@ -121,11 +121,13 @@ REFERENCES
 
 The A/52 standard is publically available at these locations:
 
-      *	http://www.atsc.org/standards/a_52.pdf - The main part of the
+      *	http://www.atsc.org/standards/a_52a.pdf - The main part of the
 	standard, as published by the ATSC.
 
       *	http://www.dolby.com/tech/ATSC_err.pdf - A list of erratas in
-	the ATSC standard, published by Dolby.
+	the ATSC standard, published by Dolby. It applies to the
+	previous revision of the standard (A/52 not A/52a), but some
+	erratas have not been fixed in the updated standard yet !
 
 
 CVS SNAPSHOTS
