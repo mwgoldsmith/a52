@@ -457,11 +457,11 @@ parse_audblk(bsi_t *bsi,audblk_t *audblk,bitstream_t *bs)
 		uint_16 skip_data;
 
 		skipl = bitstream_get(bs,9);
-		for(i = 0; i < skipl + 20; i++)
+		fprintf(stderr,"skipping %d bytes\n",skipl);
+
+		for(i = 0; i < skipl ; i++)
 		{
 			skip_data = bitstream_get(bs,8);
-			//FIXME remove
-			//printf("skipdata = %2x\n",skip_data);
 		}
 
 	}
@@ -487,6 +487,7 @@ parse_auxdata(bitstream_t *bs)
 
 	//get the auxdata exists bit
 	auxdatae = bitstream_get(bs,1);	
+		printf("auxdatae = %d\n",auxdatae);
 
 	//Skip the CRC reserved bit
 	bitstream_get(bs,1);

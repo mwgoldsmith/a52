@@ -62,7 +62,9 @@ mantissa_unpack(bsi_t *bsi, audblk_t *audblk,bitstream_t *bs)
 		for(j=0; j < audblk->endmant[i]; j++)
 			audblk->chmant[i][j] = mantissa_get(bs,audblk->fbw_bap[i][j]);
 
-		mantissa_reset();
+		//FIXME it is unclear whether mantissas are shared between
+		//channels
+		//mantissa_reset();
 	}
 
 	if(audblk->cplinu)
@@ -71,7 +73,7 @@ mantissa_unpack(bsi_t *bsi, audblk_t *audblk,bitstream_t *bs)
 		for(j=0; j < 12 * audblk->ncplsubnd; j++)
 			audblk->cplmant[j] = mantissa_get(bs,audblk->cpl_bap[j]);
 
-		mantissa_reset();
+		//mantissa_reset();
 	}
 
 
@@ -81,7 +83,7 @@ mantissa_unpack(bsi_t *bsi, audblk_t *audblk,bitstream_t *bs)
 		for(j=0; j < 7 ; j++)
 			audblk->lfemant[j] = mantissa_get(bs,audblk->lfe_bap[j]);
 
-		mantissa_reset();
+		//mantissa_reset();
 	}
 
 }
@@ -139,6 +141,11 @@ mantissa_get(bitstream_t *bs, uint_16 bap)
 
 		case 3:
 			result = bitstream_get(bs,3);
+
+			if(result > 6)
+				//FIXME do proper block error handling
+				printf("\n!! Invalid mantissa !!\n");
+
 			result = q_3[result];
 			break;
 
@@ -161,6 +168,11 @@ mantissa_get(bitstream_t *bs, uint_16 bap)
 
 		case 5:
 			result = bitstream_get(bs,4);
+
+			if(result > 14)
+				//FIXME do proper block error handling
+				printf("\n!! Invalid mantissa !!\n");
+
 			result = q_5[result];
 			break;
 

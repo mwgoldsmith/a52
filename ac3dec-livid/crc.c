@@ -12,6 +12,8 @@
 
 uint_16 state;
 
+static inline void crc_process_bit(uint_32 bit);
+
 void
 crc_init(void)
 {
@@ -32,7 +34,7 @@ crc_process(uint_32 data, uint_32 num_bits)
 	}
 }
 
-void
+static inline void
 crc_process_bit(uint_32 bit)
 {
 	uint_32 xor_val;
