@@ -40,7 +40,7 @@ void a52_bitstream_set_ptr (uint8_t * buf)
 {
     int align;
 
-    align = (int)buf & 3;
+    align = (long)buf & 3;
     buffer_start = (uint32_t *) (buf - align);
     a52_bits_left = 0;
     bitstream_get (align * 8);
