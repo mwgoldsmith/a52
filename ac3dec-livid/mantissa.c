@@ -106,9 +106,9 @@ mantissa_get(bitstream_t *bs, uint_16 bap)
 			{
 				group_code = bitstream_get(bs,5);
 
-				if(group_code > 26)
+	//			if(group_code > 26)
 					//FIXME do proper block error handling
-					printf("\n!! Invalid mantissa !!\n");
+	//				printf("\n!! Invalid mantissa !!\n");
 
 				m_1[0] = group_code / 9; 
 				m_1[1] = (group_code % 9) / 3; 
@@ -190,52 +190,3 @@ static uint_16 mantissa_get_dither(void)
 	return 0;
 }
 
-/* Converts an unsigned exponent in the range of 0-24 and a 16 bit mantissa
- * to an IEEE single precision floating point value */
-
-void mantissa_convert_to_float(uint_16 exp, uint_16 mant, uint_32 *dest)
-{
-	uint_16 sign;
-	uint_16 exponent;
-	uint_16 mantissa;
-	int i;
-
-	/* If the mantissa is zero we can simply return zero */
-	if(mant == 0)
-	{
-		*dest = 0;
-		return;
-	}
-
-	/* Take care of the one asymmetric negative number */
-	if(mant == 0x8000)
-		mant++;
-
-	/* Extract the sign bit */
-	sign = mant & 0x8000 ? 1 : 0;
-	
-
-	/* Invert the mantissa if it's negative */
-	if(sign)
-		mantissa = (~mant) + 1;
-	else 
-		mantissa = mant;
-
-	/* Shift out the sign bit */
-	mantissa <<= 1;
-
-	/* Find the index of the most significant one bit */
-	for(i = 0; i < 16; i++)
-	{
-		if((mantissa << i) & 0x8000)
-			break;
-	}
-
-	/* Exponent is offset by 127 in IEEE format minus the shift to
-	 * align the mantissa to 1.f */
-	exponent = 0xff & (127 - exp - (i + 1));
-	
-	*dest = (sign << 31) | (exponent << 23) | 
-		((0x007fffff) & (mantissa << (7 + i + 1)));
-
-}

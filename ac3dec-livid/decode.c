@@ -14,6 +14,8 @@
 #include "exponent.h"
 #include "mantissa.h"
 #include "bit_allocate.h"
+#include "uncouple.h"
+#include "output.h"
 #include "stats.h"
 
 static void decode_fill_syncinfo(bitstream_t *bs);
@@ -37,6 +39,8 @@ int main(int argc,char *argv[])
 	bs = bitstream_open("foo.ac3");
 	imdct_init();
 	decode_sanity_check_init();
+	output_open(16,48000,2);
+
 
 	/* FIXME check for end of stream and exit */
 
@@ -53,15 +57,25 @@ int main(int argc,char *argv[])
 			/* Extract most of the audblk info from the bitstream
 			 * (minus the mantissas */
 			decode_fill_audblk(bs);
+		decode_sanity_check();
 
 			/* Take the differential exponent data and turn it into
 			 * absolute exponents */
 			exponent_unpack(&bsi,&audblk,&stream_coeffs); 
+		decode_sanity_check();
 			/* Figure out how many bits per mantissa */
 			bit_allocate(syncinfo.fscod,&bsi,&audblk);
+		decode_sanity_check();
 
 			/* Extract the mantissas from the data stream */
 			mantissa_unpack(&bsi,&audblk,bs);
+		decode_sanity_check();
+
+			/* Uncouple the coupling channel if it exists and
+			 * convert the mantissa and exponents to IEEE floating
+			 * point format */
+			uncouple(&bsi,&audblk,&stream_coeffs);
+		decode_sanity_check();
 
 #if 0
 			/* Uncouple coupled channels */
@@ -76,10 +90,13 @@ int main(int argc,char *argv[])
 #endif
 			/* Convert the frequency data into time samples */
 			imdct(&bsi,&stream_coeffs,&stream_samples);
+		decode_sanity_check();
 
 			/* Send the samples to the output device */
-			/*output_samples(&stream_samples);*/
-		printf("      %ld bits (%ld words) read\n",bs->total_bits_read,bs->total_bits_read/16);
+			output_play(&stream_samples);
+
+			//FIXME remove
+//		printf("      %ld bits (%ld words) read\n",bs->total_bits_read,bs->total_bits_read/16);
 		}
 		decode_sanity_check();
 	}
@@ -315,34 +332,38 @@ decode_fill_audblk(bitstream_t *bs)
 				audblk.ncplbnd -= audblk.cplbndstrc[i];
 			}
 
-			/* Loop through all the channels and get their coupling co-ords */	
-			for(i=0;i < bsi.nfchans;i++)
+		}
+	}
+
+	if(audblk.cplinu)
+	{
+		/* Loop through all the channels and get their coupling co-ords */	
+		for(i=0;i < bsi.nfchans;i++)
+		{
+			if(!audblk.chincpl[i])
+				continue;
+
+			/* Is there new coupling co-ordinate info? */
+			audblk.cplcoe[i] = bitstream_get(bs,1);
+
+			if(audblk.cplcoe[i])
 			{
-				if(!audblk.chincpl[i])
-					continue;
-
-				/* Is there new coupling co-ordinate info? */
-				audblk.cplcoe[i] = bitstream_get(bs,1);
-
-				if(audblk.cplcoe[i])
+				audblk.mstrcplco[i] = bitstream_get(bs,1); 
+				for(j=0;j < audblk.ncplbnd; j++)
 				{
-					audblk.mstrcplco[i] = bitstream_get(bs,1); 
-					for(j=0;j < audblk.ncplbnd; j++)
-					{
-						audblk.cplcoexp[i][j] = bitstream_get(bs,4); 
-						audblk.cplcomant[i][j] = bitstream_get(bs,4); 
-					}
+					audblk.cplcoexp[i][j] = bitstream_get(bs,4); 
+					audblk.cplcomant[i][j] = bitstream_get(bs,4); 
 				}
 			}
+		}
 
-			/* If we're in dual mono mode, there's going to be some phase info */
-			if( (bsi.acmod == 0x2) && audblk.phsflginu && 
-					(audblk.cplcoe[0] || audblk.cplcoe[1]))
-			{
-				for(j=0;j < audblk.ncplbnd; j++)
-					audblk.phsflg[j] = bitstream_get(bs,1); 
+		/* If we're in dual mono mode, there's going to be some phase info */
+		if( (bsi.acmod == 0x2) && audblk.phsflginu && 
+				(audblk.cplcoe[0] || audblk.cplcoe[1]))
+		{
+			for(j=0;j < audblk.ncplbnd; j++)
+				audblk.phsflg[j] = bitstream_get(bs,1); 
 
-			}
 		}
 	}
 
@@ -415,6 +436,7 @@ decode_fill_audblk(bitstream_t *bs)
 		for(i=0;i< audblk.ncplgrps;i++)
 			audblk.cplexps[i] = bitstream_get(bs,7);
 	}
+		decode_sanity_check();
 
 	/* Get the fwb channel exponents */
 	for(i=0;i < bsi.nfchans; i++)
@@ -575,59 +597,56 @@ void decode_sanity_check(void)
 	int i;
 
 	if(syncinfo.magic != DECODE_MAGIC_NUMBER)
-		goto err;
+		fprintf(stderr,"\n** Sanity check failed -- syncinfo magic number **");
 	
 	if(bsi.magic != DECODE_MAGIC_NUMBER)
-		goto err;
+		fprintf(stderr,"\n** Sanity check failed -- bsi magic number **");
 
 	if(audblk.magic1 != DECODE_MAGIC_NUMBER)
-		goto err;
+		fprintf(stderr,"\n** Sanity check failed -- audblk magic number 1 **"); 
 
 	if(audblk.magic2 != DECODE_MAGIC_NUMBER)
-		goto err;
+		fprintf(stderr,"\n** Sanity check failed -- audblk magic number 2 **"); 
 
 	if(audblk.magic3 != DECODE_MAGIC_NUMBER)
-		goto err;
+		fprintf(stderr,"\n** Sanity check failed -- audblk magic number 3 **"); 
 
 	for(i = 0;i < 5 ; i++)
 	{
 		if (audblk.fbw_exp[i][255] !=0 || audblk.fbw_exp[i][254] !=0 || 
 				audblk.fbw_exp[i][253] !=0)
-			goto err;
+			fprintf(stderr,"\n** Sanity check failed -- fbw_exp out of bounds **"); 
 
 		if (audblk.fbw_bap[i][255] !=0 || audblk.fbw_bap[i][254] !=0 || 
 				audblk.fbw_bap[i][253] !=0)
-			goto err;
+			fprintf(stderr,"\n** Sanity check failed -- fbw_bap out of bounds **"); 
 
 		if (audblk.chmant[i][255] !=0 || audblk.chmant[i][254] !=0 || 
 				audblk.chmant[i][253] !=0)
-			goto err;
+			fprintf(stderr,"\n** Sanity check failed -- chmant out of bounds **"); 
 	}
 
 	if (audblk.cpl_exp[255] !=0 || audblk.cpl_exp[254] !=0 || 
 			audblk.cpl_exp[253] !=0)
-		goto err;
+		fprintf(stderr,"\n** Sanity check failed -- cpl_exp out of bounds **"); 
 
 	if (audblk.cpl_bap[255] !=0 || audblk.cpl_bap[254] !=0 || 
 			audblk.cpl_bap[253] !=0)
-		goto err;
+		fprintf(stderr,"\n** Sanity check failed -- cpl_bap out of bounds **"); 
 
 	if (audblk.cplmant[255] !=0 || audblk.cplmant[254] !=0 || 
 			audblk.cplmant[253] !=0)
-		goto err;
+		fprintf(stderr,"\n** Sanity check failed -- cpl_mant out of bounds **"); 
 
 	if ((audblk.cplinu == 1) && (audblk.cplbegf > (audblk.cplendf+2)))
-			goto err;
+		fprintf(stderr,"\n** Sanity check failed -- cpl params inconsistent **"); 
 
 	for(i=0; i < bsi.nfchans; i++)
 	{
 		if((audblk.chincpl[i] == 0) && (audblk.chbwcod[i] > 60))
-			goto err;
+			fprintf(stderr,"\n** Sanity check failed -- chbwcod too big **"); 
 	}
 
 	return;
-err:
-	printf("\n!! Sanity check failed !!");
-	//exit(1);
 }	
 
