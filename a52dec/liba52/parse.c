@@ -144,7 +144,7 @@ int a52_frame (a52_state_t * state, uint8_t * buf, int * flags,
     if (state->lfeon && (*flags & A52_LFE))
 	state->output |= A52_LFE;
     *flags = state->output;
-    // the 2* compensates for differences in imdct
+    /* the 2* compensates for differences in imdct */
     state->dynrng = state->level = 2 * *level;
     state->bias = bias;
     state->dynrnge = 1;
