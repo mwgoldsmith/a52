@@ -41,12 +41,11 @@
 static uint8_t buffer[BUFFER_SIZE];
 static FILE * in_file;
 static uint32_t frame_counter = 0;
-
 static struct timeval tv_beg, tv_end, tv_start;
 static int elapsed;
 static int total_elapsed;
 static int last_count = 0;
-static int demux_ps = 0;
+static int demux_track = 0;
 static ao_open_t * output_open = NULL;
 static ao_instance_t * output;
 
@@ -112,8 +111,8 @@ static void print_usage (char * argv[])
     int i;
     ao_driver_t * drivers;
 
-    fprintf (stderr, "usage: %s [-o mode] [-s] file\n"
-	     "\t-s\tuse program stream demultiplexer\n"
+    fprintf (stderr, "usage: %s [-o <mode>] [-s[<track>]] <file>\n"
+	     "\t-s\tuse program stream demultiplexer, track 0-7 or 0x80-0x87\n"
 	     "\t-o\taudioo output mode\n", argv[0]);
 
     drivers = ao_drivers ();
@@ -130,7 +129,7 @@ static void handle_args (int argc, char * argv[])
     int i;
 
     drivers = ao_drivers ();
-    while ((c = getopt (argc, argv, "so:")) != -1) {
+    while ((c = getopt (argc, argv, "s::o:")) != -1)
 	switch (c) {
 	case 'o':
 	    for (i = 0; drivers[i].name != NULL; i++)
@@ -143,13 +142,23 @@ static void handle_args (int argc, char * argv[])
 	    break;
 
 	case 's':
-	    demux_ps = 1;
+	    demux_track = 0x80;
+	    if (optarg != NULL) {
+		char * s;
+
+		demux_track = strtol (optarg, &s, 16);
+		if (demux_track < 0x80)
+		    demux_track += 0x80;
+		if ((demux_track < 0x80) || (demux_track > 0x87) || (*s)) {
+		    fprintf (stderr, "Invalid track number: %s\n", optarg);
+		    print_usage (argv);
+		}
+	    }
 	    break;
 
 	default:
 	    print_usage (argv);
 	}
-    }
 
     /* -o not specified, use a default driver */
     if (output_open == NULL)
@@ -294,7 +303,7 @@ static void ps_loop (void)
 			tmp1 += 2;
 		    tmp1 += mpeg1_skip_table [*tmp1 >> 4];
 		}
-		if (*tmp1 == 0x80) {	/* ac3 */
+		if (*tmp1 == demux_track) {	/* ac3 */
 		    tmp1 += 4;
 		    if (tmp1 < tmp2)
 			ac3_decode_data (tmp1, tmp2);
@@ -355,7 +364,7 @@ int main (int argc,char *argv[])
 
     gettimeofday (&tv_beg, NULL);
 
-    if (demux_ps)
+    if (demux_track)
 	ps_loop ();
     else
 	es_loop ();

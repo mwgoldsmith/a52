@@ -35,10 +35,12 @@
 #define BUFFER_SIZE 262144
 static uint8_t buffer[BUFFER_SIZE];
 static FILE * in_file;
+static int demux_track = 0x80;
 
 static void print_usage (char * argv[])
 {
-    fprintf (stderr, "usage: %s file\n", argv[0]);
+    fprintf (stderr, "usage: %s [-s<track>] <file>\n"
+	     "\t-s\tset track number (0-7 or 0x80-0x87)\n", argv[0]);
 
     exit (1);
 }
@@ -46,9 +48,21 @@ static void print_usage (char * argv[])
 static void handle_args (int argc, char * argv[])
 {
     int c;
+    char * s;
 
-    if ((c = getopt (argc, argv, "")) != -1)
-	print_usage (argv);
+    while ((c = getopt (argc, argv, "s:")) != -1)
+	switch (c) {
+	case 's':
+	    demux_track = strtol (optarg, &s, 16);
+	    if (demux_track < 0x80)
+		demux_track += 0x80;
+	    if ((demux_track < 0x80) || (demux_track > 0x87) || (*s)) {
+		fprintf (stderr, "Invalid track number: %s\n", optarg);
+		print_usage (argv);
+	    }
+	default:
+	    print_usage (argv);
+	}
 
     if (optind < argc) {
 	in_file = fopen (argv[optind], "rb");
@@ -136,7 +150,7 @@ static void ps_loop (void)
 			tmp1 += 2;
 		    tmp1 += mpeg1_skip_table [*tmp1 >> 4];
 		}
-		if (*tmp1 == 0x80) {	/* ac3 */
+		if (*tmp1 == demux_track) {	/* ac3 */
 		    tmp1 += 4;
 		    if (tmp1 < tmp2)
 			fwrite (tmp1, tmp2-tmp1, 1, stdout);
