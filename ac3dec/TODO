@@ -3,6 +3,7 @@
 * more statics in imdct.c ....
 * finish API documentation
 * avoid overflows, including reading the ac3 stream !!!
+* make dither code faster (generate dither table in advance ?)
 
 * finish ac3_internal.h cleanup
 	* use sensible data types
