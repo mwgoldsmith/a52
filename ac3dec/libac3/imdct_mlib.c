@@ -46,10 +46,7 @@ imdct_do_512_mlib(sample_t data[], sample_t delay[])
 	int i;
 	
 	memcpy(tmp, data, 256 * sizeof(sample_t));
-	if(mlib_SignalIMDCT_F32(tmp) != MLIB_SUCCESS) {
-	  fprintf(stderr, "mediaLib failure\n");
-	  exit(-1);
-	}
+	mlib_SignalIMDCT_F32(tmp);
   
 	buf_real = tmp;
 	buf_imag = tmp + 128;
@@ -98,10 +95,7 @@ imdct_do_256_mlib(sample_t data[], sample_t delay[])
 	int i;
 	
 	memcpy(tmp, data, 256 * sizeof(sample_t));
-	if(mlib_SignalIMDCT_F32(tmp) != MLIB_SUCCESS) {
-	  fprintf(stderr, "mediaLib failure\n");
-	  exit(-1);
-	}
+	mlib_SignalIMDCT_F32(tmp);
   
 	buf1_real = tmp;
 	buf1_imag = tmp + 64;
