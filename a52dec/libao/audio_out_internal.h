@@ -24,3 +24,11 @@
 void float2s16_2 (float * f, int16_t * s16);
 void float2s16_4 (float * f, int16_t * s16);
 void float2s16_5 (float * f, int16_t * s16);
+
+#ifdef WORDS_BIGENDIAN
+#define s16_LE(s16,channels) byteswap (s16, channels)
+#define s16_BE(s16,channels) do {} while (0)
+#else
+#define s16_LE(s16,channels) do {} while (0)
+#define s16_BE(s16,channels) byteswap (s16, channels)
+#endif

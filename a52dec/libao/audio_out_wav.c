@@ -94,6 +94,7 @@ int wav_play (ao_instance_t * _instance, int flags, sample_t * _samples)
     }
 
     float2s16_2 (samples, int16_samples);
+    s16_LE (int16_samples, 2);
     fwrite (int16_samples, 256 * sizeof (int16_t) * 2, 1, stdout);
 
     instance->size += 256 * sizeof (int16_t) * 2;

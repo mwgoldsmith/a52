@@ -75,3 +75,12 @@ void float2s16_5 (float * _f, int16_t * s16)
 	s16[5*i+4] = convert (f[i+1024]);
     }
 }
+
+void s16_swap (int16_t * s16, int channels)
+{
+    int i;
+    uint16_t * u16 = (uint16_t *) s16;
+
+    for (i = 0; i < 256 * channels; i++)
+	u16[i] = (u16[i] >> 8) | (u16[i] << 8);
+}

@@ -28,6 +28,11 @@
 #include <string.h>
 #include <errno.h>
 #include <getopt.h>
+#ifdef HAVE_IO_H
+#include <unistd.h>
+#include <fcntl.h>
+#include <io.h>
+#endif
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
 #include <signal.h>
@@ -539,6 +544,10 @@ static void es_loop (void)
 int main (int argc, char ** argv)
 {
     uint32_t accel;
+
+#ifdef HAVE_IO_H
+    setmode (STDOUT_FILENO, O_BINARY);
+#endif
 
     fprintf (stderr, PACKAGE"-"VERSION
 	     " - by Michel Lespinasse <walken@zoy.org> and Aaron Holtzman\n");
