@@ -5,6 +5,7 @@
 * avoid overflows, including reading the ac3 stream !!!
 * make dither code faster (generate dither table in advance ?)
 * redo all bit allocation if previous frame had zero_snr_offsets
+* make dynrng work in dual-channel streams
 
 * finish ac3_internal.h cleanup
 	* use sensible data types
@@ -17,8 +18,6 @@
 * see if we can get rid of cplcoe in the phsflginu test
 
 * update bitstream code
-
-* implement dynamic range control
 
 
 from aaron:
