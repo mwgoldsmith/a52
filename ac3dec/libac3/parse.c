@@ -279,9 +279,13 @@ static inline int16_t dither_gen (void)
 }
 
 static void coeff_get (sample_t * coeff, uint8_t * exp, int8_t * bap,
-		       int dither, int end)
+		       sample_t level, int dither, int end)
 {
     int i;
+    sample_t factor[25];
+
+    for (i = 0; i <= 24; i++)
+	factor[i] = scale_factor[i] * level;
 
     i = 0;
     while (i < end) {
@@ -291,7 +295,7 @@ static void coeff_get (sample_t * coeff, uint8_t * exp, int8_t * bap,
 	switch (bapi) {
 	case 0:
 	    if (dither) {
-		coeff[i++] = dither_gen() * LEVEL_3DB * scale_factor[exp[i]];
+		coeff[i++] = dither_gen() * LEVEL_3DB * factor[exp[i]];
 		continue;
 	    } else {
 		coeff[i++] = 0;
@@ -300,7 +304,7 @@ static void coeff_get (sample_t * coeff, uint8_t * exp, int8_t * bap,
 
 	case -1:
 	    if (q_1_pointer >= 0) {
-		coeff[i++] = q_1[q_1_pointer--] * scale_factor[exp[i]];
+		coeff[i++] = q_1[q_1_pointer--] * factor[exp[i]];
 		continue;
 	    } else {
 		int code;
@@ -310,13 +314,13 @@ static void coeff_get (sample_t * coeff, uint8_t * exp, int8_t * bap,
 		q_1_pointer = 1;
 		q_1[0] = q_1_2[code];
 		q_1[1] = q_1_1[code];
-		coeff[i++] = q_1_0[code] * scale_factor[exp[i]];
+		coeff[i++] = q_1_0[code] * factor[exp[i]];
 		continue;
 	    }
 
 	case -2:
 	    if (q_2_pointer >= 0) {
-		coeff[i++] = q_2[q_2_pointer--] * scale_factor[exp[i]];
+		coeff[i++] = q_2[q_2_pointer--] * factor[exp[i]];
 		continue;
 	    } else {
 		int code;
@@ -326,18 +330,18 @@ static void coeff_get (sample_t * coeff, uint8_t * exp, int8_t * bap,
 		q_2_pointer = 1;
 		q_2[0] = q_2_2[code];
 		q_2[1] = q_2_1[code];
-		coeff[i++] = q_2_0[code] * scale_factor[exp[i]];
+		coeff[i++] = q_2_0[code] * factor[exp[i]];
 		continue;
 	    }
 
 	case 3:
-	    coeff[i++] = q_3[bitstream_get (3)] * scale_factor[exp[i]];
+	    coeff[i++] = q_3[bitstream_get (3)] * factor[exp[i]];
 	    continue;
 
 	case -3:
 	    if (q_4_pointer == 0) {
 		q_4_pointer = -1;
-		coeff[i++] = q_4 * scale_factor[exp[i]];
+		coeff[i++] = q_4 * factor[exp[i]];
 		continue;
 	    } else {
 		int code;
@@ -346,17 +350,17 @@ static void coeff_get (sample_t * coeff, uint8_t * exp, int8_t * bap,
 
 		q_4_pointer = 0;
 		q_4 = q_4_1[code];
-		coeff[i++] = q_4_0[code] * scale_factor[exp[i]];
+		coeff[i++] = q_4_0[code] * factor[exp[i]];
 		continue;
 	    }
 
 	case 4:
-	    coeff[i++] = q_5[bitstream_get (4)] * scale_factor[exp[i]];
+	    coeff[i++] = q_5[bitstream_get (4)] * factor[exp[i]];
 	    continue;
 
 	default:
 	    coeff[i++] = (((int16_t) (bitstream_get (bapi) << (16 - bapi))) *
-			  scale_factor[exp[i]]);
+			  factor[exp[i]]);
 	}
     }
 }
@@ -378,7 +382,7 @@ static void coeff_get_coupling (ac3_state_t * state, int nfchans,
 	while (state->cplbndstrc[sub_bnd++])
 	    i_end += 12;
 	for (ch = 0; ch < nfchans; ch++)
-	    cplco[ch] = state->cplco[ch][bnd];
+	    cplco[ch] = state->cplco[ch][bnd] * state->level;
 	bnd++;
 
 	while (i < i_end) {
@@ -706,7 +710,7 @@ int ac3_block (ac3_state_t * state, sample_t * samples)
 	int j;
 
 	coeff_get (samples + 256 * i, state->fbw_exp[i], state->fbw_bap[i],
-		   dithflag[i], state->endmant[i]);
+		   state->level, dithflag[i], state->endmant[i]);
 
 	if (state->cplinu && state->chincpl[i]) {
 	    if (!done_cpl) {
@@ -751,14 +755,16 @@ int ac3_block (ac3_state_t * state, sample_t * samples)
 
     if (state->lfeon) {
 	if (state->output & AC3_LFE) {
-	    coeff_get (samples - 256, state->lfe_exp, state->lfe_bap, 0, 7);
+	    coeff_get (samples - 256, state->lfe_exp, state->lfe_bap,
+		       state->level, 0, 7);
 	    for (i = 7; i < 256; i++)
 		(samples-256)[i] = 0;
 	    imdct_512 (samples - 256, samples + 1536 - 256, 0);
-	    downmix_lfe (samples - 256, state->level, state->bias);
+	    downmix_lfe (samples - 256, state->bias);
 	} else {
 	    /* just skip the LFE coefficients */
-	    coeff_get (samples + 1280, state->lfe_exp, state->lfe_bap, 0, 7);
+	    coeff_get (samples + 1280, state->lfe_exp, state->lfe_bap,
+		       0, 0, 7);
 	}
     }
 
@@ -771,7 +777,7 @@ int ac3_block (ac3_state_t * state, sample_t * samples)
     if (i < nfchans) {
 	if (samples[2 * 1536 - 1] == (sample_t)0x776b6e21) {
 	    samples[2 * 1536 - 1] = 0;
-	    upmix (samples + 1536, state->acmod, state->output, state->level);
+	    upmix (samples + 1536, state->acmod, state->output);
 	}
 
 	for (i = 0; i < nfchans; i++)
@@ -780,17 +786,17 @@ int ac3_block (ac3_state_t * state, sample_t * samples)
 	    else 
 		imdct_512 (samples + 256 * i, samples + 1536 + 256 * i, 0);
 
-	downmix (samples, state->acmod, state->output, state->level,
-		 state->bias, state->clev, state->slev);
+	downmix (samples, state->acmod, state->output, state->bias,
+		 state->clev, state->slev);
     } else {
 	nfchans = nfchans_tbl[state->output & AC3_CHANNEL_MASK];
 
-	downmix (samples, state->acmod, state->output, state->level, 0,
+	downmix (samples, state->acmod, state->output, 0,
 		 state->clev, state->slev);
 
 	if (samples[2 * 1536 - 1] != (sample_t)0x776b6e21) {
-	    downmix (samples + 1536, state->acmod, state->output, state->level,
-		     0, state->clev, state->slev);
+	    downmix (samples + 1536, state->acmod, state->output, 0,
+		     state->clev, state->slev);
 	    samples[2 * 1536 - 1] = (sample_t)0x776b6e21;
 	}
 
