@@ -13,6 +13,10 @@ int main (int argc, char ** argv)
 	return 1;
     f1 = fopen (argv[1], "rb");
     f2 = fopen (argv[2], "rb");
+    if ((f1 == NULL) || (f2 == NULL)) {
+	printf ("cannot open file %s\n", (f1 == NULL) ? argv[1] : argv[2]);
+	return 0;
+    }
     while (1) {
 	i = fread (buf1, sizeof (short), 3072, f1);
 	j = fread (buf2, sizeof (short), 3072, f2);
@@ -35,9 +39,8 @@ int main (int argc, char ** argv)
 	printf ("%s is too short\n", argv[1]);
     else if (j < i)
 	printf ("%s is too short\n", argv[2]);
-    else {
+    else
 	printf ("max error %d mean error %f mean square error %f\n",
 		max, (float)err/total, (float)square/total);
-    }
     return 0;
 }
