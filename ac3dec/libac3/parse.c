@@ -114,6 +114,10 @@ int ac3_frame (ac3_state_t * state, uint8_t * buf, int * flags,
 				  state->clev, state->slev);
     if (state->output < 0)
 	return 1;
+    if (state->lfeon && (*flags & AC3_LFE)) {
+	state->output |= AC3_LFE;
+	delay += 256;
+    }
     *flags = state->output;
     state->level = *level;
     state->bias = bias;
@@ -583,6 +587,9 @@ int ac3_block (ac3_state_t * state, sample_t samples[][256])
 	    bitstream_get (8);
     }
 
+    if (state->output & AC3_LFE)
+	samples++;	// shift for LFE channel
+
     q_1_pointer = q_2_pointer = q_4_pointer = -1;
     done_cpl = 0;
 
@@ -659,10 +666,11 @@ int ac3_block (ac3_state_t * state, sample_t samples[][256])
 
     if (state->lfeon) {
 	coeff_get (samples[5], state->lfe_exp, state->lfe_bap, 0, 7);
-#if 0
-	for (i = 7; i < 256; i++)
-	    samples[5][i] = 0;
-#endif
+	if (state->output & AC3_LFE) {
+	    for (i = 7; i < 256; i++)
+		samples[-1][i] = 0;
+	    imdct_512 (samples[-1], state->delay - 256);
+	}
     }
 
     for (i = 0; i < nfchans; i++)
@@ -670,11 +678,6 @@ int ac3_block (ac3_state_t * state, sample_t samples[][256])
             imdct_256 (samples[i], state->delay + i * 256);
         else 
             imdct_512 (samples[i], state->delay + i * 256);
-
-#if 0
-    if (state->lfeon)
-	imdct_512 (samples[5], delay + 5 * 256);
-#endif
 
     downmix (*samples, state->acmod, state->output, state->level, state->bias,
 	     state->clev, state->slev);
