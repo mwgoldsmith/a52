@@ -4,5 +4,6 @@ Makefile.in
 Makefile
 bitstream_test
 imdct_test
-
+imdct_timing
 .deps
+*.out
