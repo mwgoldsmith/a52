@@ -29,7 +29,6 @@
 #include <errno.h>
 #include <getopt.h>
 #ifdef HAVE_IO_H
-#include <unistd.h>
 #include <fcntl.h>
 #include <io.h>
 #endif
@@ -546,7 +545,7 @@ int main (int argc, char ** argv)
     uint32_t accel;
 
 #ifdef HAVE_IO_H
-    setmode (STDOUT_FILENO, O_BINARY);
+    setmode (fileno (stdout), O_BINARY);
 #endif
 
     fprintf (stderr, PACKAGE"-"VERSION
