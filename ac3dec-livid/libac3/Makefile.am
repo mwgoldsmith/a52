@@ -2,6 +2,8 @@
 ## Process this file with automake to produce Makefile.in
 ##
 
+EXTRA_DIST = configure.incl
+
 INCLUDES += -I$(top_srcdir)/include
 libdir = $(PLUGIN_DIR)
 
