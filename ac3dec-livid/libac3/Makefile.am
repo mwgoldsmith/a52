@@ -16,4 +16,4 @@ libac3_la_SOURCES = bitstream.c decode.c imdct.c coeff.c exponent.c stats.c\
 
 noinst_HEADERS = ac3_internal.h bitstream.h decode.h imdct.h stats.h coeff.h\
 	exponent.h bit_allocate.h parse.h crc.h debug.h rematrix.h downmix.h\
-	dither.h sanity_check.h srfft.h srfftp.h
+	dither.h sanity_check.h srfft.h srfftp.h bswap.h
