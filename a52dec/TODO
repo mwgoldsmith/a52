@@ -1,3 +1,5 @@
+* look at issues for a52 state initialisation
+
 * get rid of globals in bitstream parsing
 * get rid of statics in imdct.c
 * avoid overflows, including reading the a52 stream !!!
@@ -5,7 +7,8 @@
 * redo all bit allocation if previous frame had zero_snr_offsets
 * make dynrng work in dual-channel streams
 
-* fix and test mlib IMDCT
+* optimize imdct
+* get rid of mlib ??? (license issue)
 
 * finish a52_internal.h cleanup
 	* use sensible data types
