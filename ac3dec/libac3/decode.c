@@ -73,6 +73,16 @@ int ac3_frame_length(uint8_t * buf)
     return parse_syncinfo (buf, &dummy, &dummy);
 }
 
+static void float_to_int (float * f, int16_t * s16) 
+{
+    int i;
+
+    for (i = 0; i < 256; i++) {
+	s16[2*i] = f[i];
+	s16[2*i+1] = f[i+256];
+    }
+}
+
 ac3_frame_t*
 ac3_decode_frame(uint8_t * buf)
 {
@@ -118,7 +128,8 @@ ac3_decode_frame(uint8_t * buf)
 
 	// Downmix into the requested number of channels
 	// and convert floating point to int16_t
-	downmix(&state,samples,&s16_samples[i * 2 * 256]);
+	downmix (*samples, state.acmod, 2, 0.4142*32767, state.clev, state.slev);
+	float_to_int (*samples, s16_samples + i * 512);
 
 	sanity_check(&state,&audblk);
 	if(error_flag)

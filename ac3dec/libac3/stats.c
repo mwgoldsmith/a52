@@ -33,24 +33,6 @@
 #include "debug.h"
 
 
-struct mixlev_s
-{
-	float clev;
-	char *desc;
-};
-
-static const struct mixlev_s cmixlev_tbl[4] =  
-{
-	{0.707, "(-3.0 dB)"}, {0.595, "(-4.5 dB)"},
-	{0.500, "(-6.0 dB)"}, {1.0,  "Invalid"}
-};
-
-static const struct mixlev_s smixlev_tbl[4] =  
-{
-	{0.707, "(-3.0 dB)"}, {0.500, "(-6.0 dB)"},
-	{  0.0,   "off    "}, {  1.0, "Invalid"}
-};
-
 void stats_print_banner(ac3_state_t * state)
 {
 	fprintf(stdout,"%d.%d Mode\n",state->nfchans,state->lfeon);
@@ -81,10 +63,6 @@ void stats_print_bsi(ac3_state_t * state)
 {
 	dprintf("(bsi) ");
 	dprintf(" %d.%d Mode ",state->nfchans,state->lfeon);
-	if ((state->acmod & 0x1) && (state->acmod != 0x1))
-		dprintf(" Centre Mix Level %s ",cmixlev_tbl[state->cmixlev].desc);
-	if (state->acmod & 0x4)
-		dprintf(" Sur Mix Level %s ",smixlev_tbl[state->cmixlev].desc);
 	dprintf("\n");
 
 }

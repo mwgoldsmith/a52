@@ -90,4 +90,4 @@ fi
 
 AC_C_ATTRIBUTE_ALIGNED
 
-AC_OUTPUT(Makefile autotools/Makefile include/Makefile src/Makefile libac3/Makefile libao/Makefile)
+AC_OUTPUT(Makefile autotools/Makefile include/Makefile test/Makefile src/Makefile libac3/Makefile libao/Makefile)

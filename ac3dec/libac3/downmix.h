@@ -25,4 +25,5 @@
  *
  */
 
-void downmix(ac3_state_t * state, stream_samples_t stream_samples,int16_t *s16_samples);
+int downmix (float * samples, int acmod, int output, 
+             float level, float clev, float slev);

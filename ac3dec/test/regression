@@ -10,6 +10,6 @@ dirs=`awk -F '#' '{print $1}' $testfile`
 for dir in $dirs; do
     echo $dir
     ../src/ac3dec $basedir/$dir/stream >/dev/null 2>&1
-    cmp output.pcm $basedir/$dir/output.pcm
+    ./compare output.pcm $basedir/$dir/output.pcm
     rm -f output.pcm
 done

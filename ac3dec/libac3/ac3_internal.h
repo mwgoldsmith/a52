@@ -76,8 +76,8 @@ typedef struct ac3_state_s {
 
     /* from bsi */
     uint8_t acmod;	// coded channels
-    uint8_t cmixlev;	// centre channel mix level
-    uint8_t surmixlev;	// surround channels mix level
+    float clev;		// centre channel mix level
+    float slev;		// surround channels mix level
     uint8_t lfeon;	// coded lfe channel
 } ac3_state_t;
 

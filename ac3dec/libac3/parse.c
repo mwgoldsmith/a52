@@ -68,6 +68,11 @@ int parse_syncinfo (uint8_t * buf, int * sample_rate, int * bit_rate)
 int parse_bsi (ac3_state_t * state, uint8_t * buf)
 {
     int chaninfo;
+#define LEVEL_3DB 0.707106781187
+#define LEVEL_45DB 0.594603557501
+#define LEVEL_6DB 0.5
+    static float clev[4] = {LEVEL_3DB, LEVEL_45DB, LEVEL_6DB, LEVEL_45DB};
+    static float slev[4] = {LEVEL_3DB, LEVEL_6DB, 0, LEVEL_6DB};
 
     state->fscod = buf[4] >> 6;
 
@@ -81,10 +86,10 @@ int parse_bsi (ac3_state_t * state, uint8_t * buf)
     bitstream_get (3);	// skip acmod we already parsed
 
     if ((state->acmod & 0x1) && (state->acmod != 0x1))
-	state->cmixlev = bitstream_get (2);
+	state->clev = clev[bitstream_get (2)];	// cmixlev
 
     if (state->acmod & 0x4)
-	state->surmixlev = bitstream_get (2);
+	state->slev = slev[bitstream_get (2)];	// surmixlev
 
     if (state->acmod == 0x2)
 	bitstream_get (2);	// dsurmod
