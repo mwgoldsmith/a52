@@ -670,9 +670,7 @@ int ac3_block (ac3_state_t * state, sample_t * samples)
     }
 
     if (do_bit_alloc) {
-	//printf ("%x\n", do_bit_alloc & 127);
 	if (zero_snr_offsets (nfchans, state)) {
-	    //printf ("XXXXXXXXXXX zero_bit_alloc\n");
 	    memset (state->cpl_bap, 0, sizeof (state->cpl_bap));
 	    memset (state->fbw_bap, 0, sizeof (state->fbw_bap));
 	    memset (state->lfe_bap, 0, sizeof (state->lfe_bap));
