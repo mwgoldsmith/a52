@@ -10,6 +10,7 @@ Other contributors include:
 	Eduard Hasenleithner <eduardh@aon.at> - gcc 3.0 fixes
 	Håkan Hjort <d95hjort@dtek.chalmers.se> - Solaris output, mlib code
 	Charles M. Hannum <root@ihack.net> - fixes
+	Chris Hodges <hodges@stradis.com> - made the library reentrant
 	Michael Holzt <kju@flummi.de> - OSS output.c and misc errata
 	Angelos Keromytis <angelos@dsl.cis.upenn.edu> - OpenBSD fixes
 	David I. Lehn <dlehn@vt.edu> - API cleanup suggestion
