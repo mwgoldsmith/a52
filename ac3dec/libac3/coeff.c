@@ -212,31 +212,39 @@ static int q_2_pointer;
 static int q_4_pointer;
 
 //Conversion from bap to number of bits in the mantissas
-//zeros account for cases 0,1,2,4 which are special cased
 static uint16_t qnttztab[10] = {5, 6, 7, 8, 9, 10, 11, 12, 14, 16};
 
 static void    coeff_reset(void);
 static float coeff_get_float(uint16_t bap, uint16_t dithflag, int exp);
 static void    coeff_uncouple_ch(float samples[],ac3_state_t *state,audblk_t *audblk,uint32_t ch);
 
+static void coeff_get (float * coeff, uint8_t * exp, int8_t * bap,
+		       int dither, int start, int end)
+{
+    int i;
+
+    for (i = 0; i < end; i++)
+	coeff[i] = coeff_get_float (bap[i], dither, exp[i]);
+}
+
 void
 coeff_unpack(ac3_state_t *state, audblk_t *audblk, stream_samples_t samples)
 {
-    uint16_t i,j;
+    uint16_t i;
     uint32_t done_cpl = 0;
 
     coeff_reset();
 
     for(i=0; i< state->nfchans; i++) {
-	for(j=0; j < audblk->endmant[i]; j++)
-	    samples[i][j] = coeff_get_float(audblk->fbw_bap[i][j],audblk->dithflag[i], audblk->fbw_exp[i][j]);
+	coeff_get (samples[i], audblk->fbw_exp[i], audblk->fbw_bap[i],
+		   audblk->dithflag[i], 0, audblk->endmant[i]);
 
 	if(audblk->cplinu && audblk->chincpl[i] && !(done_cpl)) {
 	    // ncplmant is equal to 12 * ncplsubnd
 	    // Don't dither coupling channel until channel separation so that
-	    // interchannel noise is uncorrelated 
-	    for(j=audblk->cplstrtmant; j < audblk->cplendmant; j++)
-		audblk->cplcoeff[j] = coeff_get_float(audblk->cpl_bap[j],0,audblk->cpl_exp[j]);
+	    // interchannel noise is uncorrelated
+	    coeff_get (audblk->cplcoeff, audblk->cpl_exp, audblk->cpl_bap,
+		       0, audblk->cplstrtmant, audblk->cplendmant);
 	    done_cpl = 1;
 	}
     }
@@ -251,8 +259,7 @@ coeff_unpack(ac3_state_t *state, audblk_t *audblk, stream_samples_t samples)
 
     if(state->lfeon) {
 	// There are always 7 mantissas for lfe, no dither for lfe 
-	for(j=0; j < 7 ; j++)
-	    samples[5][j] = coeff_get_float(audblk->lfe_bap[j],0,audblk->lfe_exp[j]);
+	coeff_get (samples[5], audblk->lfe_exp, audblk->lfe_bap, 0, 0, 7);
     }
 }
 
