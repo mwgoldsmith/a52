@@ -31,7 +31,6 @@
 #include "stats.h"
 #include "debug.h"
 #include "parse.h"
-#include "exponent.h"
 
 static const uint8_t nfchans[8] = {2, 1, 2, 3, 3, 4, 4, 5};
 
@@ -125,6 +124,11 @@ int parse_bsi (ac3_state_t * state, uint8_t * buf)
 
 
 
+#define UNPACK_FBW  1 
+#define UNPACK_CPL  2 
+#define UNPACK_LFE  4 
+
+
 static int parse_exponents (uint16_t type,uint16_t expstr,uint16_t ngrps,
 	      uint16_t initial_exp, uint16_t *dest)
 {
@@ -142,7 +146,7 @@ static int parse_exponents (uint16_t type,uint16_t expstr,uint16_t ngrps,
 	dest[j++] = exp_acc;
 
     /* Loop through the groups and fill the dest array appropriately */
-    for(i=0; i< ngrps; i++) {
+    for(i = 0; i< ngrps; i++) {
 	int exps;
 
 	exps = bitstream_get (7);
@@ -195,7 +199,7 @@ static int parse_exponents (uint16_t type,uint16_t expstr,uint16_t ngrps,
 
 
 
-void parse_audblk (ac3_state_t * state, audblk_t * audblk)
+int parse_audblk (ac3_state_t * state, audblk_t * audblk)
 {
     int i, chaninfo;
 
@@ -294,7 +298,7 @@ void parse_audblk (ac3_state_t * state, audblk_t * audblk)
 	    }
 
 	    /* Calculate the number of exponent groups to fetch */
-	    grp_size =  3 * (1 << (audblk->chexpstr[i] - 1));
+	    grp_size = 3 * (1 << (audblk->chexpstr[i] - 1));
 	    audblk->nchgrps[i] = (audblk->endmant[i] - 1 + (grp_size - 3)) /
 		grp_size;
 	}
@@ -305,28 +309,34 @@ void parse_audblk (ac3_state_t * state, audblk_t * audblk)
 
 
     if (audblk->cplinu && (audblk->cplexpstr != EXP_REUSE)) {
-	audblk->cplabsexp = bitstream_get (4);
-	parse_exponents (UNPACK_CPL, audblk->cplexpstr, audblk->ncplgrps,
-			 audblk->cplabsexp << 1,
-			 audblk->cpl_exp + audblk->cplstrtmant);
+	int cplabsexp;
+
+	cplabsexp = bitstream_get (4) << 1;
+	if (parse_exponents (UNPACK_CPL, audblk->cplexpstr, audblk->ncplgrps,
+			     cplabsexp, audblk->cpl_exp + audblk->cplstrtmant))
+	    return 1;
     }
 
-    /* Get the fwb channel exponents */
-    for(i=0;i < state->nfchans; i++) {
-	if(audblk->chexpstr[i] != EXP_REUSE) {
-	    int j;
-	    audblk->exps[i][0] = bitstream_get (4);
-	    for(j=1;j<=audblk->nchgrps[i];j++)
-		audblk->exps[i][j] = bitstream_get (7);
-	    audblk->gainrng[i] = bitstream_get (2);
+    for (i = 0; i < state->nfchans; i++) {
+	if (audblk->chexpstr[i] != EXP_REUSE) {
+	    int exps_0;
+
+	    exps_0 = bitstream_get (4);
+	    if (parse_exponents (UNPACK_FBW, audblk->chexpstr[i],
+				 audblk->nchgrps[i], exps_0,
+				 audblk->fbw_exp[i]))
+		return 1;
+	    bitstream_get (2);		// gainrng
 	}
     }
 
-    /* Get the lfe channel exponents */
-    if(state->lfeon && (audblk->lfeexpstr != EXP_REUSE)) {
-	audblk->lfeexps[0] = bitstream_get (4);
-	audblk->lfeexps[1] = bitstream_get (7);
-	audblk->lfeexps[2] = bitstream_get (7);
+    if (state->lfeon && (audblk->lfeexpstr != EXP_REUSE)) {
+	int lfeexps_0;
+
+	lfeexps_0 = bitstream_get (4);
+	if (parse_exponents (UNPACK_LFE, audblk->lfeexpstr, 2, lfeexps_0,
+			     audblk->lfe_exp))
+	    return 1;
     }
 
     /* Get the parametric bit allocation parameters */
@@ -408,4 +418,5 @@ void parse_audblk (ac3_state_t * state, audblk_t * audblk)
     }
 
     stats_print_audblk(state,audblk);
+    return 0;
 }

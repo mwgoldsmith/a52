@@ -120,18 +120,9 @@ typedef struct audblk_s
 	uint16_t lfeexpstr;
 	/* Channel bandwidth for independent channels */
 	uint16_t chbwcod[5];
-		/* The absolute coupling exponent */
-		uint16_t cplabsexp;
-		/* Coupling channel exponents (D15 mode gives 18 * 12 /3  encoded exponents */
-		//uint16_t cplexps[18 * 12 / 3];
 	/* Sanity checking constant */
 	uint32_t	magic2;
-	/* fbw channel exponents */
-	uint16_t exps[5][252 / 3];
-	/* channel gain range */
-	uint16_t gainrng[5];
-	/* low frequency exponents */
-	uint16_t lfeexps[3];
+
 
 	/* Bit allocation info */
 	uint16_t baie;

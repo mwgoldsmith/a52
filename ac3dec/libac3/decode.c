@@ -32,7 +32,6 @@
 #include "ac3_internal.h"
 #include "bitstream.h"
 #include "imdct.h"
-#include "exponent.h"
 #include "coeff.h"
 #include "bit_allocate.h"
 #include "parse.h"
@@ -99,12 +98,7 @@ ac3_decode_frame(uint8_t * buf)
 
 	// Extract most of the audblk info from the bitstream
 	// (minus the mantissas 
-	parse_audblk(&state,&audblk);
-
-	// Take the differential exponent data and turn it into
-	// absolute exponents 
-	exponent_unpack(&state,&audblk); 
-	if(error_flag)
+	if (parse_audblk(&state,&audblk))
 	    goto error;
 
 	// Figure out how many bits per mantissa 
