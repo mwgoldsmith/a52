@@ -53,177 +53,184 @@
 #define AC3_CHANNEL2 9
 #define AC3_DOLBY 10
 
-static void mix1to1 (float * samples, float level)
+static void mix1to1 (float * samples, float level, float bias)
 {
     int i;
 
     for (i = 0; i < 256; i++)
-	samples[i] *= level;
+	samples[i] = samples[i] * level + bias;
 }
 
-static void mix2to1 (float * samples, float level)
+static void mix2to1 (float * samples, float level, float bias)
 {
     int i;
 
     for (i = 0; i < 256; i++)
-	samples[i] = (samples[i] + samples[i + 256]) * level;
+	samples[i] = (samples[i] + samples[i + 256]) * level + bias;
 }
 
-static void mix3to1 (float * samples, float level, float clev)
-{
-    int i;
-
-    for (i = 0; i < 256; i++)
-	samples[i] = ((samples[i] + samples[i + 512]) * level +
-		      samples[i + 256] * clev);
-}
-
-static void mix21to1 (float * samples, float level, float slev)
-{
-    int i;
-
-    for (i = 0; i < 256; i++)
-	samples[i] = ((samples[i] + samples[i + 256]) * level +
-		      samples[i + 512] * slev);
-}
-
-static void mix31to1 (float * samples, float level, float clev, float slev)
+static void mix3to1 (float * samples, float level, float clev, float bias)
 {
     int i;
 
     for (i = 0; i < 256; i++)
 	samples[i] = ((samples[i] + samples[i + 512]) * level +
-		      samples[i + 256] * clev + samples[i + 768] * slev);
+		      samples[i + 256] * clev + bias);
 }
 
-static void mix22to1 (float * samples, float level, float slev)
+static void mix21to1 (float * samples, float level, float slev, float bias)
 {
     int i;
 
     for (i = 0; i < 256; i++)
 	samples[i] = ((samples[i] + samples[i + 256]) * level +
-		      (samples[i + 512] + samples[i + 768]) * slev);
+		      samples[i + 512] * slev + bias);
 }
 
-static void mix32to1 (float * samples, float level, float clev, float slev)
+static void mix31to1 (float * samples, float level, float clev, float slev,
+		      float bias)
+{
+    int i;
+
+    for (i = 0; i < 256; i++)
+	samples[i] = ((samples[i] + samples[i + 512]) * level +
+		      samples[i + 256] * clev + samples[i + 768] * slev +
+		      bias);
+}
+
+static void mix22to1 (float * samples, float level, float slev, float bias)
+{
+    int i;
+
+    for (i = 0; i < 256; i++)
+	samples[i] = ((samples[i] + samples[i + 256]) * level +
+		      (samples[i + 512] + samples[i + 768]) * slev + bias);
+}
+
+static void mix32to1 (float * samples, float level, float clev, float slev,
+		      float bias)
 {
     int i;
 
     for (i = 0; i < 256; i++)
 	samples[i] = ((samples[i] + samples[i + 512]) * level +
 		      samples[i + 256] * clev +
-		      (samples[i + 768] + samples[i + 1024]) * slev);
+		      (samples[i + 768] + samples[i + 1024]) * slev + bias);
 }
 
-static void mix1to2 (float * src, float * dest, float level)
+static void mix1to2 (float * src, float * dest, float level, float bias)
 {
     int i;
 
     for (i = 0; i < 256; i++)
-	dest[i] = src[i] *= level;
+	dest[i] = src[i] = src[i] * level + bias;
 }
 
-static void mix3to2 (float * samples, float level, float clev)
+static void mix3to2 (float * samples, float level, float clev, float bias)
 {
     int i;
     float common;
 
     for (i = 0; i < 256; i++) {
-	common = samples[i + 256] * clev;
+	common = samples[i + 256] * clev + bias;
 	samples[i] = samples[i] * level + common;
 	samples[i + 256] = samples[i + 512] * level + common;
     }
 }
 
-static void mix21to2 (float * left, float * right, float level, float slev)
+static void mix21to2 (float * left, float * right, float level, float slev,
+		      float bias)
 {
     int i;
     float common;
 
     for (i = 0; i < 256; i++) {
-	common = right[i + 256] * slev;
+	common = right[i + 256] * slev + bias;
 	left[i] = left[i] * level + common;
 	right[i] = right[i] * level + common;
     }
 }
 
-static void mix11to1 (float * front, float * rear, float level, float slev)
+static void mix11to1 (float * front, float * rear, float level, float slev,
+		      float bias)
 {
     int i;
 
     for (i = 0; i < 256; i++)
-	front[i] = front[i] * level + rear[i] * slev;
+	front[i] = front[i] * level + rear[i] * slev + bias;
 }
 
-static void mix31to2 (float * samples, float level, float clev, float slev)
+static void mix31to2 (float * samples, float level, float clev, float slev,
+		      float bias)
 {
     int i;
     float common;
 
     for (i = 0; i < 256; i++) {
-	common = samples[i + 256] * clev + samples[i + 768] * slev;
+	common = samples[i + 256] * clev + samples[i + 768] * slev + bias;
 	samples[i] = samples[i] * level + common;
 	samples[i + 256] = samples[i + 512] * level + common;
     }
 }
 
-static void mix32to2 (float * samples, float level, float clev, float slev)
+static void mix32to2 (float * samples, float level, float clev, float slev,
+		      float bias)
 {
     int i;
-    float center;
+    float common;
 
     for (i = 0; i < 256; i++) {
-	center = samples[i + 256] * clev;
-	samples[i] = samples[i] * level + center + samples[i + 768] * slev;
-	samples[i + 256] = (samples[i + 512] * level + center +
+	common = samples[i + 256] * clev + bias;
+	samples[i] = samples[i] * level + common + samples[i + 768] * slev;
+	samples[i + 256] = (samples[i + 512] * level + common +
 			    samples[i + 1024] * slev);
     }
 }
 
-static void mix21toS (float * samples, float level, float level3db)
+static void mix21toS (float * samples, float level, float level3db, float bias)
 {
     int i;
     float surround;
 
     for (i = 0; i < 256; i++) {
 	surround = samples[i + 512] * level3db;
-	samples[i] = samples[i] * level - surround;
-	samples[i + 256] = samples[i + 256] * level + surround;
+	samples[i] = samples[i] * level - surround + bias;
+	samples[i + 256] = samples[i + 256] * level + surround + bias;
     }
 }
 
-static void mix22toS (float * samples, float level, float level3db)
+static void mix22toS (float * samples, float level, float level3db, float bias)
 {
     int i;
     float surround;
 
     for (i = 0; i < 256; i++) {
 	surround = (samples[i + 512] + samples[i + 768]) * level3db;
-	samples[i] = samples[i] * level - surround;
-	samples[i + 256] = samples[i + 256] * level + surround;
+	samples[i] = samples[i] * level - surround + bias;
+	samples[i + 256] = samples[i + 256] * level + surround + bias;
     }
 }
 
-static void mix31toS (float * samples, float level, float level3db)
+static void mix31toS (float * samples, float level, float level3db, float bias)
 {
     int i;
     float common, surround;
 
     for (i = 0; i < 256; i++) {
-	common = samples[i + 256] * level3db;
+	common = samples[i + 256] * level3db + bias;
 	surround = samples[i + 768] * level3db;
 	samples[i] = samples[i] * level + common - surround;
 	samples[i + 256] = samples[i + 512] * level + common + surround;
     }
 }
 
-static void mix32toS (float * samples, float level, float level3db)
+static void mix32toS (float * samples, float level, float level3db, float bias)
 {
     int i;
     float common, surround;
 
     for (i = 0; i < 256; i++) {
-	common = samples[i + 256] * level3db;
+	common = samples[i + 256] * level3db + bias;
 	surround = (samples[i + 768] + samples[i + 1024]) * level3db;
 	samples[i] = samples[i] * level + common - surround;
 	samples[i + 256] = samples[i + 512] * level + common + surround;
@@ -231,7 +238,7 @@ static void mix32toS (float * samples, float level, float level3db)
 }
 
 int downmix (float * samples, int acmod, int output,
-	     float level, int adjust_level, float clev, float slev)
+	     float level, int adjust_level, float clev, float slev, float bias)
 {
     /* FIXME test if output variable is valid */
 
@@ -239,15 +246,15 @@ int downmix (float * samples, int acmod, int output,
 
     switch (CONVERT (acmod, output)) {
     case CONVERT (AC3_CHANNEL, AC3_MONO):
-	mix2to1 (samples, level * LEVEL_6DB);
+	mix2to1 (samples, level * LEVEL_6DB, bias);
 	return AC3_MONO;
 
     case CONVERT (AC3_CHANNEL, AC3_CHANNEL1):
-	mix1to1 (samples, level);
+	mix1to1 (samples, level, bias);
 	return AC3_CHANNEL1;
 
     case CONVERT (AC3_CHANNEL, AC3_CHANNEL2):
-	mix1to1 (samples + 256, level);
+	mix1to1 (samples + 256, level, bias);
 	return AC3_CHANNEL2;
 
     case CONVERT (AC3_CHANNEL, AC3_CHANNEL):
@@ -258,15 +265,15 @@ int downmix (float * samples, int acmod, int output,
     case CONVERT (AC3_CHANNEL, AC3_3F1R):
     case CONVERT (AC3_CHANNEL, AC3_2F2R):
     case CONVERT (AC3_CHANNEL, AC3_3F2R):
-	mix1to1 (samples, level);
-	mix1to1 (samples + 256, level);
+	mix1to1 (samples, level, bias);
+	mix1to1 (samples + 256, level, bias);
 	return AC3_CHANNEL;
 
 
     case CONVERT (AC3_MONO, AC3_MONO):
     case CONVERT (AC3_MONO, AC3_CHANNEL1):
     case CONVERT (AC3_MONO, AC3_CHANNEL2):
-	mix1to1 (samples, level);
+	mix1to1 (samples, level, bias);
 	return AC3_MONO;
 
     case CONVERT (AC3_MONO, AC3_CHANNEL):
@@ -279,7 +286,7 @@ int downmix (float * samples, int acmod, int output,
     case CONVERT (AC3_MONO, AC3_3F2R):
 	if (!adjust_level)
 	    level *= LEVEL_3DB;
-	mix1to2 (samples, samples + 256, level);
+	mix1to2 (samples, samples + 256, level, bias);
 	return AC3_DOLBY;
 
 
@@ -287,7 +294,8 @@ int downmix (float * samples, int acmod, int output,
     case CONVERT (AC3_STEREO, AC3_CHANNEL1):
     case CONVERT (AC3_STEREO, AC3_CHANNEL2):
     mix_2to1:
-	mix2to1 (samples, level * (adjust_level ? LEVEL_6DB : LEVEL_3DB));
+	mix2to1 (samples, level * (adjust_level ? LEVEL_6DB : LEVEL_3DB),
+		 bias);
 	return AC3_MONO;
 
     case CONVERT (AC3_STEREO, AC3_CHANNEL):
@@ -299,8 +307,8 @@ int downmix (float * samples, int acmod, int output,
     case CONVERT (AC3_STEREO, AC3_2F2R):
     case CONVERT (AC3_STEREO, AC3_3F2R):
     mix_2to2:
-	mix1to1 (samples, level);
-	mix1to1 (samples + 256, level);
+	mix1to1 (samples, level, bias);
+	mix1to1 (samples + 256, level, bias);
 	return AC3_DOLBY;	// or AC3_STEREO depending on dsurmod
 
 
@@ -310,7 +318,8 @@ int downmix (float * samples, int acmod, int output,
     mix_3to1:
 	if (adjust_level)
 	    level *= LEVEL_3DB / (1 + clev);
-	mix3to1 (samples, level * LEVEL_3DB, level * clev * LEVEL_PLUS3DB);
+	mix3to1 (samples, level * LEVEL_3DB, level * clev * LEVEL_PLUS3DB,
+		 bias);
 	return AC3_MONO;
 
     case CONVERT (AC3_3F, AC3_CHANNEL):
@@ -321,23 +330,23 @@ int downmix (float * samples, int acmod, int output,
 	if (clev != LEVEL_3DB) {
 	    if (adjust_level)
 		level /= 1 + clev;
-	    mix3to2 (samples, level, level * clev);
+	    mix3to2 (samples, level, level * clev, bias);
 	    return AC3_STEREO;
 	}	// else: fall thru
 
     case CONVERT (AC3_3F, AC3_DOLBY):
 	if (adjust_level)
 	    level *= 1 / (1 + LEVEL_3DB);
-	mix3to2 (samples, level, level * LEVEL_3DB);
+	mix3to2 (samples, level, level * LEVEL_3DB, bias);
 	return AC3_DOLBY;
 
     case CONVERT (AC3_3F, AC3_3F):
     case CONVERT (AC3_3F, AC3_3F1R):
     case CONVERT (AC3_3F, AC3_3F2R):
     mix_3to3:
-	mix1to1 (samples, level);
-	mix1to1 (samples + 256, level);
-	mix1to1 (samples + 512, level);
+	mix1to1 (samples, level, bias);
+	mix1to1 (samples + 256, level, bias);
+	mix1to1 (samples + 512, level, bias);
 	return AC3_3F;
 
 
@@ -348,7 +357,7 @@ int downmix (float * samples, int acmod, int output,
 	    goto mix_2to1;
 	if (adjust_level)
 	    level *= LEVEL_PLUS3DB / (2 + slev);
-	mix21to1 (samples, level * LEVEL_3DB, level * slev * LEVEL_3DB);
+	mix21to1 (samples, level * LEVEL_3DB, level * slev * LEVEL_3DB, bias);
 	return AC3_MONO;
 
     case CONVERT (AC3_2F1R, AC3_CHANNEL):
@@ -358,27 +367,28 @@ int downmix (float * samples, int acmod, int output,
 	    goto mix_2to2;
 	if (adjust_level)
 	    level /= 1 + slev * LEVEL_3DB;
-	mix21to2 (samples, samples + 256, level, level * slev * LEVEL_3DB);
+	mix21to2 (samples, samples + 256, level, level * slev * LEVEL_3DB,
+		  bias);
 	return AC3_STEREO;
 
     case CONVERT (AC3_2F1R, AC3_DOLBY):
 	if (adjust_level)
 	    level *= 1 / (1 + LEVEL_3DB);
-	mix21toS (samples, level, level * LEVEL_3DB);
+	mix21toS (samples, level, level * LEVEL_3DB, bias);
 	return AC3_DOLBY;
 
     case CONVERT (AC3_2F1R, AC3_2F1R):
     case CONVERT (AC3_2F1R, AC3_3F1R):
-	mix1to1 (samples, level);
-	mix1to1 (samples + 256, level);
-	mix1to1 (samples + 512, level);
+	mix1to1 (samples, level, bias);
+	mix1to1 (samples + 256, level, bias);
+	mix1to1 (samples + 512, level, bias);
 	return AC3_2F1R;
 
     case CONVERT (AC3_2F1R, AC3_2F2R):
     case CONVERT (AC3_2F1R, AC3_3F2R):
-	mix1to1 (samples, level);
-	mix1to1 (samples + 256, level);
-	mix1to2 (samples + 512, samples + 768, level * LEVEL_3DB);
+	mix1to1 (samples, level, bias);
+	mix1to1 (samples + 256, level, bias);
+	mix1to2 (samples + 512, samples + 768, level * LEVEL_3DB, bias);
 	return AC3_2F2R;
 
 
@@ -389,8 +399,8 @@ int downmix (float * samples, int acmod, int output,
 	    goto mix_3to1;
 	if (adjust_level)
 	    level *= LEVEL_PLUS3DB / (2 + 2 * clev + slev);
-	mix31to1 (samples, level * LEVEL_3DB,
-		  level * clev * LEVEL_PLUS3DB, level * slev * LEVEL_3DB);
+	mix31to1 (samples, level * LEVEL_3DB, level * clev * LEVEL_PLUS3DB,
+		  level * slev * LEVEL_3DB, bias);
 	return AC3_MONO;
 
     case CONVERT (AC3_3F1R, AC3_CHANNEL):
@@ -399,13 +409,14 @@ int downmix (float * samples, int acmod, int output,
 	    goto mix_3to2;
 	if (adjust_level)
 	    level /= 1 + clev + slev * LEVEL_3DB;
-	mix31to2 (samples, level, level * clev, level * slev * LEVEL_3DB);
+	mix31to2 (samples, level, level * clev, level * slev * LEVEL_3DB,
+		  bias);
 	return AC3_STEREO;
 
     case CONVERT (AC3_3F1R, AC3_DOLBY):
 	if (adjust_level)
 	    level *= 1 / (1 + 2 * LEVEL_3DB);
-	mix31toS (samples, level, level * LEVEL_3DB);
+	mix31toS (samples, level, level * LEVEL_3DB, bias);
 	return AC3_DOLBY;
 
     case CONVERT (AC3_3F1R, AC3_3F):
@@ -413,36 +424,37 @@ int downmix (float * samples, int acmod, int output,
 	    goto mix_3to3;
 	if (adjust_level)
 	    level /= 1 + slev * LEVEL_3DB;
-	mix21to2 (samples, samples + 512, level, level * slev * LEVEL_3DB);
-	mix1to1 (samples + 256, level);
+	mix21to2 (samples, samples + 512, level, level * slev * LEVEL_3DB,
+		  bias);
+	mix1to1 (samples + 256, level, bias);
 	return AC3_3F;
 
     case CONVERT (AC3_3F1R, AC3_2F1R):
 	if (adjust_level)
 	    level /= 1 + clev;
-	mix3to2 (samples, level, level * clev);
-	mix1to1 (samples + 768, level);
+	mix3to2 (samples, level, level * clev, bias);
+	mix1to1 (samples + 768, level, bias);
 	return AC3_2F1R;	// FIXME rear pointer
 
     case CONVERT (AC3_3F1R, AC3_3F1R):
-	mix1to1 (samples, level);
-	mix1to1 (samples + 256, level);
-	mix1to1 (samples + 512, level);
-	mix1to1 (samples + 768, level);
+	mix1to1 (samples, level, bias);
+	mix1to1 (samples + 256, level, bias);
+	mix1to1 (samples + 512, level, bias);
+	mix1to1 (samples + 768, level, bias);
 	return AC3_3F1R;
 
     case CONVERT (AC3_3F1R, AC3_2F2R):
 	if (adjust_level)
 	    level /= 1 + clev;
-	mix3to2 (samples, level, level * clev);
-	mix1to2 (samples + 768, samples + 512, level * LEVEL_3DB);
+	mix3to2 (samples, level, level * clev, bias);
+	mix1to2 (samples + 768, samples + 512, level * LEVEL_3DB, bias);
 	return AC3_2F2R;
 
     case CONVERT (AC3_3F1R, AC3_3F2R):
-	mix1to1 (samples, level);
-	mix1to1 (samples + 256, level);
-	mix1to1 (samples + 512, level);
-	mix1to2 (samples + 768, samples + 1024, level * LEVEL_3DB);
+	mix1to1 (samples, level, bias);
+	mix1to1 (samples + 256, level, bias);
+	mix1to1 (samples + 512, level, bias);
+	mix1to2 (samples + 768, samples + 1024, level * LEVEL_3DB, bias);
 	return AC3_3F2R;
 
 
@@ -453,7 +465,7 @@ int downmix (float * samples, int acmod, int output,
 	    goto mix_2to1;
 	if (adjust_level)
 	    level *= LEVEL_3DB / (1 + slev);
-	mix22to1 (samples, level * LEVEL_3DB, level * slev * LEVEL_3DB);
+	mix22to1 (samples, level * LEVEL_3DB, level * slev * LEVEL_3DB, bias);
 	return AC3_MONO;
 
     case CONVERT (AC3_2F2R, AC3_CHANNEL):
@@ -463,31 +475,31 @@ int downmix (float * samples, int acmod, int output,
 	    goto mix_2to2;
 	if (adjust_level)
 	    level /= (1 + slev);
-	mix11to1 (samples, samples + 512, level, level * slev);
-	mix11to1 (samples + 256, samples + 768, level, level * slev);
+	mix11to1 (samples, samples + 512, level, level * slev, bias);
+	mix11to1 (samples + 256, samples + 768, level, level * slev, bias);
 	return AC3_STEREO;
 
     case CONVERT (AC3_2F2R, AC3_DOLBY):
 	if (adjust_level)
 	    level *= 1 / (1 + 2 * LEVEL_3DB);
-	mix22toS (samples, level, level * LEVEL_3DB);
+	mix22toS (samples, level, level * LEVEL_3DB, bias);
 	return AC3_DOLBY;
 
     case CONVERT (AC3_2F2R, AC3_2F1R):
     case CONVERT (AC3_2F2R, AC3_3F1R):
 	if (adjust_level)
 	    level *= LEVEL_3DB;
-	mix1to1 (samples, level);
-	mix1to1 (samples + 256, level);
-	mix2to1 (samples + 512, level * LEVEL_3DB);
+	mix1to1 (samples, level, bias);
+	mix1to1 (samples + 256, level, bias);
+	mix2to1 (samples + 512, level * LEVEL_3DB, bias);
 	return AC3_2F1R;
 
     case CONVERT (AC3_2F2R, AC3_2F2R):
     case CONVERT (AC3_2F2R, AC3_3F2R):
-	mix1to1 (samples, level);
-	mix1to1 (samples + 256, level);
-	mix1to1 (samples + 512, level);
-	mix1to1 (samples + 768, level);
+	mix1to1 (samples, level, bias);
+	mix1to1 (samples + 256, level, bias);
+	mix1to1 (samples + 512, level, bias);
+	mix1to1 (samples + 768, level, bias);
 	return AC3_2F2R;
 
 
@@ -498,8 +510,8 @@ int downmix (float * samples, int acmod, int output,
 	    goto mix_3to1;
 	if (adjust_level)
 	    level *= LEVEL_3DB / (1 + clev + slev);
-	mix32to1 (samples, level * LEVEL_3DB,
-		  level * clev * LEVEL_PLUS3DB, level * slev * LEVEL_3DB);
+	mix32to1 (samples, level * LEVEL_3DB, level * clev * LEVEL_PLUS3DB,
+		  level * slev * LEVEL_3DB, bias);
 	return AC3_MONO;
 
     case CONVERT (AC3_3F2R, AC3_CHANNEL):
@@ -508,13 +520,13 @@ int downmix (float * samples, int acmod, int output,
 	    goto mix_3to2;
 	if (adjust_level)
 	    level /= 1 + clev + slev;
-	mix32to2 (samples, level, level * clev, level * slev);
+	mix32to2 (samples, level, level * clev, level * slev, bias);
 	return AC3_STEREO;
 
     case CONVERT (AC3_3F2R, AC3_DOLBY):
 	if (adjust_level)
 	    level *= 1 / (1 + 3 * LEVEL_3DB);
-	mix32toS (samples, level, level * LEVEL_3DB);
+	mix32toS (samples, level, level * LEVEL_3DB, bias);
 	return AC3_DOLBY;
 
     case CONVERT (AC3_3F2R, AC3_3F):
@@ -522,9 +534,9 @@ int downmix (float * samples, int acmod, int output,
 	    goto mix_3to3;
 	if (adjust_level)
 	    level /= 1 + slev;
-	mix11to1 (samples, samples + 768, level, level * slev);
-	mix1to1 (samples + 256, level);
-	mix11to1 (samples + 512, samples + 1024, level, level * slev);
+	mix11to1 (samples, samples + 768, level, level * slev, bias);
+	mix1to1 (samples + 256, level, bias);
+	mix11to1 (samples + 512, samples + 1024, level, level * slev, bias);
 	return AC3_3F;
 
     case CONVERT (AC3_3F2R, AC3_2F1R):
@@ -534,33 +546,33 @@ int downmix (float * samples, int acmod, int output,
 	    else
 		level *= LEVEL_3DB;
 	}
-	mix3to2 (samples, level, level * clev);
-	mix2to1 (samples + 768, level * LEVEL_3DB);
+	mix3to2 (samples, level, level * clev, bias);
+	mix2to1 (samples + 768, level * LEVEL_3DB, bias);
 	return AC3_2F1R;	// FIXME rear pointer
 
     case CONVERT (AC3_3F2R, AC3_3F1R):
 	if (adjust_level)
 	    level *= LEVEL_3DB;
-	mix1to1 (samples, level);
-	mix1to1 (samples + 256, level);
-	mix1to1 (samples + 512, level);
-	mix2to1 (samples + 768, level * LEVEL_3DB);
+	mix1to1 (samples, level, bias);
+	mix1to1 (samples + 256, level, bias);
+	mix1to1 (samples + 512, level, bias);
+	mix2to1 (samples + 768, level * LEVEL_3DB, bias);
 	return AC3_3F1R;
 
     case CONVERT (AC3_3F2R, AC3_2F2R):
 	if (adjust_level)
 	    level /= 1 + clev;
-	mix3to2 (samples, level, level * clev);
-	mix1to1 (samples + 768, level);
-	mix1to1 (samples + 1024, level);
+	mix3to2 (samples, level, level * clev, bias);
+	mix1to1 (samples + 768, level, bias);
+	mix1to1 (samples + 1024, level, bias);
 	return AC3_2F2R;	// FIXME rear pointer
 
     case CONVERT (AC3_3F2R, AC3_3F2R):
-	mix1to1 (samples, level);
-	mix1to1 (samples + 256, level);
-	mix1to1 (samples + 512, level);
-	mix1to1 (samples + 768, level);
-	mix1to1 (samples + 1024, level);
+	mix1to1 (samples, level, bias);
+	mix1to1 (samples + 256, level, bias);
+	mix1to1 (samples + 512, level, bias);
+	mix1to1 (samples + 768, level, bias);
+	mix1to1 (samples + 1024, level, bias);
 	return AC3_3F2R;
 
     default:	// NOT REACHED

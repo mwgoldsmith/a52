@@ -808,7 +808,7 @@ int parse_audblk (ac3_state_t * state, audblk_t * audblk)
 
     imdct (state, audblk, samples);
 
-    downmix (*samples, state->acmod, 2, 32767, 1, state->clev, state->slev);
+    downmix (*samples, state->acmod, 2, 32767, 1, state->clev, state->slev, 0);
 
     return 0;
 }
