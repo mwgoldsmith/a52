@@ -40,23 +40,18 @@ uint64_t current_word;
 uint64_t *buffer_start = 0;
 
 
-/**
- *
- **/
-
-static inline void bitstream_fill_current()
+static inline uint64_t getdword (void)
 {
-	current_word = bswap_64 (*buffer_start++);
+	return bswap_64 (*buffer_start++);
 }
 
-/**
- * The fast paths for _get is in the
- * bitstream.h header file so it can be inlined.
- *
- * The "bottom half" of this routine is suffixed _bh
- *
- * -ah
- **/
+
+static inline void bitstream_fill_current (void)
+{
+	//current_word = bswap_64 (*buffer_start++);
+	current_word = getdword ();
+}
+
 
 uint32_t bitstream_get_bh (uint32_t num_bits)
 {
@@ -75,10 +70,6 @@ uint32_t bitstream_get_bh (uint32_t num_bits)
 	return result;
 }
 
-
-/**
- *
- **/
 
 void bitstream_init (uint8_t *start)
 {

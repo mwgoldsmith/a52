@@ -30,33 +30,44 @@
 
 #include "downmix.h"
 #include "imdct.h"
+#include "imdct_c.h"
+#include "imdct_kni.h"
 #include "srfft.h"
 
-void imdct_do_256 (float data[],float delay[]);
-void imdct_do_512 (float data[],float delay[]);
-void downmix_3f_2r_to_2ch (float *samples, dm_par_t * dm_par);
-void downmix_3f_1r_to_2ch (float *samples, dm_par_t * dm_par);
-void stream_sample_2ch_to_s16 (int16_t *s16_samples, float *left, float *right);
-void stream_sample_1ch_to_s16 (int16_t *s16_samples, float *center);
 
+extern void (*downmix_3f_2r_to_2ch)(float *samples, dm_par_t * dm_par);
+extern void (*downmix_3f_1r_to_2ch)(float *samples, dm_par_t * dm_par);
+extern void (*downmix_2f_2r_to_2ch)(float *samples, dm_par_t * dm_par);
+extern void (*downmix_2f_1r_to_2ch)(float *samples, dm_par_t * dm_par);
+extern void (*downmix_3f_0r_to_2ch)(float *samples, dm_par_t * dm_par);
+
+
+extern void (*stream_sample_2ch_to_s16)(int16_t *s16_samples, float *left, float *right);
+extern void (*stream_sample_1ch_to_s16)(int16_t *s16_samples, float *center);
+
+void (*fft_64p) (complex_t *);
+void (*imdct_do_512) (float data[],float delay[]);
+void (*imdct_do_512_nol) (float data[], float delay[]);
+
+void imdct_do_256 (float data[],float delay[]);
 
 #define N 512
 
 /* static complex_t buf[128]; */
-static complex_t buf[128] __attribute__((aligned(16)));
-
-/* Twiddle factors for IMDCT */
-static float xcos1[128] __attribute__((aligned(16)));
-static float xsin1[128] __attribute__((aligned(16)));
-static float xcos2[64];
-static float xsin2[64];
+//static complex_t buf[128] __attribute__((aligned(16)));
+complex_t buf[128] __attribute__((aligned(16)));
 
 /* Delay buffer for time domain interleaving */
 static float delay[6][256];
 static float delay1[6][256];
 
+/* Twiddle factors for IMDCT */
+static float xcos2[64];
+static float xsin2[64];
+
 /* Windowing function for Modified DCT - Thank you acroread */
-static float window[] = {
+//static float window[] = {
+float window[] = {
 	0.00014, 0.00024, 0.00037, 0.00051, 0.00067, 0.00086, 0.00107, 0.00130,
 	0.00157, 0.00187, 0.00220, 0.00256, 0.00297, 0.00341, 0.00390, 0.00443,
 	0.00501, 0.00564, 0.00632, 0.00706, 0.00785, 0.00871, 0.00962, 0.01061,
@@ -91,7 +102,8 @@ static float window[] = {
 	1.00000, 1.00000, 1.00000, 1.00000, 1.00000, 1.00000, 1.00000, 1.00000
 };
 
-static const int pm128[128] =
+//static const int pm128[128] =
+const int pm128[128] =
 {
 	0, 16, 32, 48, 64, 80,  96, 112,  8, 40, 72, 104, 24, 56,  88, 120,
 	4, 20, 36, 52, 68, 84, 100, 116, 12, 28, 44,  60, 76, 92, 108, 124,
@@ -116,20 +128,13 @@ static const int pm64[64] =
 };
 
 
-/**
- *
- **/
-
-void imdct_init(void)
+void imdct_init (void)
  {
 	int i;
 	float scale = 255.99609372;
 
-	// Twiddle factors to turn IFFT into IMDCT
-	for (i=0; i < 128; i++) {
-		xcos1[i] = cos(2.0f * M_PI * (8*i+1)/(8*N)) * scale;
-		xsin1[i] = sin(2.0f * M_PI * (8*i+1)/(8*N)) * scale;
-	}
+	if (!imdct_init_kni ());
+	else if (!imdct_init_c ());
 
 	// More twiddle factors to turn IFFT into IMDCT */
 	for (i=0; i < 64; i++) {
@@ -138,155 +143,6 @@ void imdct_init(void)
 	}
 }
 
-
-/**
- *
- **/
-
-void imdct_do_512(float data[],float delay[])
-{
-	int i, j;
-	float tmp_a_r, tmp_a_i;
-	float *data_ptr;
-	float *delay_ptr;
-	float *window_ptr;
-
-// 512 IMDCT with source and dest data in 'data'
-// Pre IFFT complex multiply plus IFFT complex conjugate
-
-	for( i=0; i < 128; i++) {
-		j = pm128[i];
-		//a = (data[256-2*j-1] - data[2*j]) * (xcos1[j] + xsin1[j]);
-		//c = data[2*j] * xcos1[j];
-		//b = data[256-2*j-1] * xsin1[j];
-		//buf1[i].re = a - b + c;
-		//buf1[i].im = b + c;
-		buf[i].re = (data[256-2*j-1] * xcos1[j]) - (data[2*j] * xsin1[j]);
-		buf[i].im = -1.0 * (data[2*j] * xcos1[j] + data[256-2*j-1] * xsin1[j]);
-	}
-
-	fft_128p (&buf[0]);
-
-// Post IFFT complex multiply  plus IFFT complex conjugate
-	for (i=0; i < 128; i++) {
-		tmp_a_r = buf[i].re;
-		tmp_a_i = buf[i].im;
-		//a = (tmp_a_r - tmp_a_i) * (xcos1[j] + xsin1[j]);
-		//b = tmp_a_r * xsin1[j];
-		//c = tmp_a_i * xcos1[j];
-		//buf[j].re = a - b + c;
-		//buf[j].im = b + c;
-		buf[i].re =(tmp_a_r * xcos1[i])  +  (tmp_a_i  * xsin1[i]);
-		buf[i].im =(tmp_a_r * xsin1[i])  -  (tmp_a_i  * xcos1[i]);
-	}
-
-	data_ptr = data;
-	delay_ptr = delay;
-	window_ptr = window;
-
-// Window and convert to real valued signal
-	for (i=0; i< 64; i++) {
-		*data_ptr++   = -buf[64+i].im   * *window_ptr++ + *delay_ptr++;
-		*data_ptr++   = buf[64-i-1].re * *window_ptr++ + *delay_ptr++;
-	}
-
-	for(i=0; i< 64; i++) {
-		*data_ptr++  = -buf[i].re       * *window_ptr++ + *delay_ptr++;
-		*data_ptr++  = buf[128-i-1].im * *window_ptr++ + *delay_ptr++;
-	}
-
-// The trailing edge of the window goes into the delay line
-	delay_ptr = delay;
-
-	for(i=0; i< 64; i++) {
-		*delay_ptr++  = -buf[64+i].re   * *--window_ptr;
-		*delay_ptr++  =  buf[64-i-1].im * *--window_ptr;
-	}
-
-	for(i=0; i<64; i++) {
-		*delay_ptr++  =  buf[i].im       * *--window_ptr;
-		*delay_ptr++  = -buf[128-i-1].re * *--window_ptr;
-	}
-}
-
-
-/**
- *
- **/
-
-void imdct_do_512_nol (float data[], float delay[])
-{
-       int i, j;
-	float tmp_a_r, tmp_a_i;
-	float *data_ptr;
-	float *delay_ptr;
-	float *window_ptr;
-
-        //
-        // 512 IMDCT with source and dest data in 'data'
-        //
-
-       // Pre IFFT complex multiply plus IFFT cmplx conjugate
-        for( i=0; i < 128; i++)
-        {
-         /* z[i] = (X[256-2*i-1] + j * X[2*i]) * (xcos1[i] + j * xsin1[i]) */
-         j = pm128[i];
-         //a = (data[256-2*j-1] - data[2*j]) * (xcos1[j] + xsin1[j]);
-         //c = data[2*j] * xcos1[j];
-         //b = data[256-2*j-1] * xsin1[j];
-          //buf1[i].re = a - b + c;
-         //buf1[i].im = b + c;
-         buf[i].re = (data[256-2*j-1] * xcos1[j]) - (data[2*j] * xsin1[j]);
-         buf[i].im = -1.0 * (data[2*j] * xcos1[j] + data[256-2*j-1] * xsin1[j]);
-        }
-
-       fft_128p(&buf[0]);
-
-        /* Post IFFT complex multiply  plus IFFT complex conjugate*/
-        for( i=0; i < 128; i++)
-        {
-                /* y[n] = z[n] * (xcos1[n] + j * xsin1[n]) ; */
-               /* int j1 = i; */
-               tmp_a_r = buf[i].re;
-               tmp_a_i = buf[i].im;
-               //a = (tmp_a_r - tmp_a_i) * (xcos1[j] + xsin1[j]);
-               //b = tmp_a_r * xsin1[j];
-               //c = tmp_a_i * xcos1[j];
-               //buf[j].re = a - b + c;
-               //buf[j].im = b + c;
-               buf[i].re =(tmp_a_r * xcos1[i])  +  (tmp_a_i  * xsin1[i]);
-               buf[i].im =(tmp_a_r * xsin1[i])  -  (tmp_a_i  * xcos1[i]);
-        }
-
-        data_ptr = data;
-        delay_ptr = delay;
-        window_ptr = window;
-
-       /* Window and convert to real valued signal, no overlap here*/
-        for(i=0; i< 64; i++) {
-               *data_ptr++   = -buf[64+i].im   * *window_ptr++;
-               *data_ptr++   = buf[64-i-1].re * *window_ptr++;
-        }
-
-        /* The trailing edge of the window goes into the delay line */
-
-   delay_ptr = delay;
-
-        for(i=0; i< 64; i++) {
-               *delay_ptr++  = -buf[64+i].re   * *--window_ptr;
-               *delay_ptr++  =  buf[64-i-1].im * *--window_ptr;
-        }
-
-        for(i=0; i<64; i++) {
-               *delay_ptr++  =  buf[i].im       * *--window_ptr;
-               *delay_ptr++  = -buf[128-i-1].re * *--window_ptr;
-        }
-}
-
-
-/**
- *
- **/
 
 void imdct_do_256 (float data[],float delay[])
 {

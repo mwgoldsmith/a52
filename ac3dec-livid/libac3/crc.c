@@ -68,24 +68,27 @@ static const uint16_t crc_lut[256] =
 
 static uint16_t state;
 
+
 void crc_init(void)
 {
 	state = 0;
 }
 
 
-inline void crc_process_byte(uint8_t data)
+inline void crc_process_byte (uint8_t data)
 {
 	state = crc_lut[data ^ (state>>8)] ^ (state<<8);
 }
 
-void crc_process_frame(uint8_t *data,uint32_t num_bytes)
+
+void crc_process_frame (uint8_t *data,uint32_t num_bytes)
 {
 	uint32_t i;
 
-	for(i=0;i<num_bytes;i++)
-		crc_process_byte(data[i]);
+	for(i=0; i<num_bytes; i++)
+		crc_process_byte (data[i]);
 }
+
 
 int crc_validate(void)
 {

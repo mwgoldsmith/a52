@@ -2,18 +2,15 @@
 ## Process this file with automake to produce Makefile.in
 ##
 
-CFLAGS = -Wall -Werror -O2 -g -I../libao -idirafter ../compatibility
+INCLUDES += -I$(top_srcdir)/include
 
-lib_LTLIBRARIES = libac3.la
+libdir = $(PLUGIN_DIR)
 
-include_HEADERS = ac3.h
+## Libs
+lib_LTLIBRARIES = dec_ac3.la
 
-libac3_la_LDFLAGS = -version-info 1:6:1 -export-symbols libac3.sym -lm
+dec_ac3 = @MM_CFLAGS@
+dec_ac3_la_LDFLAGS = -avoid-version -module Wl,-soname,dec_ac3.so -lm @MM_LIBS@
+dec_ac3_la_SOURCES = dec_ac3.c bitstream.c decode.c coeff.c exponent.c stats.c bit_allocate.c  parse.c crc.c debug.c rematrix.c dither.c sanity_check.c srfft.c cpu_accel.c srfft_kni.S downmix.c downmix_kni.S downmix_i386.S imdct512_kni.S imdct_kni.c imdct_c.c imdct.c downmix_c.c
 
-libac3_la_SOURCES = bitstream.c decode.c imdct.c coeff.c exponent.c stats.c\
-	bit_allocate.c  parse.c crc.c debug.c rematrix.c downmix.c dither.c\
-	sanity_check.c srfft.c
-
-noinst_HEADERS = ac3_internal.h bitstream.h decode.h imdct.h stats.h coeff.h\
-	exponent.h bit_allocate.h parse.h crc.h debug.h rematrix.h downmix.h\
-	dither.h sanity_check.h srfft.h srfftp.h bswap.h
+noinst_HEADERS = ac3_internal.h bitstream.h imdct.h stats.h coeff.h exponent.h bit_allocate.h parse.h crc.h debug.h rematrix.h downmix.h dither.h sanity_check.h ac3.h srfft.h srfftp.h oms_accel.h imdct_kni.h imdct_c.h downmix_c.h downmix_i386.h downmix_kni.h

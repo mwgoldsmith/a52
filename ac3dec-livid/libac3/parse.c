@@ -232,13 +232,13 @@ void parse_bsi(bsi_t *bsi)
 	stats_print_bsi(bsi);
 }
 
+
 /* More pain inducing parsing */
-void
-parse_audblk(bsi_t *bsi,audblk_t *audblk)
+void parse_audblk(bsi_t *bsi,audblk_t *audblk)
 {
 	int i,j;
 
-	for (i=0;i < bsi->nfchans; i++) {
+	for (i=0; i < bsi->nfchans; i++) {
 		/* Is this channel an interleaved 256 + 256 block ? */
 		audblk->blksw[i] = bitstream_get(1);
 	}

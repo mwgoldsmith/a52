@@ -22,14 +22,14 @@
  *
  */
 
-int debug_is_on(void);
+int debug_is_on (void);
 
 #if defined (__GNUC__) && defined (DEBUG)
-#define dprintf(format,args...)\
+#define dprintf(args...)\
 {\
 	if (debug_is_on())\
 	{\
-		fprintf(stderr,format,## args);\
+		fprintf(stderr, args);\
 	}\
 }
 #else

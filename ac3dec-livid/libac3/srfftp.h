@@ -32,6 +32,8 @@
 #ifndef SRFFTP_H__
 #define SRFFTP_H__
 
+#include "cmplx.h"
+
 static complex_t delta16[4] = 
  { {1.00000000000000,  0.00000000000000},
    {0.92387953251129, -0.38268343236509},

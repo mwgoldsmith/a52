@@ -1,7 +1,8 @@
-/*
+/* 
  *  downmix_kni.S
  *
- *  Copyright (C) Yuqing Deng <Yuqing_Deng@brown.edu> - April 2000
+ *  Copyright (C) Yuqing Deng <Yuqing_Deng@brown.edu> - October 2000
+ *
  *
  *  downmix_kni.S is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -18,7 +19,6 @@
  *  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  */
-                                                                                  
 .section .rodata
 	.align 4
 sqrt2:	.float 0f0.7071068
@@ -27,10 +27,10 @@ sqrt2:	.float 0f0.7071068
 	.section .text
 	
 	.align 4
-	.global downmix_3f_2r_to_2ch
-	.type downmix_3f_2r_to_2ch, @function
+	.global downmix_3f_2r_to_2ch_kni
+	.type downmix_3f_2r_to_2ch_kni, @function
 
-downmix_3f_2r_to_2ch:
+downmix_3f_2r_to_2ch_kni:
 	pushl	%ebp
 	movl  	%esp, %ebp
 	
@@ -84,10 +84,10 @@ downmix_3f_2r_to_2ch:
 	ret
 	.p2align 4,,7
 
-	.global downmix_2f_2r_to_2ch
-	.type downmix_2f_2r_to_2ch, @function
+	.global downmix_2f_2r_to_2ch_kni
+	.type downmix_2f_2r_to_2ch_kni, @function
 
-downmix_2f_2r_to_2ch:
+downmix_2f_2r_to_2ch_kni:
 	pushl %ebp
 	movl  %esp, %ebp
 
@@ -134,10 +134,10 @@ downmix_2f_2r_to_2ch:
 	ret
 	.p2align 4,,7
 	
-	.global downmix_3f_1r_to_2ch
-	.type downmix_3f_1r_to_2ch, @function
+	.global downmix_3f_1r_to_2ch_kni
+	.type downmix_3f_1r_to_2ch_kni, @function
 
-downmix_3f_1r_to_2ch:
+downmix_3f_1r_to_2ch_kni:
 	pushl	%ebp
 	movl  	%esp, %ebp
 	
@@ -191,10 +191,10 @@ downmix_3f_1r_to_2ch:
 	ret
 	.p2align 4,,7
 		
-	.global downmix_2f_1r_to_2ch
-	.type downmix_2f_1r_to_2ch, @function
+	.global downmix_2f_1r_to_2ch_kni
+	.type downmix_2f_1r_to_2ch_kni, @function
 
-downmix_2f_1r_to_2ch:
+downmix_2f_1r_to_2ch_kni:
 	pushl	%ebp
 	movl  	%esp, %ebp
 	
@@ -241,10 +241,10 @@ downmix_2f_1r_to_2ch:
 	ret
 	.p2align 4,,7
 	
-	.global downmix_3f_0r_to_2ch
-	.type downmix_3f_0r_to_2ch, @function
+	.global downmix_3f_0r_to_2ch_kni
+	.type downmix_3f_0r_to_2ch_kni, @function
 
-downmix_3f_0r_to_2ch:
+downmix_3f_0r_to_2ch_kni:
 	pushl	%ebp
 	movl  	%esp, %ebp
 	
@@ -291,10 +291,10 @@ downmix_3f_0r_to_2ch:
 	ret
 	.p2align 4,,7
 	
-	.global stream_sample_2ch_to_s16
-	.type stream_sample_2ch_to_s16, @function
+	.global stream_sample_2ch_to_s16_kni
+	.type stream_sample_2ch_to_s16_kni, @function
 
-stream_sample_2ch_to_s16:
+stream_sample_2ch_to_s16_kni:
 	pushl %ebp
 	movl  %esp, %ebp
 
@@ -346,10 +346,10 @@ stream_sample_2ch_to_s16:
 	ret
 	.p2align 4,,7
 	
-	.global stream_sample_1ch_to_s16
-	.type stream_sample_1ch_to_s16, @function
+	.global stream_sample_1ch_to_s16_kni
+	.type stream_sample_1ch_to_s16_kni, @function
 
-stream_sample_1ch_to_s16:
+stream_sample_1ch_to_s16_kni:
 	pushl %ebp
 	movl  %esp, %ebp
 

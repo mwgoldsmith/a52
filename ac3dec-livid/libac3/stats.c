@@ -76,6 +76,7 @@ static const char *language[128] =
 	"Bengali", "Belorussian", "Bambora", "Azerbijani", "Assamese", "Armenian", "Arabic", "Amharic"
 };
 
+
 void stats_print_banner(syncinfo_t *syncinfo,bsi_t *bsi)
 {
 	fprintf(stdout,PACKAGE"-"VERSION" (C) 2000 Aaron Holtzman (aholtzma@ess.engr.uvic.ca)\n");
@@ -114,7 +115,9 @@ void stats_print_banner(syncinfo_t *syncinfo,bsi_t *bsi)
 	fprintf(stdout,"\n");
 }
 
-void stats_print_syncinfo(syncinfo_t *syncinfo) {
+
+void stats_print_syncinfo (syncinfo_t *syncinfo)
+{
 	dprintf("(syncinfo) ");
 	
 	switch (syncinfo->fscod) {
@@ -136,6 +139,7 @@ void stats_print_syncinfo(syncinfo_t *syncinfo) {
 			syncinfo->frame_size);
 
 }
+
 	
 void stats_print_bsi(bsi_t *bsi) {
 	dprintf("(bsi) ");
@@ -148,6 +152,7 @@ void stats_print_bsi(bsi_t *bsi) {
 	dprintf("\n");
 
 }
+
 
 char *exp_strat_tbl[4] = {"R   ","D15 ","D25 ","D45 "};
 

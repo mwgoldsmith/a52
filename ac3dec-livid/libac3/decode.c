@@ -32,11 +32,16 @@
 #include <string.h>
 #include <sys/time.h>
 
+#ifdef __OMS__
+#include <oms/oms.h>
+#include <oms/plugin/codec_audio.h>
+#endif
 
 #include "ac3.h"
 #include "ac3_internal.h"
 #include "bitstream.h"
 #include "downmix.h"
+#include "srfft.h"
 #include "imdct.h"
 #include "exponent.h"
 #include "coeff.h"
@@ -47,8 +52,9 @@
 #include "rematrix.h"
 #include "sanity_check.h"
 #include "debug.h"
+#ifndef __OMS__
 #include "audio_out.h"
-
+#endif
 //our global config structure
 ac3_config_t ac3_config;
 uint32_t error_flag = 0;
@@ -56,8 +62,10 @@ uint32_t error_flag = 0;
 static audblk_t audblk;
 static bsi_t bsi;
 static syncinfo_t syncinfo;
+#ifndef __OMS__
 static uint32_t frame_count = 0;
 static uint32_t done_banner;
+#endif
 static uint32_t is_output_initialized = 0;
 
 //the floating point samples for one audblk
@@ -77,8 +85,7 @@ static dm_par_t dm_par;
 static uint8_t buffer[BUFFER_MAX_SIZE];
 static uint32_t buffer_size = 0;;
 
-uint32_t
-decode_buffer_syncframe(syncinfo_t *syncinfo, uint8_t **start,uint8_t *end)
+static uint32_t decode_buffer_syncframe (syncinfo_t *syncinfo, uint8_t **start, uint8_t *end)
 {
 	uint8_t *cur = *start;
 	uint16_t syncword = syncinfo->syncword;
@@ -88,7 +95,7 @@ decode_buffer_syncframe(syncinfo_t *syncinfo, uint8_t **start,uint8_t *end)
 	// Find an ac3 sync frame.
 	// 
 	while (syncword != 0x0b77) {
-		if(cur >= end)
+		if (cur >= end)
 			goto done;
 		syncword = (syncword << 8) + *cur++;
 	}
@@ -101,8 +108,8 @@ decode_buffer_syncframe(syncinfo_t *syncinfo, uint8_t **start,uint8_t *end)
 		buffer[buffer_size++] = *cur++;
 	}
 	
-	parse_syncinfo(syncinfo,buffer);
-	stats_print_syncinfo(syncinfo);
+	parse_syncinfo (syncinfo,buffer);
+	stats_print_syncinfo (syncinfo);
 
 	while (buffer_size < syncinfo->frame_size * 2 - 2) {
 		if(cur >= end)
@@ -111,15 +118,17 @@ decode_buffer_syncframe(syncinfo_t *syncinfo, uint8_t **start,uint8_t *end)
 		buffer[buffer_size++] = *cur++;
 	}
 
+#if 0
 	// Check the crc over the entire frame 
 	crc_init();
-	crc_process_frame(buffer,syncinfo->frame_size * 2 - 2);
+	crc_process_frame (buffer, syncinfo->frame_size * 2 - 2);
 
 	if (!crc_validate()) {
 		error_flag = 1;
 		fprintf(stderr,"** CRC failed - skipping frame **\n");
 		goto done;
 	}
+#endif
 
 	//
 	//if we got to this point, we found a valid ac3 frame to decode
@@ -140,8 +149,8 @@ done:
 	return ret;
 }
 
-void
-decode_mute(void)
+
+void inline decode_mute (void)
 {
 	//mute the frame
 	memset (s16_samples, 0, sizeof(int16_t) * 256 * 2 * 6);
@@ -149,33 +158,42 @@ decode_mute(void)
 }
 
 
-void
-ac3_init(void)
+void ac3dec_init (void)
 {
-	imdct_init();
-	sanity_check_init(&syncinfo,&bsi,&audblk);
+// FIXME - don't do that statically here
+	ac3_config.num_output_ch = 2;
+	ac3_config.flags = 0;
+
+	imdct_init ();
+	downmix_init ();
+	sanity_check_init (&syncinfo,&bsi,&audblk);
 }
 
-size_t
-ac3_decode_data(ac3_config_t *config, ao_functions_t *ao_functions, uint8_t *data_start, uint8_t *data_end)
+
+#ifdef __OMS__
+size_t ac3dec_decode_data (plugin_output_audio_t *output, buf_t *buf, buf_entry_t *buf_entry)
+#else
+size_t ac3dec_decode_data (ac3_config_t *config, ao_functions_t *ao_functions, uint8_t *data_start, uint8_t *data_end)
+#endif
 {
+#ifdef __OMS__
+	uint8_t *data_start = buf_entry->data;
+	uint8_t *data_end = data_start+buf_entry->data_len;
+#endif
 	uint32_t i;
 
-	while (decode_buffer_syncframe(&syncinfo,&data_start,data_end)) {
-		dprintf("(decode) begin frame %d\n",frame_count++);
+	while (decode_buffer_syncframe (&syncinfo, &data_start, data_end)) {
+		if (error_flag)
+			goto error;
 
-		if(error_flag)
-		{
-			decode_mute();
-			continue;
-		}
+		parse_bsi (&bsi);
 
-		parse_bsi(&bsi);
-
+#ifndef __OMS__
 		if(!done_banner) {
 			stats_print_banner(&syncinfo,&bsi);
 			done_banner = 1;
 		}
+#endif
 
 		// compute downmix parameters
 		// downmix to tow channels for now
@@ -196,24 +214,24 @@ ac3_decode_data(ac3_config_t *config, ao_functions_t *ao_functions, uint8_t *dat
 
 			// Extract most of the audblk info from the bitstream
 			// (minus the mantissas 
-			parse_audblk(&bsi,&audblk);
+			parse_audblk (&bsi,&audblk);
 
 			// Take the differential exponent data and turn it into
 			// absolute exponents 
-			exponent_unpack(&bsi,&audblk); 
-			if(error_flag)
+			exponent_unpack (&bsi,&audblk); 
+			if (error_flag)
 				goto error;
 
 			// Figure out how many bits per mantissa 
-			bit_allocate(syncinfo.fscod,&bsi,&audblk);
+			bit_allocate (syncinfo.fscod,&bsi,&audblk);
 
 			// Extract the mantissas from the stream and
 			// generate floating point frequency coefficients
 			coeff_unpack (&bsi,&audblk,samples);
-			if(error_flag)
+			if (error_flag)
 				goto error;
 
-			if(bsi.acmod == 0x2)
+			if (bsi.acmod == 0x2)
 				rematrix (&audblk,samples);
 
 			// Convert the frequency samples into time samples 
@@ -230,15 +248,28 @@ ac3_decode_data(ac3_config_t *config, ao_functions_t *ao_functions, uint8_t *dat
 			continue;
 		}
 
-		if(!is_output_initialized) {
-			ao_functions->open(16,syncinfo.sampling_rate,2);
+		if (!is_output_initialized) {
+#ifdef __OMS__
+			plugin_output_audio_attr_t attr;
+			attr.format = AFMT_S16_NE;
+			attr.speed = syncinfo.sampling_rate;
+			attr.channels = 2;
+
+			output->setup (&attr);
+#else
+			ao_functions->open (16, syncinfo.sampling_rate, 2);
+#endif
 			is_output_initialized = 1;
 		}
 
+#ifdef __OMS__
+		output->write (s16_samples, 256 * 6 * 2 * 2);
+#else
 		ao_functions->play(s16_samples, 256 * 6 * 2);
+#endif
 
 error:
-		//find a new frame
+		decode_mute ();
 	}
 
 	return 0;	

@@ -25,27 +25,18 @@
 #ifndef __AC3_H__
 #define __AC3_H__
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #ifdef __OMS__
+#include <oms/oms.h>
+#include <oms/plugin/codec_audio.h>
 #include <oms/plugin/output_audio.h>
-#ifndef ao_functions_t
-#define ao_functions_t plugin_output_audio_t
-#endif
 #else
-//FIXME normally I wouldn't nest includes, but we'll leave this here until I get
-//another chance to move things around
 #include "audio_out.h"
 #endif
 
 #include <inttypes.h>
 
-#define AC3_DOLBY_SURR_ENABLE (1<<0)
-#define AC3_3DNOW_ENABLE      (1<<1)
-#define AC3_MMX_ENABLE        (1<<2)
-#define AC3_ALTIVEC_ENABLE    (1<<3)
+#define AC3_DOLBY_SURR_ENABLE	(1<<0)
+#define AC3_ALTIVEC_ENABLE	(1<<1)
 
 typedef struct ac3_config_s {
 	// Bit flags that enable various things
@@ -56,14 +47,12 @@ typedef struct ac3_config_s {
 	uint16_t dual_mono_ch_sel;
 } ac3_config_t;
 
-void ac3_init (void);
-size_t ac3_decode_data (ac3_config_t *, ao_functions_t *, uint8_t * data_start, uint8_t * data_end);
-//void ac3_close (ao_functions_t *);
-//void ac3_drop (int flag);
-//void ac3_output_init (int flag);
+void ac3dec_init (void);
 
-#ifdef __cplusplus
-}
+#ifdef __OMS__
+size_t ac3dec_decode_data (plugin_output_audio_t *output, buf_t *buf, buf_entry_t *buf_entry);
+#else
+size_t ac3dec_decode_data (ac3_config_t *config, ao_functions_t *ao_functions, uint8_t *data_start, uint8_t *data_end);
 #endif
 
 #endif

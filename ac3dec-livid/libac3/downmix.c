@@ -1,8 +1,7 @@
 /*
- *
  *  imdct.c
  *    
- *	Copyright (C) Aaron Holtzman - Sept 1999
+ *	Copyright (C) Aaron Holtzman - May 1999
  *
  *  This file is part of ac3dec, a free Dolby AC-3 stream decoder.
  *	
@@ -28,156 +27,53 @@
 #include <math.h>
 #include "ac3.h"
 #include "ac3_internal.h"
+#include "oms_accel.h"
 
-
+#include "debug.h"
 #include "downmix.h"
+#include "downmix_c.h"
+#include "downmix_i386.h"
+#include "downmix_kni.h"
+#include "oms_accel.h"
+
+void (*downmix_3f_2r_to_2ch)(float *samples, dm_par_t * dm_par);
+void (*downmix_3f_1r_to_2ch)(float *samples, dm_par_t * dm_par);
+void (*downmix_2f_2r_to_2ch)(float *samples, dm_par_t * dm_par);
+void (*downmix_2f_1r_to_2ch)(float *samples, dm_par_t * dm_par);
+void (*downmix_3f_0r_to_2ch)(float *samples, dm_par_t * dm_par);
+void (*stream_sample_2ch_to_s16)(int16_t *s16_samples, float *left, float *right);
+void (*stream_sample_1ch_to_s16)(int16_t *s16_samples, float *center);
 
 
-/**
- *
- **/
-
-void downmix_3f_2r_to_2ch (float *samples, dm_par_t *dm_par)
+void downmix_init()
 {
-	int i;
-	float *left, *right, *center, *left_sur, *right_sur;
-	float left_tmp, right_tmp;
+	uint32_t accel = oms_cpu_accel ();
 
-	left = samples;
-	right = samples + 256 * 2;
-	center = samples + 256;
-	left_sur = samples + 256 * 3;
-	right_sur = samples + 256 * 4;
-
-	for (i=0; i < 256; i++) {
-		left_tmp = dm_par->unit * *left  + dm_par->clev * *center + dm_par->slev * *left_sur++;
-		right_tmp= dm_par->unit * *right++ + dm_par->clev * *center + dm_par->slev * *right_sur++;
-		*left++ = left_tmp;
-		*center++ = right_tmp;
-	}
-}
-
-
-/**
- *
- **/
-
-void downmix_2f_2r_to_2ch (float *samples, dm_par_t *dm_par)
-{
-	int i;
-	float *left, *right, *left_sur, *right_sur;
-	float left_tmp, right_tmp;
-               
-	left = &samples[0];
-	right = &samples[256];
-	left_sur = &samples[512];
-	right_sur = &samples[768];
-	for (i = 0; i < 256; i++) {
-		left_tmp = dm_par->unit * *left  + dm_par->slev * *left_sur++;
-		right_tmp= dm_par->unit * *right + dm_par->slev * *right_sur++;
-		*left++ = left_tmp;
-		*right++ = right_tmp;
-	}
-}
-
-
-/**
- *
- **/
-
-void downmix_3f_1r_to_2ch (float *samples, dm_par_t *dm_par)
-{
-	int i;
-	float *left, *right, *center, *right_sur;
-	float left_tmp, right_tmp;
-
-	left = &samples[0];
-	right = &samples[512];
-	center = &samples[256];
-	right_sur = &samples[768];
-
-	for (i = 0; i < 256; i++) {
-		left_tmp = dm_par->unit * *left  + dm_par->clev * *center  - dm_par->slev * *right_sur;
-		right_tmp= dm_par->unit * *right++ + dm_par->clev * *center + dm_par->slev * *right_sur++;
-		*left++ = left_tmp;
-		*center++ = right_tmp;
-	}
-}
-
-
-
-/**
- *
- **/
-
-void downmix_2f_1r_to_2ch (float *samples, dm_par_t *dm_par)
-{
-	int i;
-	float *left, *right, *right_sur;
-	float left_tmp, right_tmp;
-
-	left = &samples[0];
-	right = &samples[256];
-	right_sur = &samples[512];
-
-	for (i = 0; i < 256; i++) {
-		left_tmp = dm_par->unit * *left  - dm_par->slev * *right_sur;
-		right_tmp= dm_par->unit * *right + dm_par->slev * *right_sur++;
-		*left++ = left_tmp;
-		*right++ = right_tmp;
-	}
-}
-
-
-/**
- *
- **/
-
-void downmix_3f_0r_to_2ch (float *samples, dm_par_t *dm_par)
-{
-	int i;
-	float *left, *right, *center;
-	float left_tmp, right_tmp;
-
-	left = &samples[0];
-	center = &samples[256];
-	right = &samples[512];
-
-	for (i = 0; i < 256; i++) {
-		left_tmp = dm_par->unit * *left  + dm_par->clev * *center;
-		right_tmp= dm_par->unit * *right++ + dm_par->clev * *center;
-		*left++ = left_tmp;
-		*center++ = right_tmp;
-	}
-}
-
-
-/**
- *
- **/
-				
-void stream_sample_2ch_to_s16 (int16_t *s16_samples, float *left, float *right)
-{
-	int i;
-
-	for (i=0; i < 256; i++) {
-		*s16_samples++ = (int16_t) *left++;
-		*s16_samples++ = (int16_t) *right++;
-	}
-}
-
-
-/**
- *
- **/
-
-void stream_sample_1ch_to_s16 (int16_t *s16_samples, float *center)
-{
-	int i;
-	float tmp;
-
-	for (i=0; i<256; i++) {
-		*s16_samples++ = tmp = (int16_t) (0.7071f * *center++);
-		*s16_samples++ = tmp;
+// other dowmixing should go here too
+	if (accel & OMS_ACCEL_X86_MMXEXT) {
+		dprintf("Using SSE for downmix\n");
+		downmix_3f_2r_to_2ch = downmix_3f_2r_to_2ch_kni;
+		downmix_2f_2r_to_2ch = downmix_2f_2r_to_2ch_kni;
+		downmix_3f_1r_to_2ch = downmix_3f_1r_to_2ch_kni;
+		downmix_2f_1r_to_2ch = downmix_2f_1r_to_2ch_kni;
+		downmix_3f_0r_to_2ch = downmix_3f_0r_to_2ch_kni;
+		stream_sample_2ch_to_s16 = stream_sample_2ch_to_s16_kni;
+		stream_sample_1ch_to_s16 = stream_sample_1ch_to_s16_kni;
+	} else if (accel & OMS_ACCEL_X86_3DNOW) {
+	} else {
+		downmix_3f_2r_to_2ch = downmix_3f_2r_to_2ch_c;
+		downmix_2f_2r_to_2ch = downmix_2f_2r_to_2ch_c;
+		downmix_3f_1r_to_2ch = downmix_3f_1r_to_2ch_c;
+		downmix_2f_1r_to_2ch = downmix_2f_1r_to_2ch_c;
+		downmix_3f_0r_to_2ch = downmix_3f_0r_to_2ch_c;
+#ifdef __i386__
+		stream_sample_2ch_to_s16 = stream_sample_2ch_to_s16_c;
+		stream_sample_1ch_to_s16 = stream_sample_1ch_to_s16_c;
+//		stream_sample_2ch_to_s16 = stream_sample_2ch_to_s16_i386;
+//		stream_sample_1ch_to_s16 = stream_sample_1ch_to_s16_i386;
+#else
+		stream_sample_2ch_to_s16 = stream_sample_2ch_to_s16_c;
+		stream_sample_1ch_to_s16 = stream_sample_1ch_to_s16_c;
+#endif
 	}
 }

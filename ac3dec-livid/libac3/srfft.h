@@ -31,16 +31,9 @@
 #ifndef SRFFT_H__
 #define SRFFT_H__
 
-typedef struct complex
-{
-  float re;
-  float im;
-} complex_t;
+#include "cmplx.h"
 
-void fft_asmb16(complex_t *x, complex_t *wTB);
-void fft_asmb(int n, complex_t *x, complex_t *wTB, const complex_t *d, const complex_t *d_3);
-
-void fft_64p(complex_t *x);
-void fft_128p(complex_t *x);
+void fft_64p_c (complex_t *x);
+void fft_128p_c (complex_t *x);
 
 #endif /* SRFFT_H__ */
