@@ -315,7 +315,7 @@ static inline int16_t dither_gen (a52_state_t * state)
 	
     state->lfsr_state = (uint16_t) nstate;
 
-    return nstate;
+    return (3 * nstate) >> 2;
 }
 
 #ifndef LIBA52_FIXED
@@ -346,10 +346,6 @@ static void coeff_get (a52_state_t * state, sample_t * coeff,
 
     for (i = 0; i <= 24; i++)
 	factor[i] = scale_factor[i] * level;
-#else
-    level_t level_3db;
-
-    level_3db = MUL_C (level, LEVEL_3DB);
 #endif
 
     exp = expbap->exp;
@@ -362,13 +358,7 @@ static void coeff_get (a52_state_t * state, sample_t * coeff,
 	switch (bapi) {
 	case 0:
 	    if (dither) {
-#ifndef LIBA52_FIXED
-		COEFF (coeff[i], dither_gen (state) * LEVEL_3DB, level,
-		       factor, exp[i]);
-#else
-		COEFF (coeff[i], dither_gen (state), level_3db,
-		       factor, exp[i]);
-#endif
+		COEFF (coeff[i], dither_gen (state), level, factor, exp[i]);
 		continue;
 	    } else {
 		coeff[i] = 0;
@@ -474,21 +464,17 @@ static void coeff_get_coupling (a52_state_t * state, int nfchans,
 	    bapi = bap[i];
 	    switch (bapi) {
 	    case 0:
-#ifndef LIBA52_FIXED
-		cplcoeff = LEVEL_3DB * scale_factor[exp[i]];
-#endif
 		for (ch = 0; ch < nfchans; ch++)
 		    if ((state->chincpl >> ch) & 1) {
 			if (dithflag[ch])
 #ifndef LIBA52_FIXED
-			    samples[ch][i] = (cplcoeff * cplco[ch] *
-					      dither_gen (state));
+			    samples[ch][i] = (scale_factor[exp[i]] *
+					      cplco[ch] * dither_gen (state));
 #else
 			    COEFF (samples[ch][i], dither_gen (state),
-				   MUL_C (cplco[ch], LEVEL_3DB),
-				   scale_factor, exp[i]);
+				   cplco[ch], scale_factor, exp[i]);
 #endif
-			else 
+			else
 			    samples[ch][i] = 0;
 		    }
 		i++;
