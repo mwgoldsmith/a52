@@ -391,8 +391,7 @@ void downmix (sample_t * samples, int acmod, int output,
 	break;
 
     case CONVERT (AC3_CHANNEL, AC3_CHANNEL2):
-    mix_1to1_b:
-	mix1to1 (samples + 256, level, bias);
+	move1to1 (samples + 256, samples, level, bias);
 	break;
 
     case CONVERT (AC3_STEREO, AC3_MONO):
@@ -501,7 +500,8 @@ void downmix (sample_t * samples, int acmod, int output,
 	    goto mix_3to3;
 	mix11to1 (samples, samples + 768, level, level * slev, bias);
 	mix11to1 (samples + 512, samples + 1024, level, level * slev, bias);
-	goto mix_1to1_b;
+	mix1to1 (samples + 256, level, bias);
+	break;
 
     case CONVERT (AC3_2F1R, AC3_2F2R):
 	mix1to2 (samples + 512, samples + 768, level * LEVEL_3DB, bias);
