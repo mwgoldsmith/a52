@@ -38,6 +38,7 @@
 static uint8_t buffer[BUFFER_SIZE];
 static FILE * in_file;
 static int demux_track = 0;
+static int demux_pid = 0;
 static int disable_accel = 0;
 static int disable_dynrng = 0;
 static ao_open_t * output_open = NULL;
@@ -126,8 +127,10 @@ static void print_usage (char ** argv)
     int i;
     ao_driver_t * drivers;
 
-    fprintf (stderr, "usage: %s [-o <mode>] [-s[<track>]] [-c] [-r] <file>\n"
+    fprintf (stderr, "usage: "
+	     "%s [-o <mode>] [-s [<track>]] [-t <pid>] [-c] [-r] <file>\n"
 	     "\t-s\tuse program stream demultiplexer, track 0-7 or 0x80-0x87\n"
+	     "\t-t\tuse transport stream demultiplexer, pid 0x10-0x1ffe\n"
 	     "\t-c\tuse c implementation, disables all accelerations\n"
 	     "\t-r\tdisable dynamic range compression\n"
 	     "\t-o\taudio output mode\n", argv[0]);
@@ -144,9 +147,10 @@ static void handle_args (int argc, char ** argv)
     int c;
     ao_driver_t * drivers;
     int i;
+    char * s;
 
     drivers = ao_drivers ();
-    while ((c = getopt (argc, argv, "s::cro:")) != -1)
+    while ((c = getopt (argc, argv, "s::t:cro:")) != -1)
 	switch (c) {
 	case 'o':
 	    for (i = 0; drivers[i].name != NULL; i++)
@@ -161,8 +165,6 @@ static void handle_args (int argc, char ** argv)
 	case 's':
 	    demux_track = 0x80;
 	    if (optarg != NULL) {
-		char * s;
-
 		demux_track = strtol (optarg, &s, 16);
 		if (demux_track < 0x80)
 		    demux_track += 0x80;
@@ -170,6 +172,14 @@ static void handle_args (int argc, char ** argv)
 		    fprintf (stderr, "Invalid track number: %s\n", optarg);
 		    print_usage (argv);
 		}
+	    }
+	    break;
+
+	case 't':
+	    demux_pid = strtol (optarg, &s, 16);
+	    if ((demux_pid < 0x10) || (demux_pid > 0x1ffe) || (*s)) {
+		fprintf (stderr, "Invalid pid: %s\n", optarg);
+		print_usage (argv);
 	    }
 	    break;
 
@@ -262,7 +272,8 @@ void a52_decode_data (uint8_t * start, uint8_t * end)
     }
 }
 
-static int demux (uint8_t * buf, uint8_t * end)
+#define DEMUX_PAYLOAD_START 1
+static int demux (uint8_t * buf, uint8_t * end, int flags)
 {
     static int mpeg1_skip_table[16] = {
 	0, 0, 4, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
@@ -287,7 +298,7 @@ static int demux (uint8_t * buf, uint8_t * end)
 #define DEMUX_HEADER 0
 #define DEMUX_DATA 1
 #define DEMUX_SKIP 2
-    static int state = DEMUX_HEADER;
+    static int state = DEMUX_SKIP;
     static int state_bytes = 0;
     static uint8_t head_buf[268];
 
@@ -326,6 +337,8 @@ static int demux (uint8_t * buf, uint8_t * end)
 	    buf = header + (x);	\
     } while (0)
 
+    if (flags & DEMUX_PAYLOAD_START)
+	goto payload_start;
     switch (state) {
     case DEMUX_HEADER:
 	if (state_bytes > 0) {
@@ -335,7 +348,7 @@ static int demux (uint8_t * buf, uint8_t * end)
 	}
 	break;
     case DEMUX_DATA:
-	if (state_bytes > end - buf) {
+	if (demux_pid || (state_bytes > end - buf)) {
 	    a52_decode_data (buf, end);
 	    state_bytes -= end - buf;
 	    return 0;
@@ -344,7 +357,7 @@ static int demux (uint8_t * buf, uint8_t * end)
 	buf += state_bytes;
 	break;
     case DEMUX_SKIP:
-	if (state_bytes > end - buf) {
+	if (demux_pid || (state_bytes > end - buf)) {
 	    state_bytes -= end - buf;
 	    return 0;
 	}
@@ -353,14 +366,22 @@ static int demux (uint8_t * buf, uint8_t * end)
     }
 
     while (1) {
+	if (demux_pid) {
+	    state = DEMUX_SKIP;
+	    return 0;
+	}
+    payload_start:
 	header = buf;
 	bytes = end - buf;
     continue_header:
 	NEEDBYTES (4);
 	if (header[0] || header[1] || (header[2] != 1)) {
-	    if (header != head_buf) {
+	    if (demux_pid) {
+		state = DEMUX_SKIP;
+		return 0;
+	    } else if (header != head_buf) {
 		buf++;
-		continue;
+		goto payload_start;
 	    } else {
 		header[0] = header[1];
 		header[1] = header[2];
@@ -368,6 +389,10 @@ static int demux (uint8_t * buf, uint8_t * end)
 		bytes = 3;
 		goto continue_header;
 	    }
+	}
+	if (demux_pid && (header[3] != 0xbd)) {
+	    fprintf (stderr, "bad stream id %x\n", header[3]);
+	    exit (1);
 	}
 	switch (header[3]) {
 	case 0xb9:	/* program end code */
@@ -415,7 +440,7 @@ static int demux (uint8_t * buf, uint8_t * end)
 		NEEDBYTES (len);
 		/* header points to the mpeg1 pes header */
 	    }
-	    if ((header-1)[len] != demux_track) {
+	    if ((!demux_pid) && ((header-1)[len] != demux_track)) {
 		DONEBYTES (len);
 		bytes = 6 + (header[4] << 8) + header[5] - len;
 		if (bytes <= 0)
@@ -426,14 +451,13 @@ static int demux (uint8_t * buf, uint8_t * end)
 	    NEEDBYTES (len);
 	    DONEBYTES (len);
 	    bytes = 6 + (header[4] << 8) + header[5] - len;
-	    if (bytes <= 0)
-		continue;
-	    if (bytes > end - buf) {
+	    if (demux_pid || (bytes > end - buf)) {
 		a52_decode_data (buf, end);
 		state = DEMUX_DATA;
 		state_bytes = bytes - (end - buf);
 		return 0;
-	    }
+	    } else if (bytes <= 0)
+		continue;
 	    a52_decode_data (buf, buf + bytes);
 	    buf += bytes;
 	    break;
@@ -464,9 +488,43 @@ static void ps_loop (void)
 
     do {
 	end = buffer + fread (buffer, 1, BUFFER_SIZE, in_file);
-	if (demux (buffer, end))
+	if (demux (buffer, end, 0))
 	    break;	/* hit program_end_code */
     } while (end == buffer + BUFFER_SIZE);
+}
+
+static void ts_loop (void)
+{
+#define PACKETS (BUFFER_SIZE / 188)
+    uint8_t * buf;
+    uint8_t * data;
+    uint8_t * end;
+    int packets;
+    int i;
+    int pid;
+
+    do {
+	packets = fread (buffer, 188, PACKETS, in_file);
+	for (i = 0; i < packets; i++) {
+	    buf = buffer + i * 188;
+	    end = buf + 188;
+	    if (buf[0] != 0x47) {
+		fprintf (stderr, "bad sync byte\n");
+		exit (1);
+	    }
+	    pid = ((buf[1] << 8) + buf[2]) & 0x1fff;
+	    if (pid != demux_pid)
+		continue;
+	    data = buf + 4;
+	    if (buf[3] & 0x20) {	/* buf contains an adaptation field */
+		data = buf + 5 + buf[4];
+		if (data > end)
+		    continue;
+	    }
+	    if (buf[3] & 0x10)
+		demux (data, end, (buf[1] & 0x40) ? DEMUX_PAYLOAD_START : 0);
+	}
+    } while (packets == PACKETS);
 }
 
 static void es_loop (void)
@@ -502,7 +560,9 @@ int main (int argc, char ** argv)
 	return 1;
     }
 
-    if (demux_track)
+    if (demux_pid)
+	ts_loop ();
+    else if (demux_track)
 	ps_loop ();
     else
 	es_loop ();
