@@ -495,37 +495,3 @@ void parse_audblk(bsi_t *bsi,audblk_t *audblk)
 
     stats_print_audblk(bsi,audblk);
 }
-
-void parse_auxdata(syncinfo_t *syncinfo)
-{
-    //FIXME keep this now that we don't really need it?
-#if 0
-    int i;
-    int skip_length;
-    uint16_t crc;
-    uint16_t auxdatae;
-
-    skip_length = (syncinfo->frame_size * 16)  - bitstream_get_total_bits() - 17 - 1;
-
-    //XXX remove
-    //dprintf("(auxdata) skipping %d auxbits\n",skip_length);
-	
-    for(i=0; i <  skip_length; i++)
-	//printf("Skipped bit %i\n",(uint16_t)bitstream_get(1));
-	bitstream_get(1);
-
-    //get the auxdata exists bit
-    auxdatae = bitstream_get(1);	
-
-    //XXX remove
-    //dprintf("auxdatae = %i\n",auxdatae);
-
-    //Skip the CRC reserved bit
-    bitstream_get(1);
-
-    //Get the crc
-    crc = bitstream_get(16);
-#endif
-}
-
-

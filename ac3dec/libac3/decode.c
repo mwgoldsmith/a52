@@ -158,7 +158,6 @@ ac3_decode_frame(uint8_t * buf)
 	if(error_flag)
 	    goto error;
     }
-    parse_auxdata(&syncinfo);
 
     return &frame;	
 
