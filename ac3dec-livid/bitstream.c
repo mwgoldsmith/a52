@@ -31,7 +31,7 @@ bitstream_get(bitstream_t *bs,uint_32 num_bits)
 	if (num_bits < bs->bits_left)
 	{
 		result = (bs->current_word & bit_mask[num_bits]) >> (32 - num_bits);
-		//printf("case 1 current_word = %lx result = %lx\n",bs->current_word,result);
+		/*printf("case 1 current_word = %lx result = %lx\n",bs->current_word,result);*/
 		bs->current_word <<= num_bits;
 		bs->bits_left -= num_bits;
 	}

@@ -21,6 +21,8 @@ static stream_samples_t stream_samples;
 static audblk_t audblk;
 static bsi_t bsi;
 static syncinfo_t syncinfo;
+/* Misc LUTs */
+static	uint_16 nfchans[] = {2,1,2,3,3,4,4,5};
 
 int main(int argc,char argv[])
 {
@@ -28,7 +30,7 @@ int main(int argc,char argv[])
 	bitstream_t *bs;
 
 	bs = bitstream_open("foo.dat");
-	//FIXME check for end of stream and exit
+	/* FIXME check for end of stream and exit */
 	while(1)
 	{
 		decode_fill_syncinfo(bs);
@@ -38,13 +40,13 @@ int main(int argc,char argv[])
 			decode_fill_audblk(bs);
 			/* Take audblk info and turn it into floating point
 			 * frequency coefficients for all streams */
-			//coeff_fill(&bsi,&audblk,&stream_coeffs);
+			/* coeff_fill(&bsi,&audblk,&stream_coeffs); */
 			/* FIXME Perform dynamic range compensation */
 			/* Convert the frequency data into time samples */
 			imdct(&stream_coeffs,&stream_samples);
 			/* FIXME downmix all channels into the left / right */
 			/* Send the samples to the output device */
-			//output_samples(&stream_samples);
+			/*output_samples(&stream_samples);*/
 		}
 	}
 
@@ -59,7 +61,7 @@ decode_fill_syncinfo(bitstream_t *bs)
 	data = bitstream_get(bs,16);
 	if(data != 0x0b77)
 	{
-		//FIXME - if we don't have sync, then do proper synchronization
+		/* FIXME - if we don't have sync, then do proper synchronization */
 		printf("Arghh!\n");
 		exit(1);
 	}
@@ -79,7 +81,7 @@ decode_fill_syncinfo(bitstream_t *bs)
 	syncinfo.frmsizecod = bitstream_get(bs,6);
 
 
-	//FIXME insert stats here
+	/*FIXME insert stats here*/
 }
 
 /*
@@ -89,7 +91,6 @@ void
 decode_fill_bsi(bitstream_t *bs)
 {
 	uint_32 i;
-	uint_16 nfchans[] = [2,1,2,3,3,4,4,5];
 
 	/* Check the AC-3 version number */
 	bsi.bsid = bitstream_get(bs,5);
@@ -101,7 +102,7 @@ decode_fill_bsi(bitstream_t *bs)
 	bsi.acmod = bitstream_get(bs,3);
 	/* Predecode the number of full bandwidth channels as we use this
 	 * number a lot */
-	bsi.nfchans = nfchans[acmod];
+	bsi.nfchans = nfchans[bsi.acmod];
 
 	/* If it is in use, get the centre channel mix level */
 	if ((bsi.acmod & 0x1) && (bsi.acmod != 0x1))
@@ -112,7 +113,7 @@ decode_fill_bsi(bitstream_t *bs)
 		bsi.surmixlev = bitstream_get(bs,2);
 
 	/* Get the dolby surround mode if in 2/0 mode */
-	if(acmode==0x2)
+	if(bsi.acmod == 0x2)
 		bsi.dsurmod= bitstream_get(bs,2);
 
 	/* Is the low frequency effects channel on? */
@@ -212,14 +213,14 @@ decode_fill_bsi(bitstream_t *bs)
 			bsi.addbsi[i] = bitstream_get(bs,8);
 	}
 
-	//FIXME insert stats here
+	/*FIXME insert stats here*/
 }
 
 /* More pain inducing parsing */
 void
 decode_fill_audblk(bitstream_t *bs)
 {
-	int i;
+	int i,j;
 
 	for (i=0;i < bsi.nfchans; i++)
 	{
@@ -235,7 +236,7 @@ decode_fill_audblk(bitstream_t *bs)
 
 	/* Does dynamic range control exist? */
 	audblk.dynrnge = bitstream_get(bs,1);
-	if (bsi.dynrnge)
+	if (audblk.dynrnge)
 	{
 		/* Get dynamic range info */
 		audblk.dynrng = bitstream_get(bs,8);
@@ -246,7 +247,7 @@ decode_fill_audblk(bitstream_t *bs)
 	{
 		/* Does dynamic range control two exist? */
 		audblk.dynrng2e = bitstream_get(bs,1);
-		if (bsi.dynrng2e)
+		if (audblk.dynrng2e)
 		{
 			/* Get dynamic range info */
 			audblk.dynrng2 = bitstream_get(bs,8);
@@ -263,22 +264,99 @@ decode_fill_audblk(bitstream_t *bs)
 		{
 			for(i=0;i < bsi.nfchans; i++)
 				audblk.chincpl[i] = bitstream_get(bs,1);
-			if(acmod == 0x2)
+			if(bsi.acmod == 0x2)
 				audblk.phsflginu = bitstream_get(bs,1);
 			audblk.cplbegf = bitstream_get(bs,4);
 			audblk.cplendf = bitstream_get(bs,4);
-			audlbk.ncplsubnd = 3 + audlbk.cplendf - audlbk.cplbegf;
+			audblk.ncplsubnd = (audblk.cplendf + 2) - audblk.cplbegf + 1;
 
-			for(i=1
+			/* The number of combined subbands is ncplsubnd minus each combined
+			 * band */
+			audblk.ncplbnd = audblk.ncplsubnd; 
 
+			for(i=1;i < audblk.ncplsubnd; i++)
+			{
+				audblk.cplbndstrc[i] = bitstream_get(bs,1);
+				audblk.ncplbnd -= audblk.cplbndstrc[i];
+			}
 
+			/* Loop through all the channels and get their coupling co-ords */	
+			for(i=0;i < bsi.nfchans;i++)
+			{
+				if(!audblk.chincpl[i])
+					continue;
 
+				/* Is there new coupling co-ordinate info? */
+				audblk.cplcoe[i] = bitstream_get(bs,1);
+
+				if(audblk.cplcoe[i])
+				{
+					audblk.mstrcplco[i] = bitstream_get(bs,1); 
+					for(j=0;j < audblk.ncplbnd; j++)
+					{
+						audblk.cplcoexp[i][j] = bitstream_get(bs,4); 
+						audblk.cplcomant[i][j] = bitstream_get(bs,4); 
+					}
+				}
+			}
+
+			/* If we're in dual mono mode, there's going to be some phase info */
+			if( (bsi.acmod == 0x2) && audblk.phsflginu && 
+					(audblk.cplcoe[0] || audblk.cplcoe[1]))
+			{
+				for(j=0;j < audblk.ncplbnd; j++)
+					audblk.phsflg[j] = bitstream_get(bs,1); 
+
+			}
 		}
-
-
 	}
 
-	
+	/* If we're in dual mono mode, there may be a rematrix strategy */
+	if(bsi.acmod == 0x2)
+	{
+		audblk.rematstr = bitstream_get(bs,1);
+		if(audblk.rematstr)
+		{
+			if((audblk.cplbegf > 2) || (audblk.cplinu == 0)) 
+			{ 
+				for(i = 0; i < 4; i++) 
+					audblk.rematflg[i] = bitstream_get(bs,1);
+			}
+			if((audblk.cplbegf <= 2) && audblk.cplinu) 
+			{ 
+				for(i = 0; i < 3; i++) 
+					audblk.rematflg[i] = bitstream_get(bs,1);
+			} 
+			if((audblk.cplbegf == 0) && audblk.cplinu) 
+				for(i = 0; i < 2; i++) 
+					audblk.rematflg[i] = bitstream_get(bs,1);
 
+		}
+	}
 
+	if (audblk.cplinu)
+	{
+		/* Get the coupling channel exponents/mantissa */
+		audblk.cplexpstr = bitstream_get(bs,2);
+	}
+
+	for(i = 0; i < bsi.nfchans; i++)
+		audblk.chexpstr[i] = bitstream_get(bs,2);
+
+	/* Get the exponent strategy for lfe channel */
+	if(bsi.lfeon) 
+		audblk.lfeexpstr = bitstream_get(bs,1);
+
+	/* Determine the bandwidths of all the independent variables */
+	for(i = 0; i < bsi.nfchans; i++) 
+	{ 
+		if((audblk.chexpstr[i] != 0 /* reuse */) && (!audblk.chincpl[i]))
+				audblk.chbwcod[i] = bitstream_get(bs,6);
+	}
+
+	/* Get the coupling exponents if they exist */
+	if(audblk.cplinu && (audblk.cplexpstr != 0 /* reuse */))
+	{
+		audblk.cplabsexp = bitstream_get(bs,4);
+	}
 }

@@ -111,7 +111,7 @@ typedef struct audblk_s
 		/* dynamic range 2 gain */
 		uint_16 dynrng2;
 	/* coupling strategy exists */
-	uint_16 cpistre;
+	uint_16 cplstre;
 		/* coupling in use */
 		uint_16 cplinu;
 			/* channel coupled */
@@ -123,6 +123,44 @@ typedef struct audblk_s
 			uint_16 cplbegf;
 			/* coupling end frequency code */
 			uint_16 cplendf;
+			/* Number of coupling sub-bands
+			 * This data isn't actually in the AC3 stream, but derived from
+			 * cplbegf and cplendf */
+			uint_16 ncplsubnd;
+			/* coupling band structure bits */
+			uint_16 cplbndstrc[18];
+			/* Number of combined coupling sub-bands
+			 * This data isn't actually in the AC3 stream, but derived from
+			 * ncplsubnd and cplbndstrc */
+			uint_16 ncplbnd;
+			/* Do coupling co-ords exist for this channel? */
+			uint_16 cplcoe[5];
+			/* Master coupling co-ordinate */
+			uint_16 mstrcplco[5];
+			/* Per coupling band coupling co-ordinates */
+			uint_16 cplcoexp[5][18];
+			uint_16 cplcomant[5][18];
+			/* Phase flags for dual mono */
+			uint_16 phsflg[18];
+	/* Is there a rematrixing strategy */
+	uint_16 rematstr;
+		/* Rematrixing bits */
+		uint_16 rematflg[4];
+	/* Coupling exponent strategy */
+	uint_16 cplexpstr;
+	/* Exponent strategy for full bandwidth channels */
+	uint_16 chexpstr[5];
+	/* Exponent strategy for lfe channel */
+	uint_16 lfeexpstr;
+	/* Channel bandwidth for independent channels */
+	uint_16 chbwcod[5];
+		/* The absolute coupling exponent */
+		uint_16 cplabsexp;
+
+
+
+
+		
 			
 
 
