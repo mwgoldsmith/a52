@@ -164,13 +164,13 @@ static inline uint16_t min(int16_t a,int16_t b)
 }
 
 void bit_allocate(int fscod, audblk_t * audblk, ac3_ba_t * ba, uint16_t start,
-		  uint16_t end, uint16_t fastleak, uint16_t slowleak,
+		  uint16_t end, int16_t fastleak, int16_t slowleak,
 		  uint8_t * exp, uint16_t * bap, int is_lfe)
 {
     int16_t fgain;
     uint16_t snroffset;
     int i, j;
-    int bndstrt, bndend;
+    int bndstrt;
 
     /* Do some setup before we do the bit alloc */
     sdecay = slowdec[audblk->sdcycod];
@@ -209,51 +209,49 @@ void bit_allocate(int fscod, audblk_t * audblk, ac3_ba_t * ba, uint16_t start,
 	bndpsd[j++] = 3072 - psd;
     } while (i < end);
 
-    //ba_compute_excitation(start, end , fgain, fastleak, slowleak, is_lfe, bndpsd, excite);
+    // j = bndend
 
-    bndend = j;
+    i = bndstrt;
+    if (i == 0) {
+	int lowcomp = 0;
 
-{
-    int16_t lowcomp = 0;
-    int16_t begin = 0;
-
-    if (bndstrt == 0) { /* For fbw and lfe channels */
-	lowcomp = calc_lowcomp(lowcomp, bndpsd[0], bndpsd[1], 0); 
-	excite[0] = bndpsd[0] - fgain - lowcomp; 
+	lowcomp = calc_lowcomp(lowcomp, bndpsd[0], bndpsd[1], 0);
+	excite[0] = bndpsd[0] - fgain - lowcomp;
 	lowcomp = calc_lowcomp(lowcomp, bndpsd[1], bndpsd[2], 1);
-	excite[1] = bndpsd[1] - fgain - lowcomp; 
-		
+	excite[1] = bndpsd[1] - fgain - lowcomp;
+
 	i = 2;
 	do {
 	    if (!(is_lfe && (i == 6)))
-		lowcomp = calc_lowcomp(lowcomp, bndpsd[i], bndpsd[i+1], i); 
-	    fastleak = bndpsd[i] - fgain; 
-	    slowleak = bndpsd[i] - sgain; 
+		lowcomp = calc_lowcomp(lowcomp, bndpsd[i], bndpsd[i+1], i);
+	    fastleak = bndpsd[i] - fgain;
+	    slowleak = bndpsd[i] - sgain;
 	    excite[i++] = fastleak - lowcomp;
 	} while ((i < 7) && (bndpsd[i] < bndpsd[i-1]));
 
-	for (; i < min(bndend, 22); i++) { 
+	while ((i < j) && (i < 22)) {
 	    if (!(is_lfe && (i == 6)))
-		lowcomp = calc_lowcomp(lowcomp, bndpsd[i], bndpsd[i+1], i); 
-	    fastleak -= fdecay ; 
-	    fastleak = max(fastleak, bndpsd[i] - fgain); 
-	    slowleak -= sdecay ; 
-	    slowleak = max(slowleak, bndpsd[i] - sgain); 
-	    excite[i] = max(fastleak - lowcomp, slowleak); 
-	} 
-	begin = 22; 
-    } 
-    else /* For coupling channel */ 
-	begin = bndstrt; 
+		lowcomp = calc_lowcomp(lowcomp, bndpsd[i], bndpsd[i+1], i);
+	    fastleak -= fdecay;
+	    if (fastleak < bndpsd[i] - fgain)
+		fastleak = bndpsd[i] - fgain;
+	    slowleak -= sdecay;
+	    if (slowleak < bndpsd[i] - sgain)
+		slowleak = bndpsd[i] - sgain;
+	    excite[i++] = ((fastleak - lowcomp > slowleak) ?
+			   fastleak - lowcomp : slowleak);
+	}
+    }
 
-    for (i = begin; i < bndend; i++) { 
-	fastleak -= fdecay; 
-	fastleak = max(fastleak, bndpsd[i] - fgain); 
-	slowleak -= sdecay; 
-	slowleak = max(slowleak, bndpsd[i] - sgain); 
-	excite[i] = max(fastleak, slowleak) ; 
-    } 
-}
+    while (i < j) {
+	fastleak -= fdecay;
+	if (fastleak < bndpsd[i] - fgain)
+	    fastleak = bndpsd[i] - fgain;
+	slowleak -= sdecay;
+	if (slowleak < bndpsd[i] - sgain)
+	    slowleak = bndpsd[i] - sgain;
+	excite[i++] = (fastleak > slowleak) ? fastleak : slowleak;
+    }
 
     ba_compute_mask(start, end, fscod, ba->deltbae, ba->deltnseg,
 		    ba->deltoffst, ba->deltba, ba->deltlen, excite, mask);
