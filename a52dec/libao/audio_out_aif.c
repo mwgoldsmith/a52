@@ -44,7 +44,7 @@ static uint8_t aif_header[] = {
     'F', 'O', 'R', 'M', 0xff, 0xff, 0xff, 0xfe, 'A', 'I', 'F', 'F',
     'C', 'O', 'M', 'M', 0, 0, 0, 18,
     0, 2, 0x3f, 0xff, 0xff, 0xf6, 0, 16, 0x40, 0x0e, -1, -1, 0, 0, 0, 0, 0, 0,
-    'S', 'S', 'N', 'D', 0xff, 0xff, 0xff, 0xd8
+    'S', 'S', 'N', 'D', 0xff, 0xff, 0xff, 0xd8, 0, 0, 0, 0, 0, 0, 0, 0
 };
 
 int aif_setup (ao_instance_t * _instance, int sample_rate, int * flags,
@@ -114,7 +114,7 @@ void aif_close (ao_instance_t * _instance)
     if (fseek (stdout, 0, SEEK_SET) < 0)
 	return;
 
-    store4 (aif_header + 4, instance->size + 38);
+    store4 (aif_header + 4, instance->size + 46);
     store4 (aif_header + 22, instance->size / 4);
     store4 (aif_header + 42, instance->size);
     fwrite (aif_header, sizeof (aif_header), 1, stdout);
