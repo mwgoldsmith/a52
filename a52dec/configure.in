@@ -15,57 +15,59 @@ dnl Checks for compiler
 AC_PROG_CC
 AC_PROG_GCC_TRADITIONAL
 
+dnl CC-specific flags
+AC_SUBST([OPT_CFLAGS])
 if test x"$GCC" = x"yes"; then
 
     dnl GCC-specific flags
 
     dnl -Wall
     dnl -Werror moved to the end to not disturb the configure script
-    OPT_CFLAGS="$CFLAGS -Wall"
-    AC_TRY_CFLAGS([$OPT_CFLAGS],[CFLAGS=$OPT_CFLAGS])
+    TRY_CFLAGS="$OPT_CFLAGS -Wall"
+    AC_TRY_CFLAGS([$TRY_CFLAGS $CFLAGS],[OPT_CFLAGS=$TRY_CFLAGS])
 
     dnl -O3
     changequote(<<,>>)
-    OPT_CFLAGS=`echo "$CFLAGS"|sed "s/-O[0-9]*//g"`
+    TRY_CFLAGS=`echo "$OPT_CFLAGS $CFLAGS"|sed "s/-O[0-9]*//g"`
     changequote([,])
-    OPT_CFLAGS="$OPT_CFLAGS -O3"
-    AC_TRY_CFLAGS([$OPT_CFLAGS],[CFLAGS=$OPT_CFLAGS])
+    TRY_CFLAGS="$TRY_CFLAGS -O3"
+    AC_TRY_CFLAGS([$TRY_CFLAGS],[OPT_CFLAGS=$TRY_CFLAGS; CFLAGS=""])
 
     dnl -fomit-frame-pointer
-    OPT_CFLAGS="$CFLAGS -fomit-frame-pointer"
-    AC_TRY_CFLAGS([$OPT_CFLAGS],[CFLAGS=$OPT_CFLAGS])
+    TRY_CFLAGS="$OPT_CFLAGS -fomit-frame-pointer"
+    AC_TRY_CFLAGS([$TRY_CFLAGS $CFLAGS],[OPT_CFLAGS=$TRY_CFLAGS])
 
     dnl arch-specific flags
     case "$host" in
     i?86-* | k?-*)
 	case "$host" in
-	i386-*) OPT_CFLAGS="$CFLAGS -mcpu=i386";;
-	i486-*) OPT_CFLAGS="$CFLAGS -mcpu=i486";;
-	i586-*) OPT_CFLAGS="$CFLAGS -mcpu=pentium";;
-	i686-*) OPT_CFLAGS="$CFLAGS -mcpu=pentiumpro";;
-	k6-*)   OPT_CFLAGS="$CFLAGS -mcpu=k6";;
+	i386-*) TRY_CFLAGS="$OPT_CFLAGS -mcpu=i386";;
+	i486-*) TRY_CFLAGS="$OPT_CFLAGS -mcpu=i486";;
+	i586-*) TRY_CFLAGS="$OPT_CFLAGS -mcpu=pentium";;
+	i686-*) TRY_CFLAGS="$OPT_CFLAGS -mcpu=pentiumpro";;
+	k6-*)   TRY_CFLAGS="$OPT_CFLAGS -mcpu=k6";;
 	esac
-	AC_TRY_CFLAGS([$OPT_CFLAGS],[CFLAGS=$OPT_CFLAGS]);;
+	AC_TRY_CFLAGS([$TRY_CFLAGS $CFLAGS],[OPT_CFLAGS=$TRY_CFLAGS]);;
     sparc-* | sparc64-*)
-	OPT_CFLAGS="$CFLAGS -mtune=ultrasparc"
-	AC_TRY_CFLAGS([$OPT_CFLAGS],[CFLAGS=$OPT_CFLAGS]);;
+	TRY_CFLAGS="$OPT_CFLAGS -mtune=ultrasparc"
+	AC_TRY_CFLAGS([$TRY_CFLAGS $CFLAGS],[OPT_CFLAGS=$TRY_CFLAGS]);;
     esac
 elif test x"$CC" = x"tcc" -a x"`$CC -version 2>&1 | grep TenDRA`" != x""; then
     dnl TenDRA portability checking compiler
     TENDRA=yes
-    CFLAGS="-Xp -Yansi -f`pwd`/include/tendra.h -DELIDE_CODE"
+    OPT_CFLAGS="-Xp -Yansi -f`pwd`/include/tendra.h -DELIDE_CODE"
     enable_mlib=no
     enable_oss=no
     enable_solaris_audio=no
 elif test x"$CC" = x"icc" -a x"`$CC -V 2>&1 | grep Intel`" != x""; then
     dnl Intel C++ compiler
-    CFLAGS="-g -O3 -unroll -ip"
+    OPT_CFLAGS="-g -O3 -unroll -ip"; CFLAGS=""
 else
     dnl non-gcc flags - we probably need exact configuration triplets here.
     case "$host" in
     sparc-sun-solaris*)
-	OPT_CFLAGS="$CFLAGS -xCC -fast -xO5"
-	AC_TRY_CFLAGS([$OPT_CFLAGS],[CFLAGS=$OPT_CFLAGS]);;
+	TRY_CFLAGS="$OPT_CFLAGS -xCC -fast -xO5"
+	AC_TRY_CFLAGS([$TRY_CFLAGS $CFLAGS],[OPT_CFLAGS=$TRY_CFLAGS]);;
     esac
 fi
 
@@ -100,11 +102,11 @@ AC_ARG_ENABLE([warnings],
     [  --enable-warnings       treat warnings as errors])
 if test x"$enable_warnings" = x"yes" -a x"$GCC" = x"yes"; then
     dnl compiler warnings
-    OPT_CFLAGS="$CFLAGS -Werror"
-    AC_TRY_CFLAGS([$OPT_CFLAGS],[CFLAGS=$OPT_CFLAGS])
+    TRY_CFLAGS="$OPT_CFLAGS -Werror"
+    AC_TRY_CFLAGS([$TRY_CFLAGS $CFLAGS],[OPT_CFLAGS=$TRY_CFLAGS])
 elif test x"$TENDRA" = x"yes"; then
     dnl TenDRA portability checking compiler
-    CFLAGS="$CFLAGS -DTenDRA_check"
+    OPT_CFLAGS="$OPT_CFLAGS -DTenDRA_check"
 fi
 
 AC_C_ATTRIBUTE_ALIGNED

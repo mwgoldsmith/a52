@@ -1,3 +1,5 @@
+AM_CFLAGS = $(OPT_CFLAGS)
+
 noinst_LIBRARIES = libao.a
 libao_a_SOURCES = audio_out.c float2s16.c audio_out_null.c audio_out_float.c \
 		  audio_out_oss.c audio_out_solaris.c audio_out_al.c \
