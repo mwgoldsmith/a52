@@ -208,9 +208,24 @@ static int demux (uint8_t * buf, uint8_t * end, int flags)
 		goto continue_header;
 	    }
 	}
-	if (demux_pid && (header[3] != 0xbd)) {
-	    fprintf (stderr, "bad stream id %x\n", header[3]);
-	    exit (1);
+	if (demux_pid) {
+	    if (header[3] != 0xbd) {
+		fprintf (stderr, "bad stream id %x\n", header[3]);
+		exit (1);
+	    }
+	    NEEDBYTES (9);
+	    if ((header[6] & 0xc0) != 0x80) {	/* not mpeg2 */
+		fprintf (stderr, "bad multiplex - not mpeg2\n");
+		exit (1);
+	    }
+	    len = 9 + header[8];
+	    NEEDBYTES (len);
+	    DONEBYTES (len);
+	    bytes = 6 + (header[4] << 8) + header[5] - len;
+	    fwrite (buf, end - buf, 1, stdout);
+	    state = DEMUX_DATA;
+	    state_bytes = bytes - (end - buf);
+	    return 0;
 	}
 	switch (header[3]) {
 	case 0xb9:	/* program end code */
@@ -258,7 +273,7 @@ static int demux (uint8_t * buf, uint8_t * end, int flags)
 		NEEDBYTES (len);
 		/* header points to the mpeg1 pes header */
 	    }
-	    if ((!demux_pid) && ((header-1)[len] != demux_track)) {
+	    if ((header-1)[len] != demux_track) {
 		DONEBYTES (len);
 		bytes = 6 + (header[4] << 8) + header[5] - len;
 		if (bytes <= 0)
@@ -269,15 +284,15 @@ static int demux (uint8_t * buf, uint8_t * end, int flags)
 	    NEEDBYTES (len);
 	    DONEBYTES (len);
 	    bytes = 6 + (header[4] << 8) + header[5] - len;
-	    if (demux_pid || (bytes > end - buf)) {
+	    if (bytes > end - buf) {
 		fwrite (buf, end - buf, 1, stdout);
 		state = DEMUX_DATA;
 		state_bytes = bytes - (end - buf);
 		return 0;
-	    } else if (bytes <= 0)
-		continue;
-	    fwrite (buf, bytes, 1, stdout);
-	    buf += bytes;
+	    } else if (bytes > 0) {
+		fwrite (buf, bytes, 1, stdout);
+		buf += bytes;
+	    }
 	    break;
 	default:
 	    if (header[3] < 0xb9) {
