@@ -1,3 +1,7 @@
+.*.swp
+*~
+Makefile.in
+Makefile
 bitstream_test
 imdct_test
 
