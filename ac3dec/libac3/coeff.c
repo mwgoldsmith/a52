@@ -168,10 +168,6 @@ static const float q_5[15] = {
     ( 10 << 15)/15,( 12 << 15)/15,( 14 << 15)/15
 };
 
-//
-// Scale factors for convert_to_float
-//
-
 static const uint32_t u32_scale_factors[25] = 
 {
 	0x38000000, //2 ^ -(0 + 15)
@@ -203,7 +199,6 @@ static const uint32_t u32_scale_factors[25] =
 
 static float *scale_factor = (float*)u32_scale_factors;
 
-//These store the persistent state of the packed mantissas
 static float q_1[2];
 static float q_2[2];
 static float q_4;
@@ -214,28 +209,31 @@ static int q_4_pointer;
 //Conversion from bap to number of bits in the mantissas
 static uint16_t qnttztab[10] = {5, 6, 7, 8, 9, 10, 11, 12, 14, 16};
 
-static void    coeff_reset(void);
-static void    coeff_uncouple_ch(float samples[],ac3_state_t *state,audblk_t *audblk,uint32_t ch);
+static void coeff_uncouple_ch (float * samples, ac3_state_t * state,
+			       audblk_t * audblk, int ch);
 
 static void coeff_get (float * coeff, uint8_t * exp, int8_t * bap,
 		       int dither, int start, int end)
 {
     int i;
 
-    for (i = 0; i < end; i++)
-	//coeff[i] = coeff_get_float (bap[i], dither, exp[i]);
+    i = 0;
+    while (i < end)
 	switch (bap[i]) {
 	case 0:
-	    if (dither)
-		coeff[i] = dither_gen () * scale_factor[exp[i]];
-	    else
-		coeff[i] = 0;
-	    break;
+	    if (dither) {
+		coeff[i++] = dither_gen () * scale_factor[exp[i]];
+		continue;
+	    } else {
+		coeff[i++] = 0;
+		continue;
+	    }
 
 	case 1:
-	    if (q_1_pointer >= 0)
-		coeff[i] = q_1[q_1_pointer--] * scale_factor[exp[i]];
-	    else {
+	    if (q_1_pointer >= 0) {
+		coeff[i++] = q_1[q_1_pointer--] * scale_factor[exp[i]];
+		continue;
+	    } else {
 		int code;
 
 		code = bitstream_get (5);
@@ -243,14 +241,15 @@ static void coeff_get (float * coeff, uint8_t * exp, int8_t * bap,
 		q_1_pointer = 1;
 		q_1[0] = q_1_2[code];
 		q_1[1] = q_1_1[code];
-		coeff[i] = q_1_0[code] * scale_factor[exp[i]];
+		coeff[i++] = q_1_0[code] * scale_factor[exp[i]];
+		continue;
 	    }
-	    break;
 
 	case 2:
-	    if (q_2_pointer >= 0)
-		coeff[i] = q_2[q_2_pointer--] * scale_factor[exp[i]];
-	    else {
+	    if (q_2_pointer >= 0) {
+		coeff[i++] = q_2[q_2_pointer--] * scale_factor[exp[i]];
+		continue;
+	    } else {
 		int code;
 
 		code = bitstream_get (7);
@@ -258,18 +257,19 @@ static void coeff_get (float * coeff, uint8_t * exp, int8_t * bap,
 		q_2_pointer = 1;
 		q_2[0] = q_2_2[code];
 		q_2[1] = q_2_1[code];
-		coeff[i] = q_2_0[code] * scale_factor[exp[i]];
+		coeff[i++] = q_2_0[code] * scale_factor[exp[i]];
+		continue;
 	    }
-	    break;
 
 	case 3:
-	    coeff[i] = q_3[bitstream_get (3)] * scale_factor[exp[i]];
-	    break;
+	    coeff[i++] = q_3[bitstream_get (3)] * scale_factor[exp[i]];
+	    continue;
 
 	case 4:
 	    if (q_4_pointer == 0) {
 		q_4_pointer = -1;
-		coeff[i] = q_4 * scale_factor[exp[i]];
+		coeff[i++] = q_4 * scale_factor[exp[i]];
+		continue;
 	    } else {
 		int code;
 
@@ -277,16 +277,17 @@ static void coeff_get (float * coeff, uint8_t * exp, int8_t * bap,
 
 		q_4_pointer = 0;
 		q_4 = q_4_1[code];
-		coeff[i] = q_4_0[code] * scale_factor[exp[i]];
+		coeff[i++] = q_4_0[code] * scale_factor[exp[i]];
+		continue;
 	    }
-	    break;
 
 	case 5:
-	    coeff[i] = q_5[bitstream_get (4)] * scale_factor[exp[i]];
-	    break;
+	    coeff[i++] = q_5[bitstream_get (4)] * scale_factor[exp[i]];
+	    continue;
 
 	default:
-	    coeff[i] = ((int16_t)(bitstream_get((qnttztab-6)[bap[i]]) << (16 - (qnttztab-6)[bap[i]]))) * scale_factor[exp[i]];
+	    coeff[i++] = ((int16_t)(bitstream_get((qnttztab-6)[bap[i]]) << (16 - (qnttztab-6)[bap[i]]))) * scale_factor[exp[i]];
+	    continue;
 	}
 }
 
@@ -296,50 +297,30 @@ coeff_unpack(ac3_state_t *state, audblk_t *audblk, stream_samples_t samples)
     uint16_t i;
     uint32_t done_cpl = 0;
 
-    coeff_reset();
+    q_1_pointer = q_2_pointer = q_4_pointer = -1;
 
-    for(i=0; i< state->nfchans; i++) {
+    for (i = 0; i < state->nfchans; i++) {
 	coeff_get (samples[i], audblk->fbw_exp[i], audblk->fbw_bap[i],
 		   audblk->dithflag[i], 0, audblk->endmant[i]);
 
-	if(audblk->cplinu && audblk->chincpl[i] && !(done_cpl)) {
-	    // ncplmant is equal to 12 * ncplsubnd
-	    // Don't dither coupling channel until channel separation so that
-	    // interchannel noise is uncorrelated
+	if (audblk->cplinu && audblk->chincpl[i] && !done_cpl) {
 	    coeff_get (audblk->cplcoeff, audblk->cpl_exp, audblk->cpl_bap,
 		       0, audblk->cplstrtmant, audblk->cplendmant);
 	    done_cpl = 1;
 	}
     }
 
-    //uncouple the channel if necessary
-    if(audblk->cplinu) {
-	for(i=0; i< state->nfchans; i++) {
-	    if(audblk->chincpl[i])
-		coeff_uncouple_ch(samples[i],state,audblk,i);
-	}
-    }
+    if (audblk->cplinu)
+	for (i = 0; i < state->nfchans; i++)
+	    if (audblk->chincpl[i])
+		coeff_uncouple_ch (samples[i], state, audblk, i);
 
-    if(state->lfeon) {
-	// There are always 7 mantissas for lfe, no dither for lfe 
+    if (state->lfeon)
 	coeff_get (samples[5], audblk->lfe_exp, audblk->lfe_bap, 0, 0, 7);
-    }
 }
 
-//
-// Reset the mantissa state
-//
-static void 
-coeff_reset(void)
-{
-    q_1_pointer = q_2_pointer = q_4_pointer = -1;
-}
-
-//
-// Uncouple the coupling channel into a fbw channel
-//
 static void
-coeff_uncouple_ch(float samples[],ac3_state_t *state,audblk_t *audblk,uint32_t ch)
+coeff_uncouple_ch(float samples[],ac3_state_t *state,audblk_t *audblk,int ch)
 {
     uint32_t bnd = 0;
     uint32_t sub_bnd = 0;
