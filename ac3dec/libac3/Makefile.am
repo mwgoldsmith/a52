@@ -5,5 +5,6 @@ lib_LTLIBRARIES = libac3.la
 libac3_la_SOURCES = bitstream.c imdct.c imdct_mlib.c bit_allocate.c parse.c \
 		    downmix.c
 libac3_la_LIBADD = @LIBAC3_LIBS@ -lm
+libac3_la_LDFLAGS = -no-undefined
 
 EXTRA_DIST = configure.incl ac3_internal.h bitstream.h tables.h
