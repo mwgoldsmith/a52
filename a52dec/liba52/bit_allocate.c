@@ -138,19 +138,19 @@ void a52_bit_allocate (a52_state_t * state, a52_ba_t * ba, int bndstart,
     int halfrate;
 
     halfrate = state->halfrate;
-    fdecay = (63 + 20 * state->fdcycod) >> halfrate;
-    fgain = 128 + 128 * ba->fgaincod;
-    sdecay = (15 + 2 * state->sdcycod) >> halfrate;
-    sgain = slowgain[state->sgaincod];
-    dbknee = dbpbtab[state->dbpbcod];
+    fdecay = (63 + 20 * ((state->bai >> 7) & 3)) >> halfrate;	/* fdcycod */
+    fgain = 128 + 128 * (ba->bai & 7);				/* fgaincod */
+    sdecay = (15 + 2 * (state->bai >> 9)) >> halfrate;		/* sdcycod */
+    sgain = slowgain[(state->bai >> 5) & 3];			/* sgaincod */
+    dbknee = dbpbtab[(state->bai >> 3) & 3];			/* dbpbcod */
     hth = hthtab[state->fscod];
     /*
      * if there is no delta bit allocation, make deltba point to an area
      * known to contain zeroes. baptab+156 here.
      */
     deltba = (ba->deltbae == DELTA_BIT_NONE) ? baptab + 156 : ba->deltba;
-    floor = floortab[state->floorcod];
-    snroffset = 960 - 64 * state->csnroffst - 4 * ba->fsnroffst + floor;
+    floor = floortab[state->bai & 7];				/* floorcod */
+    snroffset = 960 - 64 * state->csnroffst - 4 * (ba->bai >> 3) + floor;
     floor >>= 5;
 
     i = bndstart;
