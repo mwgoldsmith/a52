@@ -19,18 +19,29 @@
 #include <fcntl.h>
 #include <sys/audioio.h>
 #include <sys/ioctl.h>
-
+#include <stropts.h>
+#include <signal.h>
 
 #include "ac3.h"
 #include "decode.h"
 #include "output.h"
+#include "ring_buffer.h"
 
 
 /* Global to keep track of old state */
 static char dev[] = "/dev/audio";
 static audio_info_t info;
 static int fd;
-static sint_16 out_buf[1024];
+
+static void sig_handler(int foo)
+{
+	sint_16 *out_buf;
+
+	out_buf = rb_begin_read();
+	write(fd, out_buf,2048);
+	rb_end_read();
+	printf("foo\n");
+}
 
 /*
  * open the audio device for writing to
@@ -74,6 +85,25 @@ int output_open(int bits, int rate, int channels)
 
 	printf("buffer_size = %d\n",info.play.buffer_size);
 
+	/* Initialize the ring buffer */
+	rb_init();
+
+	/* Setup asynchronous io */
+
+  if(ioctl(fd,I_SETSIG , S_OUTPUT | S_WRBAND) < 0)
+  {
+    fprintf(stderr, "%s: Error setting up async I/O\n",strerror(errno));
+    goto ERR;
+  }
+
+	if (signal(SIGPOLL,sig_handler) == SIG_ERR)
+  {
+    fprintf(stderr, "%s: Error setting up async I/O\n",strerror(errno));
+    goto ERR;
+  }
+	
+	
+
 return 1;
 
 ERR:
@@ -81,6 +111,7 @@ ERR:
   return 0;
 }
 
+int first = 4;
 /*
  * play the sample to the already opened file descriptor
  */
@@ -91,8 +122,7 @@ void output_play(stream_samples_t *samples)
 	float max_right =  0.0;
 	float left_sample;
 	float right_sample;
-	int bytes_left = 0;
-	int bytes_written = 0;
+	sint_16 *out_buf;
 
 	if(fd < 0)
 		return;
@@ -100,6 +130,8 @@ void output_play(stream_samples_t *samples)
 	/* Take the floating point audio data and convert it into
 	 * 16 bit signed PCM data */
 
+
+	out_buf = rb_begin_write();
 
 	for(i=0; i < 512; i++)
 	{
@@ -120,21 +152,18 @@ void output_play(stream_samples_t *samples)
 		//fprintf(stderr,"lsample = %1.6e rsample = %1.6e\n",left_sample,right_sample);
 	}
 
+	rb_end_write();
+
 	//FIXME remove
 	//printf("max_left = %f max_right = %f\n",max_left,max_right);
 
-	bytes_left = 2048;
-
-	bytes_written = write(fd, out_buf,bytes_left);
-#if 0
-	while (bytes_left)
+	if(first)
 	{
-		bytes_written = write(fd, out_buf,bytes_left);
-		bytes_left -= bytes_written;
-		if(bytes_left > 0)
-			usleep(5);
+		out_buf = rb_begin_read();
+		write(fd, out_buf,2048);
+		rb_end_read();
+		first--;
 	}
-#endif
 }
 
 
