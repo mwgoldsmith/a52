@@ -1,4 +1,4 @@
-AM_CFLAGS = $(OPT_CFLAGS)
+AM_CFLAGS = $(A52DEC_CFLAGS)
 
 noinst_PROGRAMS = compare
 compare_SOURCES = compare.c
