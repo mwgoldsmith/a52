@@ -218,7 +218,7 @@ void float2s16_wav (float * _f, int16_t * s16, int flags)
 	}
 	break;
     case A52_2F1R:
-	float2s16_3 (_f, 16);
+	float2s16_3 (_f, s16);
 	break;
     case A52_3F1R:
 	for (i = 0; i < 256; i++) {
