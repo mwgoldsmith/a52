@@ -163,8 +163,9 @@ void bit_allocate(int fscod, audblk_t * audblk, ac3_ba_t * ba, uint16_t start,
 		  uint8_t * exp, uint16_t * bap)
 {
     static int16_t slowgain[] = { 0x540, 0x4d8, 0x478, 0x410 };
-    static int16_t dbpbtab[]  = { 0x000, 0x700, 0x900, 0xb00 };
-    static int16_t floortab[] = { 0x2f0, 0x2b0, 0x270, 0x230, 0x1f0, 0x170, 0x0f0, 0xf800 };
+    static int16_t dbpbtab[]  = { 0xc00, 0x500, 0x300, 0x100 };
+    static int16_t floortab[] = {0x910, 0x950, 0x990, 0x9d0,
+				 0xa10, 0xa90, 0xb10, 0x1400 };
 
     int16_t fgain;
     int16_t snroffset;
@@ -174,27 +175,16 @@ void bit_allocate(int fscod, audblk_t * audblk, ac3_ba_t * ba, uint16_t start,
     int psd, mask;
     int16_t * hth;
 
-    /* Do some setup before we do the bit alloc */
-    sdecay = 15 + 2 * audblk->sdcycod;
     fdecay = 63 + 20 * audblk->fdcycod;
+    fgain = (ba->fgaincod + 1) << 7;
+    sdecay = 15 + 2 * audblk->sdcycod;
     sgain = slowgain[audblk->sgaincod];
     dbknee = dbpbtab[audblk->dbpbcod];
-    floor = floortab[audblk->floorcod];
-
-    fgain = (ba->fgaincod + 1) << 7;
-    snroffset = 64 * audblk->csnroffst + 4 * ba->fsnroffst - 960 + floor;
-
-    fastleak = 3072 - fastleak;
-    slowleak = 3072 - slowleak;
-    dbknee = 3072 - dbknee;
-    snroffset = 3072 - snroffset;
-    floor = (3072 - floor) >> 5;
-
-    deltba = NULL;
-    if ((ba->deltbae == DELTA_BIT_REUSE) || (ba->deltbae == DELTA_BIT_NEW))
-	deltba = ba->deltba;
-
     hth = hth_[fscod];
+    deltba = (ba->deltbae == DELTA_BIT_NONE) ? NULL : ba->deltba;
+    floor = floortab[audblk->floorcod];
+    snroffset = 960 - 64 * audblk->csnroffst - 4 * ba->fsnroffst + floor;
+    floor >>= 5;
 
     i = masktab[start];
     j = start;
@@ -282,7 +272,7 @@ void bit_allocate(int fscod, audblk_t * audblk, ac3_ba_t * ba, uint16_t start,
 		break;
 	    }
 	}
-	// psd min:-289
+	// minpsd = -289
 	UPDATE_LEAK ();
 	mask = (fastleak < slowleak) ? fastleak : slowleak;
 	COMPUTE_MASK ();
@@ -290,8 +280,8 @@ void bit_allocate(int fscod, audblk_t * audblk, ac3_ba_t * ba, uint16_t start,
 	j = startband;
 	do {
 	    bap[j++] = baptab[63 - max (0, min (63, 63 + mask + 4 * exp[j]))];
-	    // psd-mask max:5019=sgain-deltba+snroffset+31(and)
-	    // psd-mask min:-4705=0-maxpsd+fgain-deltba+snroffset
+	    // max(mask+4*exp)=147=-(minpsd+fgain-deltba-snroffset)>>5+4*exp
+	    // min(mask+4*exp)=-156=-(sgain-deltba-snroffset)>>5
 	} while (j < endband);
     } while (j < end);
 }

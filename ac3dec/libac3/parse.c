@@ -399,8 +399,8 @@ int parse_audblk (ac3_state_t * state, audblk_t * audblk)
 	    if (audblk->cplinu)
 		bit_allocate (state->fscod, audblk, &audblk->cplba,
 			      audblk->cplstrtmant, audblk->cplendmant,
-			      (audblk->cplfleak << 8) + 768,
-			      (audblk->cplsleak << 8) + 768,
+			      2304 - (audblk->cplfleak << 8),
+			      2304 - (audblk->cplsleak << 8),
 			      audblk->cpl_exp, audblk->cpl_bap);
 	    for (i = 0; i < state->nfchans; i++)
 		bit_allocate (state->fscod, audblk, audblk->ba + i, 0,
