@@ -584,6 +584,7 @@ int main (int argc, char ** argv)
     uint32_t accel;
 
 #ifdef HAVE_IO_H
+    setmode (fileno (stdin), O_BINARY);
     setmode (fileno (stdout), O_BINARY);
 #endif
 
