@@ -718,8 +718,9 @@ int ac3_block (ac3_state_t * state, sample_t * samples)
 	    j = state->cplendmant;
 	} else
 	    j = state->endmant[i];
-	for (; j < 256; j++)
+	do
 	    (samples + 256 * i)[j] = 0;
+	while (++j < 256);
     }
 
     if (state->acmod == 2) {
