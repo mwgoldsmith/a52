@@ -23,7 +23,6 @@
  */
 
 typedef float sample_t;
-//typedef double sample_t;
 
 typedef struct ac3_ba_s {
     uint16_t fsnroffst;		// fine SNR offset
