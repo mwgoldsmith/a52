@@ -51,6 +51,9 @@
 /* a52 sample precision */
 /* #undef LIBA52_DOUBLE */
 
+/* libao al support */
+/* #undef LIBAO_AL */
+
 /* libao OSS support */
 /* #undef LIBAO_OSS */
 

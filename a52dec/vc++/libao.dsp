@@ -89,6 +89,14 @@ SOURCE=..\libao\audio_out.c
 # End Source File
 # Begin Source File
 
+SOURCE=..\libao\audio_out_aif.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\libao\audio_out_al.c
+# End Source File
+# Begin Source File
+
 SOURCE=..\libao\audio_out_float.c
 # End Source File
 # Begin Source File
