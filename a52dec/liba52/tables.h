@@ -47,9 +47,9 @@ static const int8_t exp_3[128] = {
 };
 
 #ifndef LIBA52_FIXED
-#define Q(x) ((quantizer_t)(32768.0 * x))
+#define Q(x) (32768.0 * x)
 #else
-#define Q(x) ((int16_t)(32768.0 * x + ((1.0 * x > 0) ? 0.5 : -0.5)))
+#define Q(x) ROUND (32768.0 * x)
 #endif
 
 #define Q0 Q (-2/3)
