@@ -28,9 +28,11 @@
 #include "a52.h"
 #include "audio_out_internal.h"
 
+#include <stdio.h>
+
 static inline int16_t convert (int32_t i)
 {
-#ifdef LIBAO_FIXED
+#ifdef LIBA52_FIXED
     i >>= 15;
 #else
     i -= 0x43c00000;
