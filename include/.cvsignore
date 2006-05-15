@@ -10,5 +10,5 @@ Makefile.in
 .libs
 config.h
 config.h.in
-inttypes.h
-stamp-h*
+stamp-h
+stamp-h.in
