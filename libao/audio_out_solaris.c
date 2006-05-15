@@ -1,10 +1,8 @@
 /*
  * audio_out_solaris.c
- * Copyright (C) 2000-2003 Michel Lespinasse <walken@zoy.org>
- * Copyright (C) 1999-2000 Aaron Holtzman <aholtzma@ess.engr.uvic.ca>
+ * Copyright (C) 1999-2001 Aaron Holtzman <aholtzma@ess.engr.uvic.ca>
  *
  * This file is part of a52dec, a free ATSC A-52 stream decoder.
- * See http://liba52.sourceforge.net/ for updates.
  *
  * a52dec is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,17 +23,16 @@
 
 #ifdef LIBAO_SOLARIS
 
+#include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/ioctl.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/audioio.h>
-#include <inttypes.h>
 
 #include "a52.h"
 #include "audio_out.h"
-#include "audio_out_internal.h"
 
 typedef struct solaris_instance_s {
     ao_instance_t ao;
@@ -45,8 +42,8 @@ typedef struct solaris_instance_s {
     int flags;
 } solaris_instance_t;
 
-static int solaris_setup (ao_instance_t * _instance, int sample_rate,
-			  int * flags, level_t * level, sample_t * bias)
+int solaris_setup (ao_instance_t * _instance, int sample_rate, int * flags,
+		   sample_t * level, sample_t * bias)
 {
     solaris_instance_t * instance = (solaris_instance_t *) _instance;
 
@@ -55,26 +52,46 @@ static int solaris_setup (ao_instance_t * _instance, int sample_rate,
     instance->sample_rate = sample_rate;
 
     *flags = instance->flags;
-    *level = CONVERT_LEVEL;
-    *bias = CONVERT_BIAS;
+    *level = 1;
+    *bias = 384;
 
     return 0;
 }
 
-static int solaris_play (ao_instance_t * _instance, int flags,
-			 sample_t * _samples)
+static inline int16_t convert (int32_t i)
+{
+    if (i > 0x43c07fff)
+	return 32767;
+    else if (i < 0x43bf8000)
+	return -32768;
+    else
+	return i - 0x43c00000;
+}
+
+static inline void float_to_int (float * _f, int16_t * s16, int flags)
+{
+    int i;
+    int32_t * f = (int32_t *) _f;
+
+    for (i = 0; i < 256; i++) {
+	s16[2*i] = convert (f[i]);
+	s16[2*i+1] = convert (f[i+256]);
+    }
+}
+
+int solaris_play (ao_instance_t * _instance, int flags, sample_t * _samples)
 {
     solaris_instance_t * instance = (solaris_instance_t *) _instance;
     int16_t int16_samples[256*2];
 
 #ifdef LIBA52_DOUBLE
-    convert_t samples[256 * 2];
+    float samples[256 * 2];
     int i;
 
     for (i = 0; i < 256 * 2; i++)
 	samples[i] = _samples[i];
 #else
-    convert_t * samples = _samples;
+    float * samples = _samples;
 #endif
 
     if (instance->set_params) {
@@ -85,7 +102,10 @@ static int solaris_play (ao_instance_t * _instance, int flags,
 	info.play.sample_rate = instance->sample_rate;
 	info.play.precision = 16;
 	info.play.channels = 2;
+	/* info.play.buffer_size = 2048; */
 	info.play.encoding = AUDIO_ENCODING_LINEAR;
+	/* info.play.port = AUDIO_SPEAKER; */
+	/* info.play.gain = 110; */
 	
 	/* Write our configuration */
 	/* An implicit GETINFO is also performed. */
@@ -115,20 +135,20 @@ static int solaris_play (ao_instance_t * _instance, int flags,
     } else if (flags != instance->flags)
 	return 1;
 
-    convert2s16_2 (samples, int16_samples);
+    float_to_int (samples, int16_samples, flags);
     write (instance->fd, int16_samples, 256 * sizeof (int16_t) * 2);
 
     return 0;
 }
 
-static void solaris_close (ao_instance_t * _instance)
+void solaris_close (ao_instance_t * _instance)
 {
     solaris_instance_t * instance = (solaris_instance_t *) _instance;
 
     close (instance->fd);
 }
 
-static ao_instance_t * solaris_open (int flags)
+ao_instance_t * solaris_open (int flags)
 {
     solaris_instance_t * instance;
 
