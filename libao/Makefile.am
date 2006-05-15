@@ -1,9 +1,34 @@
-AM_CFLAGS = $(OPT_CFLAGS)
+##
+## Process this file with automake to produce Makefile.in
+##
 
-noinst_LIBRARIES = libao.a
-libao_a_SOURCES = audio_out.c audio_out_null.c audio_out_float.c \
-		  audio_out_oss.c audio_out_solaris.c audio_out_al.c \
-		  audio_out_win.c audio_out_wav.c audio_out_aif.c \
-		  audio_out_peak.c convert2s16.c
+libdir = $(PLUGIN_DIR)
 
-EXTRA_DIST = configure.incl audio_out_internal.h
+
+## Conditionals
+
+if HAVE_ESD
+esd_ltlibs = audio_esd.la
+esd_ldflags = -avoid-version -module
+esd_sources = audio_esd.c
+else
+esd_ltlibs =
+esd_ldflags =
+esd_sources =
+endif
+
+
+## Libs
+lib_LTLIBRARIES = audio_sys.la audio_null.la audio_wav.la $(esd_ltlibs)
+
+audio_sys_la_SOURCES = audio_sys.c
+audio_sys_la_LDFLAGS = -rpath $(libdir) -avoid-version -module
+
+audio_null_la_SOURCES = audio_null.c
+audio_null_la_LDFLAGS = -avoid-version -module
+
+audio_wav_la_SOURCES = audio_wav.c
+audio_wav_la_LDFLAGS = -avoid-version -module
+
+audio_esd_la_SOURCES = $(esd_sources)
+audio_esd_la_LDFLAGS = $(esd_ldflags)
