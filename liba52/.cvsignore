@@ -9,4 +9,3 @@ Makefile.in
 .deps
 .libs
 liba52.la
-liba52.pc
