@@ -1,9 +1,14 @@
-AM_CFLAGS = $(OPT_CFLAGS)
+# # Process this file with automake to produce Makefile.in.
+AUTOMAKE_OPTIONS = 1.3 foreign
 
-noinst_LIBRARIES = libao.a
-libao_a_SOURCES = audio_out.c audio_out_null.c audio_out_float.c \
-		  audio_out_oss.c audio_out_solaris.c audio_out_al.c \
-		  audio_out_win.c audio_out_wav.c audio_out_aif.c \
-		  audio_out_peak.c convert2s16.c
+CFLAGS = -Wall -Werror -O3 -g @LIBAO_CFLAGS@
 
-EXTRA_DIST = configure.incl audio_out_internal.h
+lib_LTLIBRARIES = libao.la
+
+include_HEADERS = audio_out.h 
+
+libao_la_LIBADD= @LIBAO_CONFIG_LIBS@  
+libao_la_DEPENDENCIES= @LIBAO_CONFIG_LIBS@  
+libao_la_SOURCES = audio_out.c audio_out_wav.c audio_out_null.c
+
+EXTRA_DIST = audio_out_linux.c audio_out_irix.c audio_out_solaris.c

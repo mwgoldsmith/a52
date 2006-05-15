@@ -1,7 +1,7 @@
 /*
  *
- *  audio_out_null.c
- *    
+ * debug.c
+ *
  *	Copyright (C) Aaron Holtzman - May 1999
  *
  *  This file is part of ac3dec, a free Dolby AC-3 stream decoder.
@@ -20,42 +20,39 @@
  *  along with GNU Make; see the file COPYING.  If not, write to
  *  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA. 
  *
- *
  */
 
-#include "audio_out.h"
-#include "audio_out_internal.h"
+#include <stdlib.h>
+#include "debug.h"
 
-static ao_info_t ao_info =
-{
-	"Null output ",
-	"null",
-	"Aaron Holtzman <aholtzma@ess.engr.uvic.ca>",
-	""
-};
+static int debug_level = -1;
 
-static uint_32
-ao_open(uint_32 bits,uint_32 rate,uint_32 channels)
+// Determine is debug output is required.
+// We could potentially have multiple levels of debug info
+int debug_is_on(void)
 {
-	//do nothing
-	return 0;
+	char *env_var;
+	
+	if(debug_level < 0)
+	{
+	  env_var = getenv("AC3_DEBUG");
+
+		if (env_var)
+		{
+			debug_level = 1;
+		}
+		else
+			debug_level = 0;
+	}
+	
+	return debug_level;
 }
 
-static void
-ao_close(void)
+//If you don't have gcc, then ya don't get debug output
+#ifndef __GNUC__
+void dprintf(char fmt[],...)
 {
+	int foo = 0;
 }
+#endif
 
-static void
-ao_play(sint_16 *foo,uint_32 bar)
-{
-	//do nothing
-}
-
-static const ao_info_t*
-ao_get_info(void)
-{
-	return &ao_info;
-}
-
-LIBAO_EXTERN(null);

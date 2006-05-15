@@ -1,11 +1,11 @@
 /*
  *
- *  audio_out_solaris.c
- *
- *  Copyright (C) Aaron Holtzman - May 1999
+ *  audio_out_linux.c
+ *    
+ *	Copyright (C) Aaron Holtzman - May 1999
  *
  *  This file is part of ac3dec, a free Dolby AC-3 stream decoder.
- *
+ *	
  *  ac3dec is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation; either version 2, or (at your option)
@@ -32,30 +32,30 @@
 #include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include <sys/audioio.h>
-#include <sys/ioctl.h>
-#include <stropts.h>
-#include <signal.h>
 #include <math.h>
-
-//FIXME broken solaris headers!
-int usleep(unsigned int useconds);
+#if defined(__OpenBSD__)
+#include <soundcard.h>
+#elif defined(__FreeBSD__)
+#include <machine/soundcard.h>
+#else
+#include <sys/soundcard.h>
+#endif
+#include <sys/ioctl.h>
 
 #include "audio_out.h"
 #include "audio_out_internal.h"
 
 static ao_info_t ao_info =
 {
-	"Solaris audio output ",
-	"sol",
+	"OSS audio driver output ",
+	"oss",
 	"Aaron Holtzman <aholtzma@ess.engr.uvic.ca>",
 	""
 };
 
-/* Global to keep track of old state */
-static audio_info_t info;
-static char dev[] = "/dev/audio";
+static char dev[] = "/dev/dsp";
 static int fd;
+
 
 /*
  * open the audio device for writing to
@@ -63,46 +63,40 @@ static int fd;
 static uint_32
 ao_open(uint_32 bits, uint_32 rate, uint_32 channels)
 {
-
-	/*
-	 * Open the device driver
-	 */
+  int tmp;
+  
+  /*
+   * Open the device driver
+   */
 
 	fd=open(dev,O_WRONLY);
-	if(fd < 0) 
-	{
-		fprintf(stderr,"%s: Opening audio device %s\n",
-				strerror(errno), dev);
-		goto ERR;
-	}
-	fprintf(stderr,"Opened audio device \"%s\"\n",dev);
+  if(fd < 0) 
+  {
+    fprintf(stderr,"%s: Opening audio device %s\n",
+        strerror(errno), dev);
+    goto ERR;
+  }
 
-	/* Setup our parameters */
-	AUDIO_INITINFO(&info);
+  tmp = channels == 2 ? 1 : 0;
+  ioctl(fd,SNDCTL_DSP_STEREO,&tmp);
 
-	info.play.sample_rate = rate;
-	info.play.precision = bits;
-	info.play.channels = channels;
-	info.play.buffer_size = 1024;
-	info.play.encoding = AUDIO_ENCODING_LINEAR;
-	//info.play.port = AUDIO_SPEAKER;
-	//info.play.gain = 110;
+  tmp = bits;
+  ioctl(fd,SNDCTL_DSP_SAMPLESIZE,&tmp);
 
-	/* Write our configuration */
-	/* An implicit GETINFO is also performed so we can get
-	 * the buffer_size */
+  tmp = rate;
+  ioctl(fd,SNDCTL_DSP_SPEED, &tmp);
 
-	if(ioctl(fd, AUDIO_SETINFO, &info) < 0)
-	{
-		fprintf(stderr, "%s: Writing audio config block\n",strerror(errno));
-		goto ERR;
-	}
+	//this is cheating
+	tmp = 256;
+  ioctl(fd,SNDCTL_DSP_SETFRAGMENT,&tmp);
+
+
 
 	return 1;
 
 ERR:
-	if(fd >= 0) { close(fd); }
-	return 0;
+  if(fd >= 0) { close(fd); }
+  return 0;
 }
 
 /*
@@ -111,12 +105,10 @@ ERR:
 static void 
 ao_play(sint_16* output_samples, uint_32 num_bytes)
 {
-	write(fd,&output_samples[0 * 512],1024);
-	write(fd,&output_samples[1 * 512],1024);
-	write(fd,&output_samples[2 * 512],1024);
-	write(fd,&output_samples[3 * 512],1024);
-	write(fd,&output_samples[4 * 512],1024);
-	write(fd,&output_samples[5 * 512],1024);
+//	if(fd < 0)
+//		return;
+
+	write(fd,output_samples,1024 * 6);
 }
 
 
@@ -125,6 +117,7 @@ ao_close(void)
 {
 	close(fd);
 }
+
 
 static const ao_info_t*
 ao_get_info(void)

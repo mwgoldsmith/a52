@@ -1,8 +1,10 @@
 /*
  *
- *  audio_out_null.c
+ *  downmix.h
  *    
- *	Copyright (C) Aaron Holtzman - May 1999
+ *	Copyright (C) Aaron Holtzman - Sept 1999
+ *
+ *	Originally based on code by Yeqing Deng.
  *
  *  This file is part of ac3dec, a free Dolby AC-3 stream decoder.
  *	
@@ -23,39 +25,4 @@
  *
  */
 
-#include "audio_out.h"
-#include "audio_out_internal.h"
-
-static ao_info_t ao_info =
-{
-	"Null output ",
-	"null",
-	"Aaron Holtzman <aholtzma@ess.engr.uvic.ca>",
-	""
-};
-
-static uint_32
-ao_open(uint_32 bits,uint_32 rate,uint_32 channels)
-{
-	//do nothing
-	return 0;
-}
-
-static void
-ao_close(void)
-{
-}
-
-static void
-ao_play(sint_16 *foo,uint_32 bar)
-{
-	//do nothing
-}
-
-static const ao_info_t*
-ao_get_info(void)
-{
-	return &ao_info;
-}
-
-LIBAO_EXTERN(null);
+void downmix(bsi_t* bsi, stream_samples_t stream_samples,sint_16 *s16_samples);

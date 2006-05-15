@@ -1,7 +1,6 @@
-/*
+/* 
+ *    dither.h
  *
- *  audio_out_null.c
- *    
  *	Copyright (C) Aaron Holtzman - May 1999
  *
  *  This file is part of ac3dec, a free Dolby AC-3 stream decoder.
@@ -20,42 +19,19 @@
  *  along with GNU Make; see the file COPYING.  If not, write to
  *  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA. 
  *
- *
  */
 
-#include "audio_out.h"
-#include "audio_out_internal.h"
 
-static ao_info_t ao_info =
-{
-	"Null output ",
-	"null",
-	"Aaron Holtzman <aholtzma@ess.engr.uvic.ca>",
-	""
-};
+extern uint_16 lfsr_state;
+extern const uint_16 dither_lut[256]; 
 
-static uint_32
-ao_open(uint_32 bits,uint_32 rate,uint_32 channels)
+static inline uint_16 dither_gen(void)
 {
-	//do nothing
-	return 0;
+	sint_16 state;
+
+	state = dither_lut[lfsr_state >> 8] ^ (lfsr_state << 8);
+	
+	lfsr_state = (uint_16) state;
+
+	return ((state * (sint_32) (0.707106 * 256.0))>>8);
 }
-
-static void
-ao_close(void)
-{
-}
-
-static void
-ao_play(sint_16 *foo,uint_32 bar)
-{
-	//do nothing
-}
-
-static const ao_info_t*
-ao_get_info(void)
-{
-	return &ao_info;
-}
-
-LIBAO_EXTERN(null);

@@ -1,8 +1,8 @@
 /*
  *
- *  audio_out_internal.h 
+ *  audio_out.h 
  *    
- *	Copyright (C) Aaron Holtzman - June  2000
+ *	Copyright (C) Aaron Holtzman - May 1999
  *
  *  This file is part of ac3dec, a free Dolby AC-3 stream decoder.
  *	
@@ -27,17 +27,35 @@
  *
  */
 
-static uint_32 ao_open(uint_32 bits, uint_32 rate, uint_32 channels);
-static void ao_play(sint_16* output_samples, uint_32 num_bytes);
-static void ao_close(void);
-static const ao_info_t* ao_get_info(void);
+#ifndef AARONS_TYPES
+#define AARONS_TYPES
+//typedef to appropriate type for your architecture
+typedef unsigned char uint_8;
+typedef unsigned short uint_16;
+typedef unsigned int uint_32;
+typedef signed int sint_32;
+typedef signed short sint_16;
+typedef signed char sint_8;
+#endif
 
+typedef struct ao_info_s
+{
+	/* driver name ("OSS Audio driver") */
+	const char *name;
+	/* short name (for config strings) ("oss") */
+	const char *short_name;
+	/* author ("Aaron Holtzman <aholtzma@ess.engr.uvic.ca>") */
+	const char *author;
+	/* any additional comments */
+	const char *comment;
+} ao_info_t;
 
-#define LIBAO_EXTERN(x) ao_functions_t audio_out_##x =\
-{\
-	ao_open,\
-	ao_play,\
-	ao_close,\
-	ao_get_info\
-}
+typedef struct ao_functions_s
+{
+	uint_32 (*open)(uint_32 bits, uint_32 rate, uint_32 channels);
+	void (*play)(sint_16* output_samples, uint_32 num_bytes);
+	void (*close)(void);
+	const ao_info_t* (*get_info)(void);
+} ao_functions_t;
 
+extern ao_functions_t* audio_out_drivers[];

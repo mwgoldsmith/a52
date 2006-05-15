@@ -1,214 +1,232 @@
 /*
- * audio_out_wav.c
- * Copyright (C) 2000-2003 Michel Lespinasse <walken@zoy.org>
- * Copyright (C) 1999-2000 Aaron Holtzman <aholtzma@ess.engr.uvic.ca>
  *
- * This file is part of a52dec, a free ATSC A-52 stream decoder.
- * See http://liba52.sourceforge.net/ for updates.
+ *  audio_out_wav.c
+ *    
+ *	Copyright (C) Aaron Holtzman - May 1999
  *
- * a52dec is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
+ *  This file is part of ac3dec, a free Dolby AC-3 stream decoder.
+ *	
+ *  ac3dec is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2, or (at your option)
+ *  any later version.
+ *   
+ *  ac3dec is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *   
+ *  You should have received a copy of the GNU General Public License
+ *  along with GNU Make; see the file COPYING.  If not, write to
+ *  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA. 
  *
- * a52dec is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ *  This file is based on output_linux.c by Aaron Holtzman.
+ *  All .wav modifications were done by Jorgen Lundman <lundman@lundman.net>
+ *  Any .wav bugs and errors should be reported to him.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
  */
 
-#include "config.h"
+#ifdef HAVE_CONFIG_H
+#  include <config.h>
+#endif
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <errno.h>
-#include <inttypes.h>
+#include <string.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <signal.h>
 
-#include "a52.h"
 #include "audio_out.h"
 #include "audio_out_internal.h"
 
-typedef struct wav_instance_s {
-    ao_instance_t ao;
-    int sample_rate;
-    int set_params;
-    int flags;
-    uint32_t speaker_flags;
-    int size;
-} wav_instance_t;
+#define WAVE_FORMAT_PCM  0x0001
+#define FORMAT_MULAW     0x0101
+#define IBM_FORMAT_ALAW  0x0102
+#define IBM_FORMAT_ADPCM 0x0103
 
-static uint8_t wav_header[] = {
-    'R', 'I', 'F', 'F', 0xfc, 0xff, 0xff, 0xff, 'W', 'A', 'V', 'E',
-    'f', 'm', 't', ' ', 16, 0, 0, 0,
-    1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 16, 0,
-    'd', 'a', 't', 'a', 0xd8, 0xff, 0xff, 0xff
+
+struct riff_struct 
+{
+  unsigned char id[4];   /* RIFF */
+  unsigned long len;
+  unsigned char wave_id[4]; /* WAVE */
 };
 
-static uint8_t wav6_header[] = {
-    'R', 'I', 'F', 'F', 0xf0, 0xff, 0xff, 0xff, 'W', 'A', 'V', 'E',
-    'f', 'm', 't', ' ', 40, 0, 0, 0,
-    0xfe, 0xff, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 16, 0,
-    22, 0, 16, 0, 0, 0, 0, 0,
-    1, 0, 0, 0, 0, 0, 0x10, 0x00, 0x80, 0, 0, 0xaa, 0, 0x38, 0x9b, 0x71,
-    'd', 'a', 't', 'a', 0xb4, 0xff, 0xff, 0xff
+
+struct chunk_struct 
+{
+	unsigned char id[4];
+	unsigned long len;
 };
 
-static int wav_setup (ao_instance_t * _instance, int sample_rate, int * flags,
-		      level_t * level, sample_t * bias)
+struct common_struct 
 {
-    wav_instance_t * instance = (wav_instance_t *) _instance;
+	unsigned short wFormatTag;
+	unsigned short wChannels;
+	unsigned long dwSamplesPerSec;
+	unsigned long dwAvgBytesPerSec;
+	unsigned short wBlockAlign;
+	unsigned short wBitsPerSample;  /* Only for PCM */
+};
 
-    if ((instance->set_params == 0) && (instance->sample_rate != sample_rate))
-	return 1;
-    instance->sample_rate = sample_rate;
+struct wave_header 
+{
+	struct riff_struct   riff;
+	struct chunk_struct  format;
+	struct common_struct common;
+	struct chunk_struct  data;
 
-    if (instance->flags >= 0)
-	*flags = instance->flags;
-    *level = CONVERT_LEVEL;
-    *bias = CONVERT_BIAS;
+	struct riff_struct   riffdata;
+	struct chunk_struct  dataformat;
+};
 
-    return 0;
+
+static ao_info_t ao_info =
+{
+	"WAV file output",
+	"wav",
+	"Aaron Holtzman <aholtzma@ess.engr.uvic.ca>",
+	""
+};
+
+static char output_file[] = "output.wav";
+static int fd;
+
+static struct wave_header wave;
+static void (*old_sig)(int);
+
+static 
+void signal_handler(int sig)
+{
+	ao_close();
+	signal(sig, old_sig);
+	raise(sig);
 }
 
-static void store4 (uint8_t * buf, int value)
+static uint_32 
+ao_open(uint_32 bits, uint_32 rate, uint_32 channels)
 {
-    buf[0] = value;
-    buf[1] = value >> 8;
-    buf[2] = value >> 16;
-    buf[3] = value >> 24;
-}
 
-static void store2 (uint8_t * buf, int16_t value)
-{
-    buf[0] = value;
-    buf[1] = value >> 8;
-}
+	fd=open(output_file,O_WRONLY | O_TRUNC | O_CREAT, 0644);
 
-static int wav_channels (int flags, uint32_t * speaker_flags)
-{
-    static const uint16_t speaker_tbl[] = {
-	3, 4, 3, 7, 0x103, 0x107, 0x33, 0x37, 4, 4, 3
-    };
-    static const uint8_t nfchans_tbl[] = {
-	2, 1, 2, 3, 3, 4, 4, 5, 1, 1, 2
-    };
-    int chans;
-
-    *speaker_flags = speaker_tbl[flags & A52_CHANNEL_MASK];
-    chans = nfchans_tbl[flags & A52_CHANNEL_MASK];
-
-    if (flags & A52_LFE) {
-	*speaker_flags |= 8;	/* WAVE_SPEAKER_LOW_FREQUENCY */
-	chans++;
-    }
-
-    return chans;	    
-}
-
-#include <stdio.h>
-
-static int wav_play (ao_instance_t * _instance, int flags, sample_t * _samples)
-{
-    wav_instance_t * instance = (wav_instance_t *) _instance;
-    int16_t int16_samples[256 * 6];
-    int chans;
-    uint32_t speaker_flags;
-
-#ifdef LIBA52_DOUBLE
-    convert_t samples[256 * 6];
-    int i;
-
-    for (i = 0; i < 256 * 6; i++)
-	samples[i] = _samples[i];
-#else
-    convert_t * samples = _samples;
-#endif
-
-    chans = wav_channels (flags, &speaker_flags);
-
-    if (instance->set_params) {
-	instance->set_params = 0;
-	instance->speaker_flags = speaker_flags;
-	if (speaker_flags == 3 || speaker_flags == 4) {
-	    store2 (wav_header + 22, chans);
-	    store4 (wav_header + 24, instance->sample_rate);
-	    store4 (wav_header + 28, instance->sample_rate * 2 * chans);
-	    store2 (wav_header + 32, 2 * chans);
-	    fwrite (wav_header, sizeof (wav_header), 1, stdout);
-	} else {
-	    store2 (wav6_header + 22, chans);
-	    store4 (wav6_header + 24, instance->sample_rate);
-	    store4 (wav6_header + 28, instance->sample_rate * 2 * chans);
-	    store2 (wav6_header + 32, 2 * chans);
-	    store4 (wav6_header + 40, speaker_flags);
-	    fwrite (wav6_header, sizeof (wav6_header), 1, stdout);
+	if(fd < 0) 
+	{
+		fprintf(stderr,"%s: Opening audio output %s\n", strerror(errno), output_file);
+		goto ERR;
 	}
-    } else if (speaker_flags != instance->speaker_flags)
+
+	/* Write out a ZEROD wave header first */
+	memset(&wave, 0, sizeof(wave));
+
+	/* Store information */
+	wave.common.wChannels = channels;
+	wave.common.wBitsPerSample = bits;
+	wave.common.dwSamplesPerSec = rate;
+
+	if (write(fd, &wave, sizeof(wave)) != sizeof(wave)) 
+	{
+		fprintf(stderr,"failed to write wav-header: %s\n", strerror(errno));
+		goto ERR;
+	}
+
+	//install our handler to properly write the riff header
+	old_sig = signal(SIGINT,signal_handler);
+
 	return 1;
 
-    convert2s16_wav (samples, int16_samples, flags);
-
-    s16_LE (int16_samples, chans);
-    fwrite (int16_samples, 256 * sizeof (int16_t) * chans, 1, stdout);
-
-    instance->size += 256 * sizeof (int16_t) * chans;
-
-    return 0;
+ERR:
+	if(fd >= 0) { close(fd); }
+	return 0;
 }
 
-static void wav_close (ao_instance_t * _instance)
+
+/*
+ * play the sample to the already opened file descriptor
+ */
+static void
+ao_play(sint_16* output_samples, uint_32 num_bytes)
 {
-    wav_instance_t * instance = (wav_instance_t *) _instance;
+	if(fd < 0)
+		return;
+  
+	write(fd,output_samples,1024 * 6);
 
-    if (fseek (stdout, 0, SEEK_SET) < 0)
-	return;
-
-    if (instance->speaker_flags == 3 || instance->speaker_flags == 4) {
-	store4 (wav_header + 4, instance->size + 36);
-	store4 (wav_header + 40, instance->size);
-	fwrite (wav_header, sizeof (wav_header), 1, stdout);
-    } else {
-	store4 (wav6_header + 4, instance->size + 60);
-	store4 (wav6_header + 64, instance->size);
-	fwrite (wav6_header, sizeof (wav6_header), 1, stdout);
-    }
 }
 
-static ao_instance_t * wav_open (int flags)
+
+static void
+ao_close(void)
 {
-    wav_instance_t * instance;
+	off_t size;
 
-    instance = (wav_instance_t *) malloc (sizeof (wav_instance_t));
-    if (instance == NULL)
-	return NULL;
+	/* Find how long our file is in total, including header */
+	size = lseek(fd, 0, SEEK_CUR);
 
-    instance->ao.setup = wav_setup;
-    instance->ao.play = wav_play;
-    instance->ao.close = wav_close;
+  if (size < 0) 
+	{
+		fprintf(stderr,"lseek failed - wav-header is corrupt\n");
+		goto ERR;
+	}
 
-    instance->sample_rate = 0;
-    instance->set_params = 1;
-    instance->flags = flags;
-    instance->size = 0;
+  /* Rewind file */
+	if (lseek(fd, 0, SEEK_SET) < 0) 
+	{
+		fprintf(stderr,"rewind failed - wav-header is corrupt\n");
+		goto ERR;
+	}
 
-    return (ao_instance_t *) instance;
+	// Fill out our wav-header with some information. 
+	size -= 8;
+
+	strcpy(wave.riff.id, "RIFF");
+	wave.riff.len = size + 24;
+	strcpy(wave.riff.wave_id, "WAVE");
+	size -= 4;
+
+	size -= 8;
+	strcpy(wave.format.id, "fmt ");
+	wave.format.len = sizeof(struct common_struct);
+
+	wave.common.wFormatTag = WAVE_FORMAT_PCM;
+	wave.common.dwAvgBytesPerSec = 
+		wave.common.wChannels * wave.common.dwSamplesPerSec *
+		(wave.common.wBitsPerSample >> 4);
+
+	wave.common.wBlockAlign = wave.common.wChannels * 
+		(wave.common.wBitsPerSample >> 4);
+
+	strcpy(wave.data.id, "data");
+
+	size -= sizeof(struct common_struct);
+	wave.data.len = size;
+
+	size -= 8;
+	strcpy(wave.riffdata.id, "RIFF");
+	wave.riffdata.len = size;
+	strcpy(wave.riffdata.wave_id, "WAVE");
+	size -= 4;
+
+	size -= 8;
+	strcpy(wave.dataformat.id, "DATA");
+	wave.dataformat.len = size;
+
+	if (write(fd, &wave, sizeof(wave)) < sizeof(wave)) 
+	{
+		fprintf(stderr,"wav-header write failed -- file is corrupt\n");
+		goto ERR;
+	}
+
+ERR:
+	close(fd);
 }
 
-ao_instance_t * ao_wav_open (void)
+static const ao_info_t*
+ao_get_info(void)
 {
-    return wav_open (A52_STEREO);
+	return &ao_info;
 }
 
-ao_instance_t * ao_wavdolby_open (void)
-{
-    return wav_open (A52_DOLBY);
-}
-
-ao_instance_t * ao_wav6_open (void)
-{
-    return wav_open (-1);
-}
+//export our ao implementation
+LIBAO_EXTERN(wav);

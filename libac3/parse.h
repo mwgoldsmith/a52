@@ -1,7 +1,6 @@
-/*
+/* 
+ *    parse.h
  *
- *  audio_out_null.c
- *    
  *	Copyright (C) Aaron Holtzman - May 1999
  *
  *  This file is part of ac3dec, a free Dolby AC-3 stream decoder.
@@ -20,42 +19,10 @@
  *  along with GNU Make; see the file COPYING.  If not, write to
  *  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA. 
  *
- *
  */
 
-#include "audio_out.h"
-#include "audio_out_internal.h"
+void parse_syncinfo(syncinfo_t *syncinfo,uint_8 *data);
+void parse_audblk(bsi_t *bsi,audblk_t *audblk);
+void parse_bsi(bsi_t *bsi);
+void parse_auxdata(syncinfo_t *syncinfo);
 
-static ao_info_t ao_info =
-{
-	"Null output ",
-	"null",
-	"Aaron Holtzman <aholtzma@ess.engr.uvic.ca>",
-	""
-};
-
-static uint_32
-ao_open(uint_32 bits,uint_32 rate,uint_32 channels)
-{
-	//do nothing
-	return 0;
-}
-
-static void
-ao_close(void)
-{
-}
-
-static void
-ao_play(sint_16 *foo,uint_32 bar)
-{
-	//do nothing
-}
-
-static const ao_info_t*
-ao_get_info(void)
-{
-	return &ao_info;
-}
-
-LIBAO_EXTERN(null);
