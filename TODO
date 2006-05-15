@@ -1,17 +1,15 @@
-* look at possible overflow/precision issues in integer port
+- Mute frame on error.
+- Detect hrtime on solaris and enable it via config.h
+- Add multilevel debug output
+- Separate uint_* typedefs from ac3.h
+- the output signal from the IMDCT sometimes is outside the rand
+  of [-1.0,1.0]. This is why there is the normalization pass in
+	output.c. Need to investigate and hopefully we can move the
+	normalization.
 
-* redo all bit allocation if previous frame had zero_snr_offsets
-* make dynrng work in dual-channel streams
-
-* implement A/52a downmix extensions
-* reduce size of delay buffer by 50%
-* include float->s16 conversion in liba52 API ?
-* include up/downsampling 44100<->48000 in liba52 API ?
-* include audio dithering in liba52 API ?
-* API extensions might be at a different level (base vs. extended)
-
-* use restrict pointers where appropriate
-* avoid overflows, including reading the a52 stream !!!
-* faster bitstream parsing ?
-* make dither code faster (generate dither table in advance ?)
-* SIMD optimizations
+DONE
+- Use proper frame sizes in auxdata parsing - DONE July 1999 - AH
+- fix clipping in output (normalize to max digital output) - DONE Aug 99 -AH
+- Fix coupling channel support - DONE July 1999 - AH
+- Add delta bit allocation support - DONE July 1999 - AH
+- Add downmixing support - DONE Sept 1999 - AH, Yeqing Deng
