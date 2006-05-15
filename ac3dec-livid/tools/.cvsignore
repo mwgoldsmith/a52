@@ -1,8 +1,0 @@
-*~
-*.o
-*.lo
-extract_ac3
-Makefile
-Makefile.in
-.deps
-.libs
