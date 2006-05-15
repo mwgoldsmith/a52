@@ -109,10 +109,6 @@ SOURCE=..\libao\audio_out_oss.c
 # End Source File
 # Begin Source File
 
-SOURCE=..\libao\audio_out_peak.c
-# End Source File
-# Begin Source File
-
 SOURCE=..\libao\audio_out_solaris.c
 # End Source File
 # Begin Source File
@@ -121,11 +117,7 @@ SOURCE=..\libao\audio_out_wav.c
 # End Source File
 # Begin Source File
 
-SOURCE=..\libao\audio_out_win.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\libao\convert2s16.c
+SOURCE=..\libao\float2s16.c
 # End Source File
 # End Group
 # Begin Group "Header Files"
