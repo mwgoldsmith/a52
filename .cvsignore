@@ -4,14 +4,13 @@
 *.patch
 *.lo
 *.o
-a52dec-*
+a52dec-*.tar.gz
 Makefile
 Makefile.in
 configure
 .deps
 .libs
 aclocal.m4
-autom4te.cache
 config.log
 config.cache
 libtool

@@ -1,10 +1,8 @@
 /*
  * audio_out_float.c
- * Copyright (C) 2000-2003 Michel Lespinasse <walken@zoy.org>
- * Copyright (C) 1999-2000 Aaron Holtzman <aholtzma@ess.engr.uvic.ca>
+ * Copyright (C) 1999-2001 Aaron Holtzman <aholtzma@ess.engr.uvic.ca>
  *
  * This file is part of a52dec, a free ATSC A-52 stream decoder.
- * See http://liba52.sourceforge.net/ for updates.
  *
  * a52dec is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,33 +21,25 @@
 
 #include "config.h"
 
-#include <stdio.h>
 #include <inttypes.h>
+#include <stdio.h>
 
 #include "a52.h"
 #include "audio_out.h"
-#include "audio_out_internal.h"
 
-static int float_setup (ao_instance_t * instance, int sample_rate, int * flags,
-			level_t * level, sample_t * bias)
+int float_setup (ao_instance_t * instance, int sample_rate, int * flags,
+		 sample_t * level, sample_t * bias)
 {
     *flags = A52_STEREO;
-    *level = CONVERT_LEVEL;
+    *level = 1;
     *bias = 0;
 
     return 0;
 }
 
-static int float_play (ao_instance_t * instance, int flags,
-		       sample_t * _samples)
+int float_play (ao_instance_t * instance, int flags, sample_t * _samples)
 {
-#if defined(LIBA52_FIXED)
-    float samples[256 * 2];
-    int i;
-    
-    for (i = 0; i < 256 * 2; i++)
-      samples[i] = _samples[i] * (1.0 / (1 << 30));
-#elif defined(LIBA52_DOUBLE)
+#ifdef LIBA52_DOUBLE
     float samples[256 * 2];
     int i;
 
@@ -64,7 +54,7 @@ static int float_play (ao_instance_t * instance, int flags,
     return 0;
 }
 
-static void float_close (ao_instance_t * instance)
+void float_close (ao_instance_t * instance)
 {
 }
 

@@ -1,10 +1,8 @@
 /*
  * bit_allocate.c
- * Copyright (C) 2000-2003 Michel Lespinasse <walken@zoy.org>
- * Copyright (C) 1999-2000 Aaron Holtzman <aholtzma@ess.engr.uvic.ca>
+ * Copyright (C) 1999-2001 Aaron Holtzman <aholtzma@ess.engr.uvic.ca>
  *
  * This file is part of a52dec, a free ATSC A-52 stream decoder.
- * See http://liba52.sourceforge.net/ for updates.
  *
  * a52dec is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -121,9 +119,9 @@ do {						\
     mask -= floor;				\
 } while (0)
 
-void a52_bit_allocate (a52_state_t * state, ba_t * ba, int bndstart,
-		       int start, int end, int fastleak, int slowleak,
-		       expbap_t * expbap)
+void bit_allocate (a52_state_t * state, a52_ba_t * ba, int bndstart,
+		   int start, int end, int fastleak, int slowleak,
+		   uint8_t * exp, int8_t * bap)
 {
     static int slowgain[4] = {0x540, 0x4d8, 0x478, 0x410};
     static int dbpbtab[4]  = {0xc00, 0x500, 0x300, 0x100};
@@ -131,8 +129,6 @@ void a52_bit_allocate (a52_state_t * state, ba_t * ba, int bndstart,
 			      0xa10, 0xa90, 0xb10, 0x1400};
 
     int i, j;
-    uint8_t * exp;
-    int8_t * bap;
     int fdecay, fgain, sdecay, sgain, dbknee, floor, snroffset;
     int psd, mask;
     int8_t * deltba;
@@ -140,23 +136,20 @@ void a52_bit_allocate (a52_state_t * state, ba_t * ba, int bndstart,
     int halfrate;
 
     halfrate = state->halfrate;
-    fdecay = (63 + 20 * ((state->bai >> 7) & 3)) >> halfrate;	/* fdcycod */
-    fgain = 128 + 128 * (ba->bai & 7);				/* fgaincod */
-    sdecay = (15 + 2 * (state->bai >> 9)) >> halfrate;		/* sdcycod */
-    sgain = slowgain[(state->bai >> 5) & 3];			/* sgaincod */
-    dbknee = dbpbtab[(state->bai >> 3) & 3];			/* dbpbcod */
+    fdecay = (63 + 20 * state->fdcycod) >> halfrate;
+    fgain = 128 + 128 * ba->fgaincod;
+    sdecay = (15 + 2 * state->sdcycod) >> halfrate;
+    sgain = slowgain[state->sgaincod];
+    dbknee = dbpbtab[state->dbpbcod];
     hth = hthtab[state->fscod];
     /*
      * if there is no delta bit allocation, make deltba point to an area
      * known to contain zeroes. baptab+156 here.
      */
     deltba = (ba->deltbae == DELTA_BIT_NONE) ? baptab + 156 : ba->deltba;
-    floor = floortab[state->bai & 7];				/* floorcod */
-    snroffset = 960 - 64 * state->csnroffst - 4 * (ba->bai >> 3) + floor;
+    floor = floortab[state->floorcod];
+    snroffset = 960 - 64 * state->csnroffst - 4 * ba->fsnroffst + floor;
     floor >>= 5;
-
-    exp = expbap->exp;
-    bap = expbap->bap;
 
     i = bndstart;
     j = start;
@@ -175,8 +168,7 @@ void a52_bit_allocate (a52_state_t * state, ba_t * ba, int bndstart,
 	    psd = 128 * exp[i];
 	    mask = psd + fgain + lowcomp;
 	    COMPUTE_MASK ();
-	    bap[i] = (baptab+156)[mask + 4 * exp[i]];
-	    i++;
+	    bap[i++] = (baptab+156)[mask + 4 * exp[i]];
 	} while ((i < 3) || ((i < 7) && (exp[i] > exp[i-1])));
 	fastleak = psd + fgain;
 	slowleak = psd + sgain;
@@ -193,8 +185,7 @@ void a52_bit_allocate (a52_state_t * state, ba_t * ba, int bndstart,
 	    mask = ((fastleak + lowcomp < slowleak) ?
 		    fastleak + lowcomp : slowleak);
 	    COMPUTE_MASK ();
-	    bap[i] = (baptab+156)[mask + 4 * exp[i]];
-	    i++;
+	    bap[i++] = (baptab+156)[mask + 4 * exp[i]];
 	}
 
 	if (end == 7)	/* lfe channel */
@@ -210,8 +201,7 @@ void a52_bit_allocate (a52_state_t * state, ba_t * ba, int bndstart,
 	    mask = ((fastleak + lowcomp < slowleak) ?
 		    fastleak + lowcomp : slowleak);
 	    COMPUTE_MASK ();
-	    bap[i] = (baptab+156)[mask + 4 * exp[i]];
-	    i++;
+	    bap[i++] = (baptab+156)[mask + 4 * exp[i]];
 	} while (i < 20);
 
 	while (lowcomp > 128) {		/* two iterations maximum */
@@ -221,8 +211,7 @@ void a52_bit_allocate (a52_state_t * state, ba_t * ba, int bndstart,
 	    mask = ((fastleak + lowcomp < slowleak) ?
 		    fastleak + lowcomp : slowleak);
 	    COMPUTE_MASK ();
-	    bap[i] = (baptab+156)[mask + 4 * exp[i]];
-	    i++;
+	    bap[i++] = (baptab+156)[mask + 4 * exp[i]];
 	}
 	j = i;
     }
@@ -231,7 +220,7 @@ void a52_bit_allocate (a52_state_t * state, ba_t * ba, int bndstart,
 	int startband, endband;
 
 	startband = j;
-	endband = (bndtab[i-20] < end) ? bndtab[i-20] : end;
+	endband = ((bndtab-20)[i] < end) ? (bndtab-20)[i] : end;
 	psd = 128 * exp[j++];
 	while (j < endband) {
 	    int next, delta;
@@ -259,7 +248,7 @@ void a52_bit_allocate (a52_state_t * state, ba_t * ba, int bndstart,
 	do {
 	    /* max(mask+4*exp)=147=-(minpsd+fgain-deltba-snroffset)>>5+4*exp */
 	    /* min(mask+4*exp)=-156=-(sgain-deltba-snroffset)>>5 */
-	    bap[j] = (baptab+156)[mask + 4 * exp[j]];
-	} while (++j < endband);
+	    bap[j++] = (baptab+156)[mask + 4 * exp[j]];
+	} while (j < endband);
     } while (j < end);
 }
