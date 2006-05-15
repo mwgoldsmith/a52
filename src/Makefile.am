@@ -1,11 +1,5 @@
-AM_CFLAGS = $(A52DEC_CFLAGS)
+INCLUDES = -I$(top_srcdir)/libac3 -I$(top_srcdir)/libao
 
-bin_PROGRAMS = a52dec extract_a52
-a52dec_SOURCES = a52dec.c getopt.c gettimeofday.c
-a52dec_LDADD = $(top_builddir)/liba52/liba52.la \
-	       $(top_builddir)/libao/libao.a -lm $(LIBAO_LIBS)
-extract_a52_SOURCES = extract_a52.c getopt.c
-
-man_MANS = a52dec.1 extract_a52.1
-
-EXTRA_DIST = configure.incl getopt.h gettimeofday.h $(man_MANS)
+bin_PROGRAMS = ac3dec
+ac3dec_SOURCES = ac3dec.c
+ac3dec_LDADD = $(top_builddir)/libac3/libac3.la $(top_builddir)/libao/libao.la

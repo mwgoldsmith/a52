@@ -1,3 +1,3 @@
-SUBDIRS = autotools include doc liba52 libao src vc++ test
+SUBDIRS = autotools include libac3 libao src
 
-EXTRA_DIST = HISTORY bootstrap
+EXTRA_DIST = bootstrap
