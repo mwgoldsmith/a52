@@ -38,7 +38,6 @@
 
 #include "a52.h"
 #include "audio_out.h"
-#include "mm_accel.h"
 #include "gettimeofday.h"
 
 #define BUFFER_SIZE 4096
@@ -616,7 +615,7 @@ int main (int argc, char ** argv)
 
     handle_args (argc, argv);
 
-    accel = disable_accel ? 0 : MM_ACCEL_DJBFFT;
+    accel = disable_accel ? 0 : A52_ACCEL_DJBFFT;
 
     output = output_open ();
     if (output == NULL) {
@@ -624,7 +623,8 @@ int main (int argc, char ** argv)
 	return 1;
     }
 
-    state = a52_init (accel);
+    a52_accel (accel);
+    state = a52_init ();
     if (state == NULL) {
 	fprintf (stderr, "A52 init failed\n");
 	return 1;

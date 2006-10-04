@@ -39,7 +39,6 @@
 
 #include "a52.h"
 #include "a52_internal.h"
-#include "mm_accel.h"
 
 typedef struct complex_s {
     sample_t real;
@@ -355,7 +354,7 @@ static double besselI0 (double x)
     return bessel;
 }
 
-void a52_imdct_init (uint32_t mm_accel)
+void a52_imdct_init (uint32_t accel)
 {
     int i, k;
     double sum;
@@ -412,7 +411,7 @@ void a52_imdct_init (uint32_t mm_accel)
     }
 
 #ifdef LIBA52_DJBFFT
-    if (mm_accel & MM_ACCEL_DJBFFT) {
+    if (accel & A52_ACCEL_DJBFFT) {
 #ifndef LIBA52_DOUBLE
 	ifft128 = (void (*) (complex_t *)) fftc4_un128;
 	ifft64 = (void (*) (complex_t *)) fftc4_un64;

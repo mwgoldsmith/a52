@@ -115,11 +115,24 @@ void a52_downmix (sample_t * samples, int acmod, int output, sample_t bias,
 		  level_t clev, level_t slev);
 void a52_upmix (sample_t * samples, int acmod, int output);
 
-void a52_imdct_init (uint32_t mm_accel);
+void a52_imdct_init (uint32_t accel);
 void a52_imdct_256 (sample_t * data, sample_t * delay, sample_t bias);
 void a52_imdct_512 (sample_t * data, sample_t * delay, sample_t bias);
 
 #define ROUND(x) ((int)((x) + ((x) > 0 ? 0.5 : -0.5)))
+
+typedef struct {
+#ifdef ARCH_PPC
+    uint8_t regv[12*16];
+#endif
+    int dummy;
+} cpu_state_t;
+
+/* cpu_accel.c */
+uint32_t a52_detect_accel (uint32_t accel);
+
+/* cpu_state.c */
+void a52_cpu_state_init (uint32_t accel);
 
 #ifndef LIBA52_FIXED
 

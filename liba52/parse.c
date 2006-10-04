@@ -32,6 +32,8 @@
 #include "bitstream.h"
 #include "tables.h"
 
+static int a52_accels = 0;
+
 #if defined(HAVE_MEMALIGN) && !defined(__cplusplus)
 /* some systems have memalign() but no declaration for it */
 void * memalign (size_t align, size_t size);
@@ -51,10 +53,22 @@ typedef struct {
 
 static uint8_t halfrate[12] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3};
 
-a52_state_t * a52_init (uint32_t mm_accel)
+uint32_t a52_accel (uint32_t accel)
+{
+    if (!a52_accels) {
+	a52_accels = a52_detect_accel (accel) | A52_ACCEL_DETECT;
+	a52_cpu_state_init (a52_accels);
+	a52_imdct_init (a52_accels);
+    }
+    return a52_accels & ~A52_ACCEL_DETECT;
+}
+
+a52_state_t * a52_init (void)
 {
     a52_state_t * state;
     int i;
+
+    a52_accel (A52_ACCEL_DETECT);
 
     state = (a52_state_t *) malloc (sizeof (a52_state_t));
     if (state == NULL)
@@ -72,8 +86,6 @@ a52_state_t * a52_init (uint32_t mm_accel)
     state->downmixed = 1;
 
     state->lfsr_state = 1;
-
-    a52_imdct_init (mm_accel);
 
     return state;
 }
