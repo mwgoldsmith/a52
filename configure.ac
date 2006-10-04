@@ -21,6 +21,7 @@ AC_CHECK_HEADERS([sys/time.h time.h sys/timeb.h io.h])
 
 dnl CC-specific flags
 AC_SUBST([OPT_CFLAGS])
+AC_SUBST([ARCH_OPT_CFLAGS])
 if test x"$GCC" = x"yes"; then
 
     dnl GCC-specific flags
@@ -53,7 +54,8 @@ if test x"$GCC" = x"yes"; then
 
     dnl arch-specific flags
     case "$host" in
-    i?86-* | k?-*)
+    i?86-* | k?-* | x86_64-* | amd64-*)
+	AC_DEFINE([ARCH_X86],,[x86 architecture])
 	case "$host" in
 	i386-*) TRY_CFLAGS="$OPT_CFLAGS -mcpu=i386";;
 	i486-*) TRY_CFLAGS="$OPT_CFLAGS -mcpu=i486";;
@@ -62,9 +64,36 @@ if test x"$GCC" = x"yes"; then
 	k6-*)   TRY_CFLAGS="$OPT_CFLAGS -mcpu=k6";;
 	esac
 	AC_TRY_CFLAGS([$TRY_CFLAGS $CFLAGS],[OPT_CFLAGS="$TRY_CFLAGS"]);;
+    ppc-* | powerpc-*)
+	have_altivec=no
+	for TRY_CFLAGS in "-mpim-altivec -force_cpusubtype_ALL" -faltivec -maltivec -fvec; do
+	    AC_TRY_CFLAGS([$OPT_CFLAGS $TRY_CFLAGS $CFLAGS],
+		[save_CFLAGS="$CFLAGS"
+		 CFLAGS="$OPT_CFLAGS $TRY_CFLAGS $CFLAGS"
+		 AC_MSG_CHECKING([if <altivec.h> is needed])
+		 AC_TRY_COMPILE([],
+		    [typedef vector int t;
+		     vec_ld(0, (unsigned char *)0);],
+		    [have_altivec=yes; AC_MSG_RESULT(no)],
+		    [AC_TRY_COMPILE([#include <altivec.h>],
+			[typedef vector int t; vec_ld(0, (unsigned char *)0);],
+			[AC_DEFINE([HAVE_ALTIVEC_H],,
+			    [Define to 1 if you have the <altivec.h> header.])
+			 have_altivec=yes; AC_MSG_RESULT(yes)],
+			[AC_MSG_RESULT(unsupported)])])
+		 CFLAGS="$save_CFLAGS"])
+	    if test "$have_altivec" = "yes"; then
+		ARCH_OPT_CFLAGS="$TRY_CFLAGS"
+		AC_DEFINE([ARCH_PPC],,[ppc architecture])
+		break
+	    fi
+	done;;
     sparc-* | sparc64-*)
+	AC_DEFINE([ARCH_SPARC],,[sparc architecture])
 	TRY_CFLAGS="$OPT_CFLAGS -mtune=ultrasparc"
 	AC_TRY_CFLAGS([$TRY_CFLAGS $CFLAGS],[OPT_CFLAGS="$TRY_CFLAGS"]);;
+    alpha*)
+	AC_DEFINE([ARCH_ALPHA],,[alpha architecture]);;
     esac
 elif test x"$CC" = x"tendracc"; then
     dnl TenDRA portability checking compiler
