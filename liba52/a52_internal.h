@@ -119,6 +119,8 @@ void a52_imdct_init (uint32_t accel);
 void a52_imdct_256 (sample_t * data, sample_t * delay, sample_t bias);
 void a52_imdct_512 (sample_t * data, sample_t * delay, sample_t bias);
 
+uint16_t a52_crc16_block(uint8_t *data, uint32_t num_bytes);
+
 #define ROUND(x) ((int)((x) + ((x) > 0 ? 0.5 : -0.5)))
 
 typedef struct {

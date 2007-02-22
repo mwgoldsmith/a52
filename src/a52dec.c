@@ -267,6 +267,8 @@ void a52_decode_data (uint8_t * start, uint8_t * end)
 		int length;
 
 		length = a52_syncinfo (buf, &flags, &sample_rate, &bit_rate);
+
+                /* treat crc failure as sync failure - could be cleaner */
 		if (!length) {
 		    fprintf (stderr, "skip\n");
 		    for (bufptr = buf; bufptr < buf + 6; bufptr++)
@@ -278,6 +280,12 @@ void a52_decode_data (uint8_t * start, uint8_t * end)
 		level_t level;
 		sample_t bias;
 		int i;
+
+                int length;
+
+                length = a52_syncinfo (buf, &flags, &sample_rate, &bit_rate);
+                if (a52_crc (buf, length))
+                    goto error;
 
 		if (output->setup (output, sample_rate, &flags, &level, &bias))
 		    goto error;

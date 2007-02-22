@@ -1,7 +1,7 @@
 AM_CFLAGS = $(OPT_CFLAGS) $(LIBA52_CFLAGS)
 
 lib_LTLIBRARIES = liba52.la
-liba52_la_SOURCES = bitstream.c imdct.c bit_allocate.c parse.c downmix.c cpu_accel.c cpu_state.c
+liba52_la_SOURCES = bitstream.c imdct.c bit_allocate.c parse.c downmix.c crc.c cpu_accel.c cpu_state.c
 liba52_la_LIBADD = liba52arch.la $(LIBA52_LIBS) -lm
 liba52_la_LDFLAGS = -no-undefined
 

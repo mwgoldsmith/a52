@@ -72,6 +72,7 @@ a52_state_t * a52_init (void);
 sample_t * a52_samples (a52_state_t * state);
 int a52_syncinfo (uint8_t * buf, int * flags,
 		  int * sample_rate, int * bit_rate);
+int a52_crc (uint8_t * buf, int len);
 int a52_frame (a52_state_t * state, uint8_t * buf, int * flags,
 	       level_t * level, sample_t bias);
 void a52_dynrng (a52_state_t * state,
