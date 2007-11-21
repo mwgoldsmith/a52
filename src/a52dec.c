@@ -166,7 +166,7 @@ static void handle_args (int argc, char ** argv)
 		if (strcmp (drivers[i].name, optarg) == 0)
 		    output_open = drivers[i].open;
 	    if (output_open == NULL) {
-		fprintf (stderr, "Invalid video driver: %s\n", optarg);
+		fprintf (stderr, "Invalid audio driver: %s\n", optarg);
 		print_usage (argv);
 	    }
 	    break;
