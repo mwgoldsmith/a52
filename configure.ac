@@ -2,10 +2,9 @@ dnl Process this file with autoconf to produce a configure script.
 AC_PREREQ(2.54)
 AC_INIT
 AC_CONFIG_SRCDIR([src/a52dec.c])
-AC_CONFIG_AUX_DIR(autotools)
-AC_CONFIG_FILES([Makefile autotools/Makefile include/Makefile test/Makefile
-    doc/Makefile src/Makefile liba52/Makefile libao/Makefile vc++/Makefile
-    liba52/liba52.pc])
+AC_CONFIG_AUX_DIR(.auto)
+AC_CONFIG_FILES([Makefile liba52/Makefile include/Makefile test/Makefile
+    doc/Makefile src/Makefile libao/Makefile vc++/Makefile liba52/liba52.pc])
 AM_INIT_AUTOMAKE([a52dec],[0.7.5-cvs])
 AC_CONFIG_HEADERS([include/config.h])
 AM_MAINTAINER_MODE
