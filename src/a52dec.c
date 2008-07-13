@@ -236,7 +236,7 @@ static void handle_args (int argc, char ** argv)
 	in_file = stdin;
 }
 
-void a52_decode_data (uint8_t * start, uint8_t * end)
+static void a52_decode_data (uint8_t * start, uint8_t * end)
 {
     static uint8_t buf[3840];
     static uint8_t * bufptr = buf;
@@ -341,7 +341,7 @@ static int demux (uint8_t * buf, uint8_t * end, int flags)
 #define DEMUX_HEADER 0
 #define DEMUX_DATA 1
 #define DEMUX_SKIP 2
-    static int state = DEMUX_SKIP;
+    static int demux_state = DEMUX_SKIP;
     static int state_bytes = 0;
     static uint8_t head_buf[268];
 
@@ -367,7 +367,7 @@ static int demux (uint8_t * buf, uint8_t * end, int flags)
 		}						\
 	    } else {						\
 		memcpy (head_buf, header, bytes);		\
-		state = DEMUX_HEADER;				\
+		demux_state = DEMUX_HEADER;			\
 		state_bytes = bytes;				\
 		return 0;					\
 	    }							\
@@ -382,7 +382,7 @@ static int demux (uint8_t * buf, uint8_t * end, int flags)
 
     if (flags & DEMUX_PAYLOAD_START)
 	goto payload_start;
-    switch (state) {
+    switch (demux_state) {
     case DEMUX_HEADER:
 	if (state_bytes > 0) {
 	    header = head_buf;
@@ -410,7 +410,7 @@ static int demux (uint8_t * buf, uint8_t * end, int flags)
 
     while (1) {
 	if (demux_pid) {
-	    state = DEMUX_SKIP;
+	    demux_state = DEMUX_SKIP;
 	    return 0;
 	}
     payload_start:
@@ -420,7 +420,7 @@ static int demux (uint8_t * buf, uint8_t * end, int flags)
 	NEEDBYTES (4);
 	if (header[0] || header[1] || (header[2] != 1)) {
 	    if (demux_pid) {
-		state = DEMUX_SKIP;
+		demux_state = DEMUX_SKIP;
 		return 0;
 	    } else if (header != head_buf) {
 		buf++;
@@ -449,7 +449,7 @@ static int demux (uint8_t * buf, uint8_t * end, int flags)
 	    bytes = 6 + (header[4] << 8) + header[5] - len;
 	    if (bytes > end - buf) {
 		a52_decode_data (buf, end);
-		state = DEMUX_DATA;
+		demux_state = DEMUX_DATA;
 		state_bytes = bytes - (end - buf);
 		return 0;
 	    } else if (bytes > 0) {
@@ -516,7 +516,7 @@ static int demux (uint8_t * buf, uint8_t * end, int flags)
 	    bytes = 6 + (header[4] << 8) + header[5] - len;
 	    if (bytes > end - buf) {
 		a52_decode_data (buf, end);
-		state = DEMUX_DATA;
+		demux_state = DEMUX_DATA;
 		state_bytes = bytes - (end - buf);
 		return 0;
 	    } else if (bytes > 0) {
@@ -535,7 +535,7 @@ static int demux (uint8_t * buf, uint8_t * end, int flags)
 		bytes = (header[4] << 8) + header[5];
 	    skip:
 		if (bytes > end - buf) {
-		    state = DEMUX_SKIP;
+		    demux_state = DEMUX_SKIP;
 		    state_bytes = bytes - (end - buf);
 		    return 0;
 		}
