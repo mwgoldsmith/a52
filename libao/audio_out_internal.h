@@ -27,6 +27,30 @@ typedef float convert_t;
 typedef sample_t convert_t;
 #endif
 
+extern ao_open_t ao_oss_open;
+extern ao_open_t ao_ossdolby_open;
+extern ao_open_t ao_oss4_open;
+extern ao_open_t ao_oss6_open;
+extern ao_open_t ao_solaris_open;
+extern ao_open_t ao_solarisdolby_open;
+extern ao_open_t ao_al_open;
+extern ao_open_t ao_aldolby_open;
+extern ao_open_t ao_al4_open;
+extern ao_open_t ao_al6_open;
+extern ao_open_t ao_win_open;
+extern ao_open_t ao_windolby_open;
+extern ao_open_t ao_wav_open;
+extern ao_open_t ao_wavdolby_open;
+extern ao_open_t ao_wav6_open;
+extern ao_open_t ao_aif_open;
+extern ao_open_t ao_aifdolby_open;
+extern ao_open_t ao_peak_open;
+extern ao_open_t ao_peakdolby_open;
+extern ao_open_t ao_null_open;
+extern ao_open_t ao_null4_open;
+extern ao_open_t ao_null6_open;
+extern ao_open_t ao_float_open;
+
 #ifdef LIBA52_FIXED
 #define CONVERT_LEVEL (1 << 26)
 #define CONVERT_BIAS 0
