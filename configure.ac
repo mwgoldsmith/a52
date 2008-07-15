@@ -114,7 +114,6 @@ else
 fi
 
 dnl Checks for libtool - this must be done after we set cflags
-AC_DISABLE_SHARED
 AC_LIBTOOL_WIN32_DLL
 AC_PROG_LIBTOOL
 
