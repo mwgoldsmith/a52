@@ -22,3 +22,7 @@ stamp-*
 src/a52dec
 src/extract_a52
 test/compare
+
+.sdf
+*.opendb
+.vs/
