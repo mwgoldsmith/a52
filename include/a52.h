@@ -24,6 +24,20 @@
 #ifndef A52_H
 #define A52_H
 
+#if defined(_WIN32) || defined(_WIN64) || defined(_WINDOWS)
+#  if defined(A52_DLL_BUILD)
+#    define A52_API __declspec(dllexport)
+#  elif defined(_USRDLL)
+#    define A52_API __declspec(dllimport)
+#  else
+#    define A52_API 
+#  endif /* A52_DLL_BUILD */
+#elif defined(__GNUC__) && (__GNUC__ >= 4)
+#  define A52_API __attribute__((__visibility__("default")))
+#else
+#  define A52_API
+#endif /* _WIN32 || _WIN64 || _WINDOWS */
+
 #if defined(LIBA52_FIXED)
 typedef int32_t sample_t;
 typedef int32_t level_t;
@@ -67,17 +81,14 @@ typedef struct a52_state_s a52_state_t;
 #define A52_ACCEL_SPARC_VIS2 2
 #define A52_ACCEL_DETECT 0x80000000
 
-uint32_t a52_accel (uint32_t accel);
-a52_state_t * a52_init (void);
-sample_t * a52_samples (a52_state_t * state);
-int a52_syncinfo (uint8_t * buf, int * flags,
-		  int * sample_rate, int * bit_rate);
-int a52_crc (uint8_t * buf, int len);
-int a52_frame (a52_state_t * state, uint8_t * buf, int * flags,
-	       level_t * level, sample_t bias);
-void a52_dynrng (a52_state_t * state,
-		 level_t (* call) (level_t, void *), void * data);
-int a52_block (a52_state_t * state);
-void a52_free (a52_state_t * state);
+A52_API uint32_t a52_accel (uint32_t accel);
+A52_API a52_state_t * a52_init (void);
+A52_API sample_t * a52_samples (a52_state_t * state);
+A52_API int a52_syncinfo (uint8_t * buf, int * flags, int * sample_rate, int * bit_rate);
+A52_API int a52_crc (uint8_t * buf, int len);
+A52_API int a52_frame (a52_state_t * state, uint8_t * buf, int * flags, level_t * level, sample_t bias);
+A52_API void a52_dynrng (a52_state_t * state, level_t (* call) (level_t, void *), void * data);
+A52_API int a52_block (a52_state_t * state);
+A52_API void a52_free (a52_state_t * state);
 
 #endif /* A52_H */
